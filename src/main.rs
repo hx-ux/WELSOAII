@@ -12,6 +12,10 @@ use crate::reciver::ReciverGrid;
 mod Utils;
 use crate::Utils::AppMode;
 
+const WIDTH: f32 = 640.0;
+const HEIGHT: f32 = 360.0;
+
+
 fn main() {
     nannou::app(model).update(update).run();
 }
@@ -24,8 +28,16 @@ struct Model {
 }
 
 fn model(app: &App) -> Model {
-    app.new_window().event(event).view(view).build().unwrap();
 
+    let presentation_window_id=app.new_window()
+        .size(WIDTH as u32, HEIGHT as u32)
+        .view(view)
+        .event(event)
+        .build()
+        .unwrap();
+
+   // app.new_window().event(event).view(view).build().unwrap();
+    let window = app.window(presentation_window_id).unwrap();
     let win_rect = app.window_rect();
 
     let _ramdomBalls: Animator = Animator {
