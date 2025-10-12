@@ -26,6 +26,16 @@ impl AnimatorObject {
             .unwrap_or(Rgba::new(1.0, 0.0, 0.0, 1.0));
     }
 
+    fn gen_rand_col() -> Rgba {
+        let t = Rgba::new(
+            random_range(0.0, 1.0),
+            random_range(0.0, 1.0),
+            random_range(0.0, 1.0),
+            1.0,
+        );
+        return t;
+    }
+
     // Singelton
     fn _randPositions(win_rect: &Rect, multiCol: bool) -> Self {
         let mut currColor = Rgba::new(1.0, 1.0, 1.0, 1.0);
@@ -33,8 +43,8 @@ impl AnimatorObject {
         let radius = random_range(10.0, 25.0);
 
         if multiCol {
-            currColor = Self::color_map(2);
-        }
+            currColor = Self::gen_rand_col();
+        };
 
         AnimatorObject {
             position: vec2(

@@ -1,26 +1,32 @@
 extern crate nannou;
 use nannou::{color::encoding::Srgb, prelude::*};
-// use nannou::{draw, prelude::*};
+use nannou::{draw, prelude::*};
 
 mod animator;
 use crate::animator::Animator;
 use crate::animator::AnimatorObject;
 
 mod reciver;
-use crate::reciver::Reciver;
-use crate::reciver::ReciverObject;
+use crate::reciver::ReciverGrid;
+
+mod Utils;
+use crate::Utils::AppMode;
 
 fn main() {
-    nannou::app(model).update(update).simple_window(view).run();
+    nannou::app(model).update(update).run();
 }
 
 struct Model {
     animators: Vec<AnimatorObject>,
-    receivers: Reciver,
+    receivers: Vec<ReciverGrid>,
+    // global settings
+    app_mode: AppMode,
 }
 
-fn model(_app: &App) -> Model {
-    let win_rect = _app.window_rect();
+fn model(app: &App) -> Model {
+    app.new_window().event(event).view(view).build().unwrap();
+
+    let win_rect = app.window_rect();
 
     let _ramdomBalls: Animator = Animator {
         countObject: 10,
@@ -28,71 +34,104 @@ fn model(_app: &App) -> Model {
     };
     let animators = _ramdomBalls.generateRandomBall(&win_rect);
 
-    let receivers = vec![
-        ReciverObject::new(-200.0, 0.0, 100.0, 100.0),
-        ReciverObject::new(200.0, 0.0, 100.0, 100.0),
-        ReciverObject::new(0.0, 150.0, 150.0, 80.0),
-    ];
-
-    let r: Reciver = Reciver { revicer: receivers };
+    let main_receiver_rect = Rect::from_x_y_w_h(0.0, 0.0, 400.0, 300.0);
+    let receiver_grid = ReciverGrid::new(main_receiver_rect, 10, 8); // 10 columns, 8 rows
 
     Model {
         animators,
-        receivers: r,
+        receivers: vec![receiver_grid],
+        app_mode: AppMode::Preview,
     }
 }
 
 fn update(_app: &App, _model: &mut Model, _update: Update) {
     let win_rect = _app.window_rect();
-
-    _model.receivers.revicer.iter_mut().for_each(|t| t.reset());
+    _model
+        .receivers
+        .iter_mut()
+        .for_each(|receiver| receiver.cells.iter_mut().for_each(|cell| cell.reset()));
 
     for animator in &mut _model.animators {
         animator.update(&win_rect);
 
-        for t in &mut _model.receivers.revicer {
-            if t.rect.contains(animator.position) {
-                t.is_active = true;
-                t.targetColor = animator.color;
-
-                // t.active_color = animator.color;
+        for receiver in &mut _model.receivers {
+            for cell in &mut receiver.cells {
+                if cell.rect.contains(animator.position) {
+                    cell.is_active = true;
+                    cell.found_color = animator.color;
+                }
             }
         }
     }
 }
 
+fn event(_app: &App, _model: &mut Model, event: WindowEvent) {
+    if _model.receivers.is_empty() {
+        return;
+    }
+    let receiver = &mut _model.receivers[0];
+
+    println!("{:?}", event);
+
+    match event {
+        KeyPressed(_key) => match _key {
+            Key::Up => receiver.move_by(vec2(0.0, 10.0)),
+            Key::Down => receiver.move_by(vec2(0.0, -10.0)),
+            Key::Left => receiver.move_by(vec2(-10.0, 0.0)),
+            Key::Right => receiver.move_by(vec2(10.0, 0.0)),
+            Key::Equals | Key::Plus => receiver.resize_by(vec2(10.0, 10.0)),
+            Key::Minus => receiver.resize_by(vec2(-10.0, -10.0)),
+            Key::P => _model.app_mode = AppMode::Presentation,
+            Key::E => _model.app_mode = AppMode::Edit,
+            Key::R => _model.app_mode = AppMode::Preview,
+            _ => (),
+        },
+        MousePressed(_button) => {
+            // do_something();
+        }
+        MouseReleased(_button) => {}
+
+        _other => {}
+    }
+}
+
 fn view(_app: &App, _model: &Model, frame: Frame) {
     let draw = _app.draw();
-    draw.background().color(BLUE);
+    draw.background().color(BLACK);
 
-    for receiver in &_model.receivers.revicer {
-        // White with low opacity (alpha = 0.1)
-        let transparent_white = Rgba::new(1.0, 1.0, 1.0, 0.1);
-        let currColor = Rgba::new(
-            receiver.targetColor.red,
-            receiver.targetColor.green,
-            receiver.targetColor.blue,
-            0.5, // new opacity
-        );
+    match _model.app_mode {
+        AppMode::Edit | AppMode::Preview => {
+            for receiver in &_model.receivers {
+                for cell in &receiver.cells {
 
-        let color = if receiver.is_active {
-            currColor
-        } else {
-            transparent_white
-        };
+                    // ReciverCell::
+                    let color = if cell.is_active {
+                        Rgba::new(
+                            cell.found_color.red,
+                            cell.found_color.green,
+                            cell.found_color.blue,
+                            0.5,
+                        )
+                    } else {
+                        Rgba::new(1.0, 1.0, 1.0, 0.1)
+                    };
 
-        draw.rect()
-            .xy(receiver.rect.xy())
-            .wh(receiver.rect.wh())
-            .color(color);
+                    draw.rect()
+                        .xy(cell.rect.xy())
+                        .wh(cell.rect.wh())
+                        .color(color);
 
-        // Add a stroke to show the receiver's boundary clearly.
-        draw.rect()
-            .xy(receiver.rect.xy())
-            .wh(receiver.rect.wh())
-            .no_fill()
-            .stroke_weight(2.0)
-            .stroke(SNOW);
+                    // Draw the cell's border
+                    draw.rect()
+                        .xy(cell.rect.xy())
+                        .wh(cell.rect.wh())
+                        .no_fill()
+                        .stroke_weight(1.0)
+                        .stroke(SNOW);
+                }
+            }
+        }
+        AppMode::Presentation => {}
     }
 
     for animator in &_model.animators {
