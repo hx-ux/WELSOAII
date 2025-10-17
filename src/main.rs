@@ -1,8 +1,7 @@
 extern crate nannou;
-use nannou::image::flat::View;
 use nannou::{color::encoding::Srgb, prelude::*};
-use nannou::{draw, prelude::*};
 use nannou_egui::{self, Egui, egui};
+
 
 mod animator;
 use crate::animator::Animator;
@@ -25,7 +24,6 @@ struct Model {
     animators: Vec<AnimatorObject>,
     receivers: Vec<ReciverGrid>,
     currReciver: ReciverGrid,
-    app_mode: AppMode,
     settings_egui: Egui,
     global_settings: GlobalSettings,
 }
@@ -36,7 +34,11 @@ fn settings_window_event(app: &App, model: &mut Model, event: &nannou::winit::ev
 }
 
 fn model(app: &App) -> Model {
-    let global_settings = GlobalSettings::default();
+    let global_settings = GlobalSettings::load_or_default("");
+
+    let serialized = serde_json::to_string(&global_settings).unwrap();
+    print!("{}", serialized);
+
     app.set_loop_mode(LoopMode::rate_fps(global_settings.framerate));
 
     let view_window = app
@@ -70,7 +72,7 @@ fn model(app: &App) -> Model {
     let win_rect: Rect = app.window_rect();
 
     let _ramdomBalls: Animator = Animator {
-        countObject: 10,
+        countObjects: 10,
         multiColor: false,
     };
 
@@ -78,13 +80,12 @@ fn model(app: &App) -> Model {
 
     let main_receiver_rect = Rect::from_x_y_w_h(0.0, 0.0, 400.0, 300.0);
     let receiver_grid = ReciverGrid::new(main_receiver_rect, 10, 8); // 10 columns, 8 rows
-    let currReciver = receiver_grid.clone();
+    let currReciver = receiver_grid.clone().to_owned();
 
     Model {
         animators,
         receivers: vec![receiver_grid],
         currReciver,
-        app_mode: AppMode::Preview,
         settings_egui: egui,
         view_window,
         settings_window,
@@ -98,23 +99,14 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
     let egui = &mut _model.settings_egui;
     let ctx = egui.begin_frame();
 
-    egui::Window::new("Global Settings").show(&ctx, |ui| {
-        ui.label("Framerate");
-        let framerate_response = ui.add(egui::Slider::new(
-            &mut _model.global_settings.framerate,
-            1.0..=60.0,
-        ));
-
-        if framerate_response.changed() {
-            print!("what");
-            _app.set_loop_mode(LoopMode::rate_fps(_model.global_settings.framerate));
-        }
-    });
+    egui::Window::new("Global Settings").show(&ctx, |ui| if _model.global_settings.ui(ui) {});
 
     egui::Window::new("Test2").show(&ctx, |ui| {
-  ui.label("Framerate");
-     
+        ui.heading("WHAT");
 
+        if let Some(f) = _model.receivers.first_mut() {
+            if (f.ui(ui)) {}
+        }
     });
 
     _model
@@ -142,7 +134,7 @@ fn event(_app: &App, _model: &mut Model, event: WindowEvent) {
     }
     let receiver = &mut _model.receivers[0];
 
-    println!("{:?}", event);
+    // println!("{:?}", event);
 
     match event {
         KeyPressed(_key) => match _key {
@@ -152,9 +144,9 @@ fn event(_app: &App, _model: &mut Model, event: WindowEvent) {
             Key::Right => receiver.move_by(vec2(10.0, 0.0)),
             Key::Equals | Key::Plus => receiver.resize_by(vec2(10.0, 10.0)),
             Key::Minus => receiver.resize_by(vec2(-10.0, -10.0)),
-            Key::P => _model.app_mode = AppMode::Presentation,
-            Key::E => _model.app_mode = AppMode::Edit,
-            Key::R => _model.app_mode = AppMode::Preview,
+            Key::P => _model.global_settings.app_mode = AppMode::Presentation,
+            Key::E => _model.global_settings.app_mode  = AppMode::Edit,
+            Key::R => _model.global_settings.app_mode  = AppMode::Preview,
             _ => (),
         },
         MousePressed(_button) => {
@@ -171,7 +163,7 @@ fn view(_app: &App, _model: &Model, frame: Frame) {
 
     match frame.window_id() {
         id if id == _model.view_window => {
-            match _model.app_mode {
+            match _model.global_settings.app_mode {
                 AppMode::Edit | AppMode::Preview => {
                     draw.background().color(BLACK);
                     for receiver in &_model.receivers {

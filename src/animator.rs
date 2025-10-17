@@ -2,14 +2,8 @@ extern crate nannou;
 use nannou::{color::encoding::Srgb, prelude::*};
 use std::collections::HashMap;
 
-pub struct AnimatorObject {
-    pub position: Vec2,
-    pub velocity: Vec2,
-    pub radius: f32,
-    pub color: Rgba,
-}
-
-impl AnimatorObject {
+pub struct AnimatorCore {}
+impl AnimatorCore {
     fn color_map(pos: u32) -> Rgba {
         let _pos = pos % 5;
 
@@ -27,23 +21,32 @@ impl AnimatorObject {
     }
 
     fn gen_rand_col() -> Rgba {
-        let t = Rgba::new(
+        let col: nannou::color::Alpha<rgb::Rgb, f32> = Rgba::new(
             random_range(0.0, 1.0),
             random_range(0.0, 1.0),
             random_range(0.0, 1.0),
             1.0,
         );
-        return t;
+        col
     }
+}
 
+pub struct AnimatorObject {
+    pub position: Vec2,
+    pub velocity: Vec2,
+    pub radius: f32,
+    pub color: Rgba,
+}
+
+impl AnimatorObject {
+   
     // Singelton
     fn _randPositions(win_rect: &Rect, multiCol: bool) -> Self {
         let mut currColor = Rgba::new(1.0, 1.0, 1.0, 1.0);
 
         let radius = random_range(10.0, 25.0);
-
         if multiCol {
-            currColor = Self::gen_rand_col();
+            currColor = AnimatorCore::gen_rand_col();
         };
 
         AnimatorObject {
@@ -76,12 +79,12 @@ impl AnimatorObject {
 }
 
 pub struct Animator {
-    pub countObject: u32,
+    pub countObjects: u32,
     pub multiColor: bool,
 }
 impl Animator {
     pub fn generateRandomBall(&self, _c_size: &Rect) -> Vec<AnimatorObject> {
-        let animators = (0..self.countObject)
+        let animators = (0..self.countObjects)
             .map(|_| AnimatorObject::_randPositions(&_c_size, true))
             .collect();
 

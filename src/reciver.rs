@@ -4,6 +4,7 @@ use nannou::{
     color::{encoding::Srgb, rgb::Rgb},
     prelude::*,
 };
+use nannou_egui::egui;
 
 #[derive(Clone)]
 pub struct ReciverCell {
@@ -41,8 +42,8 @@ impl ReciverCell {
 pub struct ReciverGrid {
     main_rect: Rect,
     pub cells: Vec<ReciverCell>,
-    cols: i32,
-    rows: i32,
+    pub cols: i32,
+    pub rows: i32,
     pub bg_color: Rgba,
 }
 
@@ -90,5 +91,24 @@ impl ReciverGrid {
             new_size.y,
         );
         self.update_cells();
+    }
+    pub fn ui(&mut self, ui: &mut egui::Ui) -> bool {
+        let mut changed = false;
+
+        let rows_slider = egui::Slider::new(&mut self.rows, 1..=40).text("Rows");
+        if ui.add(rows_slider).changed() {
+            changed = true;
+        }
+
+        let cols_slider = egui::Slider::new(&mut self.cols, 1..=40).text("Columns");
+        if ui.add(cols_slider).changed() {
+            changed = true;
+        }
+
+        if changed {
+            self.update_cells();
+        }
+
+        changed 
     }
 }
