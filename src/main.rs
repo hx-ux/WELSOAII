@@ -2,10 +2,8 @@ extern crate nannou;
 use nannou::{color::encoding::Srgb, prelude::*};
 use nannou_egui::{self, Egui, egui};
 
-
 mod animator;
-use crate::animator::Animator;
-use crate::animator::AnimatorObject;
+use crate::animator::AnimatorNew;
 
 mod reciver;
 use crate::reciver::ReciverGrid;
@@ -21,9 +19,11 @@ fn main() {
 struct Model {
     view_window: WindowId,
     settings_window: WindowId,
-    animators: Vec<AnimatorObject>,
-    receivers: Vec<ReciverGrid>,
-    currReciver: ReciverGrid,
+
+    animators: AnimatorNew,
+    // animators: Vec<AnimatorObject>,
+    //  receivers: Vec<ReciverGrid>,
+    // currReciver: ReciverGrid,
     settings_egui: Egui,
     global_settings: GlobalSettings,
 }
@@ -44,7 +44,7 @@ fn model(app: &App) -> Model {
     let view_window = app
         .new_window()
         .title("main")
-        //.always_on_top(true)
+        // .always_on_top(false)
         .size(
             global_settings.view_window_size.0,
             global_settings.view_window_size.1,
@@ -57,6 +57,7 @@ fn model(app: &App) -> Model {
     let settings_window = app
         .new_window()
         .title("settings")
+        // .always_on_top(true)
         .size(
             global_settings.settings_window_size.0,
             global_settings.settings_window_size.1,
@@ -67,25 +68,22 @@ fn model(app: &App) -> Model {
         .unwrap();
 
     let settings_window_ref = app.window(settings_window).unwrap();
-    let egui = Egui::from_window(&settings_window_ref);
 
+    let egui = Egui::from_window(&settings_window_ref);
     let win_rect: Rect = app.window_rect();
 
-    let _ramdomBalls: Animator = Animator {
-        countObjects: 10,
-        multiColor: false,
-    };
-
-    let animators = _ramdomBalls.generateRandomBall(&win_rect);
+    let mut animator = AnimatorNew::new(&win_rect);
+    animator.reset(&win_rect);
 
     let main_receiver_rect = Rect::from_x_y_w_h(0.0, 0.0, 400.0, 300.0);
     let receiver_grid = ReciverGrid::new(main_receiver_rect, 10, 8); // 10 columns, 8 rows
-    let currReciver = receiver_grid.clone().to_owned();
+
+    animator.link_grid(receiver_grid);
 
     Model {
-        animators,
-        receivers: vec![receiver_grid],
-        currReciver,
+        animators: animator,
+        //    receivers: vec![receiver_grid],
+        // currReciver,
         settings_egui: egui,
         view_window,
         settings_window,
@@ -101,38 +99,30 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
 
     egui::Window::new("Global Settings").show(&ctx, |ui| if _model.global_settings.ui(ui) {});
 
-    egui::Window::new("Test2").show(&ctx, |ui| {
-        ui.heading("WHAT");
+    egui::Window::new("Grid").show(&ctx, |ui| if (_model.animators.grid.ui(ui)) {});
 
-        if let Some(f) = _model.receivers.first_mut() {
-            if (f.ui(ui)) {}
+    egui::Window::new("Animator Controls").show(&ctx, |ui| {
+        if _model.animators.ui(ui) {
+            _model.animators.reset(&win_rect);
         }
     });
 
+    // IDK
+    //  _model.animators.grid.cells.reset
+    //     .receivers
+    //     .iter_mut()
+    //     .for_each(|receiver| receiver.cells.iter_mut().for_each(|cell| cell.reset()));
+
     _model
-        .receivers
-        .iter_mut()
-        .for_each(|receiver| receiver.cells.iter_mut().for_each(|cell| cell.reset()));
-
-    for animator in &mut _model.animators {
-        animator.update(&win_rect);
-
-        for receiver in &mut _model.receivers {
-            for cell in &mut receiver.cells {
-                if cell.rect.contains(animator.position) {
-                    cell.is_active = true;
-                    cell.found_color = animator.color;
-                }
-            }
-        }
-    }
+        .animators
+        .update(&win_rect, _app.duration.since_prev_update.as_secs_f32());
 }
 
 fn event(_app: &App, _model: &mut Model, event: WindowEvent) {
-    if _model.receivers.is_empty() {
-        return;
-    }
-    let receiver = &mut _model.receivers[0];
+    // if _model.receivers.is_empty() {
+    //     return;
+    // }
+    let receiver = &mut _model.animators.grid;
 
     // println!("{:?}", event);
 
@@ -145,8 +135,8 @@ fn event(_app: &App, _model: &mut Model, event: WindowEvent) {
             Key::Equals | Key::Plus => receiver.resize_by(vec2(10.0, 10.0)),
             Key::Minus => receiver.resize_by(vec2(-10.0, -10.0)),
             Key::P => _model.global_settings.app_mode = AppMode::Presentation,
-            Key::E => _model.global_settings.app_mode  = AppMode::Edit,
-            Key::R => _model.global_settings.app_mode  = AppMode::Preview,
+            Key::E => _model.global_settings.app_mode = AppMode::Edit,
+            Key::R => _model.global_settings.app_mode = AppMode::Preview,
             _ => (),
         },
         MousePressed(_button) => {
@@ -161,48 +151,16 @@ fn event(_app: &App, _model: &mut Model, event: WindowEvent) {
 fn view(_app: &App, _model: &Model, frame: Frame) {
     let draw = _app.draw();
 
+    _model.animators.draw(&draw);
+    
     match frame.window_id() {
-        id if id == _model.view_window => {
-            match _model.global_settings.app_mode {
-                AppMode::Edit | AppMode::Preview => {
-                    draw.background().color(BLACK);
-                    for receiver in &_model.receivers {
-                        for cell in &receiver.cells {
-                            let color = if cell.is_active {
-                                Rgba::new(
-                                    cell.found_color.red,
-                                    cell.found_color.green,
-                                    cell.found_color.blue,
-                                    0.5,
-                                )
-                            } else {
-                                Rgba::new(1.0, 1.0, 1.0, 0.1)
-                            };
-
-                            draw.rect()
-                                .xy(cell.rect.xy())
-                                .wh(cell.rect.wh())
-                                .color(color);
-
-                            draw.rect()
-                                .xy(cell.rect.xy())
-                                .wh(cell.rect.wh())
-                                .no_fill()
-                                .stroke_weight(1.0)
-                                .stroke(SNOW);
-                        }
-                    }
-                }
-                AppMode::Presentation => {}
+        id if id == _model.view_window => match _model.global_settings.app_mode {
+            AppMode::Edit | AppMode::Preview => {
+                draw.background().color(BLACK);
+                _model.animators.grid.draw(&draw);
             }
-
-            for animator in &_model.animators {
-                draw.ellipse()
-                    .xy(animator.position)
-                    .radius(animator.radius)
-                    .color(animator.color);
-            }
-        }
+            AppMode::Presentation => {}
+        },
 
         id if id == _model.settings_window => {
             draw.background().color(DARKGRAY);

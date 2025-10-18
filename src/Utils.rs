@@ -24,7 +24,7 @@ impl GlobalSettings {
         Self {
             framerate: 60.0,
             view_window_size: (1000, 1000),
-            settings_window_size: (400, 400),
+            settings_window_size: (800, 400),
             app_mode: AppMode::Preview,
         }
     }

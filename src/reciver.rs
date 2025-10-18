@@ -2,6 +2,7 @@ extern crate nannou;
 
 use nannou::{
     color::{encoding::Srgb, rgb::Rgb},
+    noise::Blend,
     prelude::*,
 };
 use nannou_egui::egui;
@@ -14,6 +15,8 @@ pub struct ReciverCell {
 }
 
 impl ReciverCell {
+    // const STANDARD_COLOR: Rgba = rgba::<_>(1.0, 1.0, 1.0, 0.1);
+
     pub fn new(x: f32, y: f32, w: f32, h: f32) -> Self {
         ReciverCell {
             rect: Rect::from_x_y_w_h(x, y, w, h),
@@ -35,6 +38,7 @@ impl ReciverCell {
 
     pub fn reset(&mut self) {
         self.is_active = false;
+        self.found_color = Self::get_stan_color();
     }
 }
 
@@ -57,11 +61,16 @@ impl ReciverGrid {
             bg_color: ReciverCell::get_stan_color(),
         };
         grid.update_cells();
-        return grid;
+        grid
     }
 
     pub fn update_cells(&mut self) {
         self.cells.clear();
+
+        if self.cols == 0 || self.rows == 0 {
+            return;
+        }
+
         let cell_w = self.main_rect.w() / self.cols as f32;
         let cell_h = self.main_rect.h() / self.rows as f32;
         let start_x = self.main_rect.left() + cell_w / 2.0;
@@ -74,6 +83,30 @@ impl ReciverGrid {
                 let cell_rect = Rect::from_x_y_w_h(x, y, cell_w, cell_h);
                 self.cells.push(ReciverCell::new_from_rect(cell_rect));
             }
+        }
+    }
+
+    pub fn draw(&self, draw: &Draw) {
+        for cell in &self.cells {
+            let color = if cell.is_active {
+                cell.found_color
+            } else {
+                Rgba::new(1.0, 1.0, 1.0, 0.1)
+            };
+            // Cells
+            draw.rect()
+                .xy(cell.rect.xy())
+                .wh(cell.rect.wh())
+                .stroke_color(BLACK)
+                .stroke_weight(1.0)
+                .color(color);
+            // Backdrop / Outer Rect
+            draw.rect()
+                .xy(cell.rect.xy())
+                .wh(cell.rect.wh())
+                .no_fill()
+                .stroke_weight(1.0)
+                .stroke(SNOW);
         }
     }
 
@@ -109,6 +142,6 @@ impl ReciverGrid {
             self.update_cells();
         }
 
-        changed 
+        changed
     }
 }
