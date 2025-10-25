@@ -1,10 +1,12 @@
 extern crate nannou;
 use crate::reciver::ReciverGrid;
-use nannou::prelude::*;
+use nannou::{color::rgb::Rgb, prelude::*};
 use nannou_egui::egui::{self, widgets};
 
 use self::AnimationType::*;
 use std::slice::Iter;
+use crate::Utils::*;
+
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum AnimationType {
@@ -24,41 +26,6 @@ impl AnimationType {
             AnimationType::GravityFountain => "Gravity Fountain",
             AnimationType::ScanLine => "Scan Line",
         }
-    }
-}
-
-pub mod AnimatorCore {
-    use super::*;
-
-    // #[derive(Debug, Clone, Copy, PartialEq)]
-    // pub enum ColorPalette {
-    //     Vivid,
-    //     Pastel,
-    //     GoldAndSteel,
-    // }
-
-    pub fn generate_rand_col() -> Rgba {
-        let col = Rgba::new(
-            random_range(0.0, 1.0),
-            random_range(0.0, 1.0),
-            random_range(0.0, 1.0),
-            1.0,
-        );
-        col
-    }
-
-    pub fn placeholder_col() -> Rgba {
-        Rgba::new(1.0, 0.0, 0.0, 1.0)
-    }
-
-    pub fn color_to_SRGB(col: egui::Color32) -> Rgba {
-        let mut _c = placeholder_col();
-
-        let _r = col.r() as f32 / 255.0;
-        let _g = col.g() as f32 / 255.0;
-        let _b = col.b() as f32 / 255.0;
-        let _a = col.a() as f32 / 255.0;
-        Rgba::new(_r, _g, _b, _a)
     }
 }
 
@@ -363,8 +330,9 @@ impl AnimatorNew {
         self.objects.clear();
 
         for elements in 0..self.settings.count {
+
             let color = if self.settings.multicolor {
-                AnimatorCore::generate_rand_col()
+                Rgba::random()
             } else {
                 self.color
             };
@@ -450,7 +418,7 @@ impl AnimatorNew {
             changed = true;
         }
         if ui.color_edit_button_srgba(&mut self.egui_color).changed() {
-            self.color = AnimatorCore::color_to_SRGB(self.egui_color);
+            self.color = Rgba::from_egui(self.egui_color);
             changed = true;
         }
 

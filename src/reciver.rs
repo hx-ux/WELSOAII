@@ -1,44 +1,46 @@
 extern crate nannou;
+use std::string;
 
-use nannou::{
-    color::{encoding::Srgb, rgb::Rgb},
-    noise::Blend,
-    prelude::*,
+use crate::{
+    Utils::*,
+    reciver_device::{self, SingleLed},
 };
+use nannou::{prelude::*, wgpu::bytes::from};
 use nannou_egui::egui;
+use reciver_device::*;
 
 #[derive(Clone)]
 pub struct ReciverCell {
+    pub pos: u16,
     pub rect: Rect,
     pub found_color: Rgba,
     pub is_active: bool,
 }
 
 impl ReciverCell {
-    // const STANDARD_COLOR: Rgba = rgba::<_>(1.0, 1.0, 1.0, 0.1);
-
-    pub fn new(x: f32, y: f32, w: f32, h: f32) -> Self {
+    pub fn new(x: f32, y: f32, w: f32, h: f32, pos: u16) -> Self {
         ReciverCell {
             rect: Rect::from_x_y_w_h(x, y, w, h),
             is_active: false,
-            found_color: Self::get_stan_color(),
+            found_color: Rgba::standard(),
+            pos,
         }
     }
-    pub fn new_from_rect(r: Rect) -> Self {
+    pub fn new_from_rect(r: Rect, pos: u16) -> Self {
         ReciverCell {
             rect: r,
             is_active: false,
-            found_color: Self::get_stan_color(),
+            found_color: Rgba::standard(),
+            pos,
         }
-    }
-
-    pub fn get_stan_color() -> Rgba {
-        Rgba::new(1.0, 1.0, 1.0, 0.1)
     }
 
     pub fn reset(&mut self) {
         self.is_active = false;
-        self.found_color = Self::get_stan_color();
+        self.found_color = Rgba::standard();
+    }
+    pub fn as_led(&self) -> SingleLed {
+        SingleLed::newRgba(self.found_color, self.pos)
     }
 }
 
@@ -48,7 +50,8 @@ pub struct ReciverGrid {
     pub cells: Vec<ReciverCell>,
     pub cols: i32,
     pub rows: i32,
-    pub bg_color: Rgba,
+    device: ReciverDevice,
+    pub is_locked: bool,
 }
 
 impl ReciverGrid {
@@ -58,8 +61,14 @@ impl ReciverGrid {
             cells: Vec::new(),
             cols,
             rows,
-            bg_color: ReciverCell::get_stan_color(),
+            device: ReciverDevice::new(
+                "192.168.178.102".to_string(),
+                Vec::new(),
+                "name".to_string(),
+            ),
+            is_locked: true,
         };
+
         grid.update_cells();
         grid
     }
@@ -76,12 +85,17 @@ impl ReciverGrid {
         let start_x = self.main_rect.left() + cell_w / 2.0;
         let start_y = self.main_rect.top() - cell_h / 2.0;
 
+        // TODO Sloppy Implementation
+        let g: Vec<SingleLed> = Vec::new();
+
+        let mut _pos = 0;
         for r in 0..self.rows {
             for c in 0..self.cols {
                 let x = start_x + c as f32 * cell_w;
                 let y = start_y - r as f32 * cell_h;
                 let cell_rect = Rect::from_x_y_w_h(x, y, cell_w, cell_h);
-                self.cells.push(ReciverCell::new_from_rect(cell_rect));
+                self.cells.push(ReciverCell::new_from_rect(cell_rect, _pos));
+                _pos += 1;
             }
         }
     }
@@ -128,15 +142,21 @@ impl ReciverGrid {
     pub fn ui(&mut self, ui: &mut egui::Ui) -> bool {
         let mut changed = false;
 
-        let rows_slider = egui::Slider::new(&mut self.rows, 1..=40).text("Rows");
-        if ui.add(rows_slider).changed() {
-            changed = true;
-        }
+        let rows_value = egui::DragValue::new(&mut self.rows)
+            .clamp_range(1..=40)
+            .prefix("Rows: ");
 
-        let cols_slider = egui::Slider::new(&mut self.cols, 1..=40).text("Columns");
-        if ui.add(cols_slider).changed() {
-            changed = true;
-        }
+        changed = ui.add(rows_value).changed();
+
+        let cols_value = egui::DragValue::new(&mut self.cols)
+            .clamp_range(1..=40)
+            .prefix("Cols: ");
+
+        changed = ui.add(cols_value).changed();
+
+        ui.label("IP");
+        let mut z = String::from("IP Adress");
+        let response = ui.add(egui::TextEdit::singleline(&mut z));
 
         if changed {
             self.update_cells();

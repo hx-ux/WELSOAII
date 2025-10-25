@@ -9,8 +9,10 @@ mod reciver;
 use crate::reciver::ReciverGrid;
 
 mod Utils;
-use crate::Utils::AppMode;
-use crate::Utils::GlobalSettings;
+use crate::Utils::*;
+
+mod reciver_device;
+use crate::reciver_device::*;
 
 fn main() {
     nannou::app(model).update(update).run();
