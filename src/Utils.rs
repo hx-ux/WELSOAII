@@ -1,5 +1,5 @@
-use nannou::color::rgb::Rgb;
 use nannou::color::Rgba;
+use nannou::color::rgb::Rgb;
 
 use nannou::rand::random_range;
 use nannou_egui::egui;
@@ -9,7 +9,6 @@ use serde::{Deserialize, Serialize};
 pub enum AppMode {
     Presentation,
     Edit,
-    Preview,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -17,7 +16,6 @@ pub enum AppMode {
 pub struct GlobalSettings {
     pub framerate: f64,
     pub view_window_size: (u32, u32),
-    pub settings_window_size: (u32, u32),
     pub app_mode: AppMode,
 }
 
@@ -28,8 +26,7 @@ impl GlobalSettings {
         Self {
             framerate: 60.0,
             view_window_size: (1000, 1000),
-            settings_window_size: (800, 400),
-            app_mode: AppMode::Preview,
+            app_mode: AppMode::Edit,
         }
     }
 
@@ -41,8 +38,6 @@ impl GlobalSettings {
     }
     pub fn ui(&mut self, ui: &mut egui::Ui) -> bool {
         let mut changed = false;
-        ui.label("Framerate");
-        let framerate_response = ui.add(egui::Slider::new(&mut self.framerate, 1.0..=60.0));
         ui.separator();
         ui.horizontal(|ui| {
             changed |= ui
@@ -51,16 +46,18 @@ impl GlobalSettings {
             changed |= ui
                 .radio_value(&mut self.app_mode, AppMode::Edit, "Edit")
                 .changed();
-            changed |= ui
-                .radio_value(&mut self.app_mode, AppMode::Preview, "Preview")
-                .changed();
         });
 
-        if framerate_response.changed() {
-            changed = true;
+        if changed {
+            changed = false;
+            return true;
         }
 
-        changed
+        false
+    }
+
+    pub fn app_name() -> String {
+        String::from("WELOSA II")
     }
 }
 
@@ -71,7 +68,7 @@ pub trait ColorHelpers {
     fn from_egui(col: egui::Color32) -> Rgba;
     fn random() -> Rgba;
     fn standard() -> Rgba;
-    fn hsv_to_rgb(h:f32,v:f32,s:f32) ->(u8, u8, u8);
+    fn hsv_to_rgb(h: f32, v: f32, s: f32) -> (u8, u8, u8);
 }
 
 impl ColorHelpers for Rgba {
@@ -103,7 +100,7 @@ impl ColorHelpers for Rgba {
     fn standard() -> Rgba {
         Rgba::new(1.0, 1.0, 1.0, 0.1)
     }
-    
+
     fn to_sendable(&self) -> (u8, u8, u8) {
         let r = (self.red * 255.0) as u8;
         let g = (self.green * 255.0) as u8;
@@ -112,7 +109,6 @@ impl ColorHelpers for Rgba {
     }
 
     fn hsv_to_rgb(h: f32, s: f32, v: f32) -> (u8, u8, u8) {
-
         let c = v * s;
         let x = c * (1.0 - ((h / 60.0) % 2.0 - 1.0).abs());
         let m = v - c;
