@@ -23,15 +23,13 @@ struct Model {
     settings_window: WindowId,
 
     animators: AnimatorNew,
-    // animators: Vec<AnimatorObject>,
-    //  receivers: Vec<ReciverGrid>,
-    // currReciver: ReciverGrid,
+
     settings_egui: Egui,
     global_settings: GlobalSettings,
 }
 
 fn settings_window_event(app: &App, model: &mut Model, event: &nannou::winit::event::WindowEvent) {
-    println!("window b: {:?}", event);
+    //  println!("window b: {:?}", event);
     model.settings_egui.handle_raw_event(event);
 }
 
@@ -47,6 +45,7 @@ fn model(app: &App) -> Model {
         .new_window()
         .title("main")
         // .always_on_top(false)
+        //  .always_on_top(true)
         .size(
             global_settings.view_window_size.0,
             global_settings.view_window_size.1,
@@ -81,11 +80,10 @@ fn model(app: &App) -> Model {
     let receiver_grid = ReciverGrid::new(main_receiver_rect, 10, 8); // 10 columns, 8 rows
 
     animator.link_grid(receiver_grid);
+    app.set_loop_mode(LoopMode::RefreshSync);
 
     Model {
         animators: animator,
-        //    receivers: vec![receiver_grid],
-        // currReciver,
         settings_egui: egui,
         view_window,
         settings_window,
@@ -115,15 +113,18 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
     //     .iter_mut()
     //     .for_each(|receiver| receiver.cells.iter_mut().for_each(|cell| cell.reset()));
 
-    _model
+//    _model
+//         .animators
+//         .update(&win_rect, _update.since_start.as_secs_f32());
+
+  _model
         .animators
         .update(&win_rect, _app.duration.since_prev_update.as_secs_f32());
 }
 
 fn event(_app: &App, _model: &mut Model, event: WindowEvent) {
-    // if _model.receivers.is_empty() {
-    //     return;
-    // }
+
+
     let receiver = &mut _model.animators.grid;
 
     // println!("{:?}", event);
@@ -154,7 +155,7 @@ fn view(_app: &App, _model: &Model, frame: Frame) {
     let draw = _app.draw();
 
     _model.animators.draw(&draw);
-    
+
     match frame.window_id() {
         id if id == _model.view_window => match _model.global_settings.app_mode {
             AppMode::Edit | AppMode::Preview => {

@@ -1,11 +1,10 @@
 extern crate nannou;
-use std::string;
 
 use crate::{
     Utils::*,
     reciver_device::{self, SingleLed},
 };
-use nannou::{prelude::*, wgpu::bytes::from};
+use nannou::prelude::*;
 use nannou_egui::egui;
 use reciver_device::*;
 
@@ -40,7 +39,7 @@ impl ReciverCell {
         self.found_color = Rgba::standard();
     }
     pub fn as_led(&self) -> SingleLed {
-        SingleLed::newRgba(self.found_color, self.pos)
+        SingleLed::new_rgba(self.found_color, self.pos)
     }
 }
 
@@ -98,6 +97,16 @@ impl ReciverGrid {
                 _pos += 1;
             }
         }
+
+        let mut s: Vec<SingleLed> = Vec::new();
+
+        for f in &self.cells {
+            s.push(f.as_led());
+        }
+
+        self.device.leds = s;
+
+        self.device.send_test_data();
     }
 
     pub fn draw(&self, draw: &Draw) {
@@ -142,21 +151,8 @@ impl ReciverGrid {
     pub fn ui(&mut self, ui: &mut egui::Ui) -> bool {
         let mut changed = false;
 
-        let rows_value = egui::DragValue::new(&mut self.rows)
-            .clamp_range(1..=40)
-            .prefix("Rows: ");
-
-        changed = ui.add(rows_value).changed();
-
-        let cols_value = egui::DragValue::new(&mut self.cols)
-            .clamp_range(1..=40)
-            .prefix("Cols: ");
-
-        changed = ui.add(cols_value).changed();
-
-        ui.label("IP");
-        let mut z = String::from("IP Adress");
-        let response = ui.add(egui::TextEdit::singleline(&mut z));
+        ui.label(&self.device.name);
+        ui.label(&self.device.ip);
 
         if changed {
             self.update_cells();

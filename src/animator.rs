@@ -4,20 +4,21 @@ use nannou::{color::rgb::Rgb, prelude::*};
 use nannou_egui::egui::{self, widgets};
 
 use self::AnimationType::*;
-use std::slice::Iter;
 use crate::Utils::*;
-
+use std::slice::Iter;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum AnimationType {
     BouncingBalls,
     GravityFountain,
     ScanLine,
+    PulseBackground,
 }
 
 impl AnimationType {
     pub fn iterator() -> Iter<'static, AnimationType> {
-        static DIRECTIONS: [AnimationType; 3] = [BouncingBalls, GravityFountain, ScanLine];
+        static DIRECTIONS: [AnimationType; 4] =
+            [BouncingBalls, GravityFountain, ScanLine, PulseBackground];
         DIRECTIONS.iter()
     }
     pub fn as_str(&self) -> &'static str {
@@ -25,6 +26,7 @@ impl AnimationType {
             AnimationType::BouncingBalls => "Bouncing Balls",
             AnimationType::GravityFountain => "Gravity Fountain",
             AnimationType::ScanLine => "Scan Line",
+            AnimationType::PulseBackground => "Pulse",
         }
     }
 }
@@ -38,6 +40,7 @@ pub trait AnimatedObject {
     fn position(&self) -> Vec2;
     fn color(&self) -> Rgba;
     fn ui(&mut self, ui: &mut egui::Ui) -> bool;
+    fn reset(&self);
 }
 
 pub struct BouncingBall {
@@ -99,6 +102,8 @@ impl AnimatedObject for BouncingBall {
     fn ui(&mut self, ui: &mut egui::Ui) -> bool {
         false
     }
+
+    fn reset(&self) {}
 }
 
 pub struct GravityParticle {
@@ -152,7 +157,8 @@ impl AnimatedObject for GravityParticle {
     }
 
     fn is_dead(&self) -> bool {
-        self.life <= 0.0
+        // self.life <= 0.0
+        false
     }
     fn position(&self) -> Vec2 {
         self.position
@@ -163,6 +169,10 @@ impl AnimatedObject for GravityParticle {
     }
 
     fn ui(&mut self, ui: &mut egui::Ui) -> bool {
+        todo!()
+    }
+
+    fn reset(&self) {
         todo!()
     }
 }
@@ -188,7 +198,6 @@ impl ScanLine {
         }
     }
 }
-/* ------------------------------------------- */
 
 impl AnimatedObject for ScanLine {
     fn update(&mut self, win_rect: &Rect, delta_time: f32) {
@@ -289,6 +298,8 @@ impl AnimatedObject for ScanLine {
 
         reset
     }
+
+    fn reset(&self) {}
 }
 pub struct AnimatorSettings {
     pub count: u32,
@@ -302,6 +313,7 @@ pub struct AnimatorNew {
     pub grid: ReciverGrid,
     pub color: Rgba,
     egui_color: egui::Color32,
+    frameCount: f32,
 }
 
 impl AnimatorNew {
@@ -316,6 +328,7 @@ impl AnimatorNew {
             grid: ReciverGrid::new(win_rect.pad(20.0), 10, 10),
             color: Rgba::new(1.0, 0.0, 0.0, 1.0),
             egui_color: egui::Color32::from_rgba_unmultiplied(100, 140, 200, 255),
+            frameCount: 0.0,
         }
     }
 
@@ -330,7 +343,6 @@ impl AnimatorNew {
         self.objects.clear();
 
         for elements in 0..self.settings.count {
-
             let color = if self.settings.multicolor {
                 Rgba::random()
             } else {
@@ -338,25 +350,26 @@ impl AnimatorNew {
             };
 
             let new_obj: Box<dyn AnimatedObject> = match self.settings.animation_type {
-                AnimationType::BouncingBalls => Box::new(BouncingBall::new(win_rect, color)),
-                AnimationType::GravityFountain => {
-                    Box::new(GravityParticle::new(win_rect, fountain_origin, color))
-                }
-                AnimationType::ScanLine => {
-                    Box::new(ScanLine::new(win_rect, 0, 20.0, color, fountain_origin))
-                }
+                BouncingBalls => Box::new(BouncingBall::new(win_rect, color)),
+                GravityFountain => Box::new(GravityParticle::new(win_rect, fountain_origin, color)),
+                ScanLine => Box::new(ScanLine::new(win_rect, 0, 20.0, color, fountain_origin)),
+                PulseBackground => todo!(),
             };
             self.objects.push(new_obj);
         }
     }
 
     pub fn update(&mut self, win_rect: &Rect, delta_time: f32) {
-        // animate objects by time
+        // self.frameCount += 0.1;
+        // if self.frameCount > 10000.0 {
+        //     self.frameCount = 0.0;
+        // }
+        // println!("{}", self.frameCount);
+
         for obj in self.objects.iter_mut() {
             obj.update(win_rect, delta_time);
         }
 
-        // Remove dead particles
         self.objects.retain(|obj| !obj.is_dead());
 
         for cell in self.grid.cells.iter_mut() {
