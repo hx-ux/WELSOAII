@@ -23,6 +23,22 @@ impl GlobalSettings {
     pub fn load_or_default(path: &str) -> Self {
         let result = std::fs::read_to_string(path);
 
+        if !path.is_empty() {
+            if let Ok(content) = std::fs::read_to_string(path) {
+                if let Ok(parsed) = serde_json::from_str::<GlobalSettings>(&content) {
+                    return parsed;
+                } else {
+                    eprintln!(
+                        "Warning: failed to parse settings JSON at '{}', using defaults",
+                        path
+                    );
+                }
+            } else {
+                println!("No settings file found at '{}', using defaults", path);
+            }
+        }
+
+        // defaults
         Self {
             framerate: 60.0,
             view_window_size: (1000, 1000),
