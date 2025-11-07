@@ -1,4 +1,8 @@
-use std::sync::{Arc, Mutex};
+use std::{
+    sync::{Arc, Mutex},
+    thread,
+    time::Duration,
+};
 
 use crate::Utils::{self, ColorHelpers};
 use ddp_rs::connection::DDPConnection;
@@ -11,7 +15,6 @@ pub struct ReciverDevice {
     pub name: String,
     pub leds: Vec<SingleLed>,
     is_online: bool,
-    // maxLedLen: i16,
     con: Arc<Mutex<DDPConnection>>,
 }
 
@@ -47,8 +50,7 @@ impl ReciverDevice {
             leds: led,
             name: name,
             is_online: _status,
-            // maxLedLen: 800,
-            con: shared_connection, 
+            con: shared_connection,
         }
     }
 
@@ -60,6 +62,35 @@ impl ReciverDevice {
             let mut sender = self.con.lock().unwrap();
             let _ = sender.write(&frame_bytes);
         }
+    }
+    /// Start a background thread that periodically writes the current led buffer to the device.
+    /// interval_ms: frame interval in milliseconds.
+    pub fn start_sender(&self, interval_ms: u64) {
+        
+        // if !self.is_online {
+        //     return;
+        // }
+
+        let con = Arc::clone(&self.con);
+
+        let frame_bytes: Vec<u8> = self.leds_frame();
+        thread::spawn(move || {
+            loop {
+                if let Ok(mut conn) = con.lock() {
+                    let _ = conn.write(&frame_bytes);
+                }
+                // let frame: Vec<u8> = {
+                //     // keep lock as short as possible
+                //     let l = leds;
+                //     l.iter().flat_map(|led| [led.red, led.green, led.blue]).collect()
+                // };
+
+                // if let Ok(mut conn) = con.lock() {
+                //     let _ = conn.write(&frame);
+                // }
+                // thread::sleep(Duration::from_millis(interval_ms));
+            }
+        });
     }
 
     fn leds_frame(&self) -> Vec<u8> {
@@ -79,7 +110,6 @@ pub struct SingleLed {
 }
 
 impl SingleLed {
-
     pub fn new_rgba(col: Rgba, index: u16) -> Self {
         let _col = col.to_sendable();
         SingleLed {

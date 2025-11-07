@@ -1,26 +1,22 @@
 extern crate nannou;
-use nannou::{color::encoding::Srgb, prelude::*};
+use nannou::prelude::*;
 use nannou_egui::{self, Egui, egui};
 
-mod animator;
-use crate::animator::Animator;
-
-mod reciver;
-use crate::animator::GravityParticle;
-use crate::reciver::ReciverGrid;
-
 mod Utils;
+mod animator;
+mod reciver;
+use animator::Animator;
+use reciver::ReciverGrid;
 use crate::Utils::*;
 
 mod reciver_device;
-use crate::reciver_device::*;
 
 fn main() {
     nannou::app(model).update(update).run();
 }
 
 struct Model {
-    view_window_id: WindowId,
+    // view_window_id: WindowId,
     animators: Animator,
     settings_egui: Egui,
     global_settings: GlobalSettings,
@@ -28,14 +24,11 @@ struct Model {
 
 fn settings_window_event(app: &App, model: &mut Model, event: &nannou::winit::event::WindowEvent) {
     //  println!("window b: {:?}", event);
-     model.settings_egui.handle_raw_event(event);
+    model.settings_egui.handle_raw_event(event);
 }
 
 fn model(app: &App) -> Model {
     let global_settings = GlobalSettings::load_or_default("");
-
-    // let serialized = serde_json::to_string(&global_settings).unwrap();
-    // print!("{}", serialized);
 
     app.set_loop_mode(LoopMode::rate_fps(global_settings.framerate));
 
@@ -70,7 +63,7 @@ fn model(app: &App) -> Model {
     Model {
         animators: animator,
         settings_egui,
-        view_window_id,
+        // view_window_id,
         global_settings,
     }
 }
@@ -139,11 +132,16 @@ fn view(_app: &App, _model: &Model, frame: Frame) {
     let draw = _app.draw();
 
     draw.background().color(BLACK);
-    _model.animators.draw(&draw);
+    _model.animators.draw_animator(&draw);
+    // _model.animators.draw_grid(&draw);
+    _model.animators.draw_grid(&draw);
     draw.to_frame(_app, &frame).unwrap();
 
     match _model.global_settings.app_mode {
         AppMode::Presentation => {}
-        AppMode::Edit => _model.settings_egui.draw_to_frame(&frame).unwrap(),
+        AppMode::Edit => {
+            // _model.animators.draw_grid(&draw);
+            _model.settings_egui.draw_to_frame(&frame).unwrap()
+        }
     }
 }
