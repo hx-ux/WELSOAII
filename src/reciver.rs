@@ -104,9 +104,17 @@ impl ReciverGrid {
             s.push(f.as_led());
         }
 
-        self.device.leds = s;
+        // self.device.send_test_data();
+        // replace contents of shared led buffer
+        {
+            // let mut leds_lock = self.device.leds;
+            // *leds_lock = s;
+        }
 
-        self.device.send_test_data();
+        // send an initial frame immediately, and ensure the background sender is running.
+        // self.device.send_test_data();
+        // Start background sender (50 ms ~ 20fps). If you want only one thread, guard-start externally.
+        self.device.start_sender(50);
     }
 
     pub fn draw(&self, draw: &Draw) {
@@ -114,7 +122,7 @@ impl ReciverGrid {
             let color = if cell.is_active {
                 cell.found_color
             } else {
-                Rgba::new(1.0, 1.0, 1.0, 0.1)
+                Rgba::new(0.1, 0.1, 0.1, 0.1)
             };
             // Cells
             draw.rect()
