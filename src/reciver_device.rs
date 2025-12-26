@@ -1,122 +1,70 @@
-use std::{
-    sync::{Arc, Mutex},
-    thread,
-    time::Duration,
-};
+use std::sync::{Arc, Mutex};
 
-use crate::Utils::{self, ColorHelpers};
 use ddp_rs::connection::DDPConnection;
-use nannou::color::Rgba;
 
 // https://crates.io/crates/ddp-rs
 #[derive(Clone)]
 pub struct ReciverDevice {
     pub ip: String,
     pub name: String,
-    pub leds: Vec<SingleLed>,
-    is_online: bool,
-    con: Arc<Mutex<DDPConnection>>,
+    pub max_len: u64,
+    con: Option<Arc<Mutex<DDPConnection>>>,
+    pub etash_conn: bool,
 }
 
 impl ReciverDevice {
-    const BIND_ADDRESS: &str = "0.0.0.0:6969";
     const RECIVER_PORT: &str = "4048";
 
-    pub fn new(ip: String, led: Vec<SingleLed>, name: String) -> Self {
-        let target_address = format!("{}:{}", &ip, ReciverDevice::RECIVER_PORT);
-        let mut _status = false;
+    pub fn factory() -> Self {
+        Self {
+            ip: "none".to_string(),
+            name: "none".to_string(),
+            con: None,
+            max_len: 0,
+            etash_conn: false,
+        }
+    }
 
-        let connection = match DDPConnection::try_new(
+    pub fn send_data(&self, datat: Vec<u8>) -> Result<(), Box<dyn std::error::Error>> {
+        
+        if self.etash_conn {
+            if let Some(conn) = &self.con {
+                let mut connection = conn.lock().unwrap();
+                connection.write_offset(&datat, 0)?;
+            }
+        }
+        Ok(())
+    }
+
+    fn testfill_all(len: u64) -> Vec<u8> {
+        let mut vec = Vec::new();
+        for i in 0..len {
+            vec.push(255 as u8);
+            vec.push(0 as u8);
+            vec.push(0 as u8);
+        }
+        vec
+    }
+
+    pub fn open_connection(&mut self, ip: &str, name: &str, max_len: u64) {
+        let target_address = format!("{}:{}", &ip, ReciverDevice::RECIVER_PORT);
+
+        match DDPConnection::try_new(
             target_address,
             ddp_rs::protocol::PixelConfig::default(),
             ddp_rs::protocol::ID::Default,
-            std::net::UdpSocket::bind("0.0.0.0:0").unwrap(),
+            std::net::UdpSocket::bind("0.0.0.0:4048").unwrap(),
         ) {
             Ok(conn) => {
-                _status = true;
-                conn
+                print!("open connection");
+                self.con = Some(Arc::new(Mutex::new(conn)));
+                self.etash_conn = true;
             }
             Err(err) => panic!("Error creating DDP connection: {}", err),
         };
 
-        if _status == false {
-            println!("{}", _status);
-        }
-
-        let shared_connection = Arc::new(Mutex::new(connection));
-
-        ReciverDevice {
-            ip: ip,
-            leds: led,
-            name: name,
-            is_online: _status,
-            con: shared_connection,
-        }
-    }
-
-    pub fn send_test_data(&self) {
-        if self.is_online {
-            let frame_bytes: Vec<u8> = self.leds_frame();
-            println!("Sending initial frame ({} bytes).", frame_bytes.len());
-
-            let mut sender = self.con.lock().unwrap();
-            let _ = sender.write(&frame_bytes);
-        }
-    }
-    /// Start a background thread that periodically writes the current led buffer to the device.
-    /// interval_ms: frame interval in milliseconds.
-    pub fn start_sender(&self, interval_ms: u64) {
-        
-        // if !self.is_online {
-        //     return;
-        // }
-
-        let con = Arc::clone(&self.con);
-
-        let frame_bytes: Vec<u8> = self.leds_frame();
-        thread::spawn(move || {
-            loop {
-                if let Ok(mut conn) = con.lock() {
-                    let _ = conn.write(&frame_bytes);
-                }
-                // let frame: Vec<u8> = {
-                //     // keep lock as short as possible
-                //     let l = leds;
-                //     l.iter().flat_map(|led| [led.red, led.green, led.blue]).collect()
-                // };
-
-                // if let Ok(mut conn) = con.lock() {
-                //     let _ = conn.write(&frame);
-                // }
-                // thread::sleep(Duration::from_millis(interval_ms));
-            }
-        });
-    }
-
-    fn leds_frame(&self) -> Vec<u8> {
-        self.leds
-            .iter()
-            .flat_map(|led| [led.red, led.green, led.blue])
-            .collect()
-    }
-}
-
-#[derive(Clone)]
-pub struct SingleLed {
-    index: u16,
-    red: u8,
-    green: u8,
-    blue: u8,
-}
-
-impl SingleLed {
-    pub fn new_rgba(col: Rgba, index: u16) -> Self {
-        let _col = col.to_sendable();
-        SingleLed {
-            index,
-            red: _col.0,
-            green: _col.1,
-            blue: _col.2,
-        }
+        self.ip = ip.to_string();
+        self.name = name.to_string();
+        self.max_len = max_len;
     }
 }

@@ -5,9 +5,9 @@ use nannou_egui::{self, Egui, egui};
 mod Utils;
 mod animator;
 mod reciver;
+use crate::Utils::*;
 use animator::Animator;
 use reciver::ReciverGrid;
-use crate::Utils::*;
 
 mod reciver_device;
 
@@ -16,14 +16,12 @@ fn main() {
 }
 
 struct Model {
-    // view_window_id: WindowId,
     animators: Animator,
     settings_egui: Egui,
     global_settings: GlobalSettings,
 }
 
 fn settings_window_event(app: &App, model: &mut Model, event: &nannou::winit::event::WindowEvent) {
-    //  println!("window b: {:?}", event);
     model.settings_egui.handle_raw_event(event);
 }
 
@@ -55,7 +53,7 @@ fn model(app: &App) -> Model {
     animator.reset(&win_rect);
 
     let main_receiver_rect = Rect::from_x_y_w_h(0.0, 0.0, 400.0, 300.0);
-    let receiver_grid = ReciverGrid::new(main_receiver_rect, 10, 8); // 10 columns, 8 rows
+    let receiver_grid = ReciverGrid::new(main_receiver_rect, 2, 20,true); // 10 columns, 8 rows
 
     animator.link_grid(receiver_grid);
     app.set_loop_mode(LoopMode::RefreshSync);
@@ -63,7 +61,6 @@ fn model(app: &App) -> Model {
     Model {
         animators: animator,
         settings_egui,
-        // view_window_id,
         global_settings,
     }
 }
@@ -78,23 +75,13 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
 
     egui::Window::new("Global Settings").show(&ctx, |ui| if _model.global_settings.ui(ui) {});
 
-    egui::Window::new("Grid").show(&ctx, |ui| if _model.animators.grid.ui(ui) {});
+    egui::Window::new("Device").show(&ctx, |ui| if _model.animators.grid.ui(ui) {});
 
     egui::Window::new("Animator Controls").show(&ctx, |ui| {
         if _model.animators.ui(ui) {
             _model.animators.reset(&win_rect);
         }
     });
-
-    // IDK
-    //  _model.animators.grid.cells.reset
-    //     .receivers
-    //     .iter_mut()
-    //     .for_each(|receiver| receiver.cells.iter_mut().for_each(|cell| cell.reset()));
-
-    //    _model
-    //         .animators
-    //         .update(&win_rect, _update.since_start.as_secs_f32());
 
     _model
         .animators
@@ -103,8 +90,6 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
 
 fn event(_app: &App, _model: &mut Model, event: WindowEvent) {
     let receiver = &mut _model.animators.grid;
-
-    // println!("{:?}", event);
 
     match event {
         KeyPressed(_key) => match _key {
@@ -119,9 +104,7 @@ fn event(_app: &App, _model: &mut Model, event: WindowEvent) {
 
             _ => (),
         },
-        MousePressed(_button) => {
-            // do_something();
-        }
+        MousePressed(_button) => {}
         MouseReleased(_button) => {}
 
         _other => {}
@@ -132,16 +115,12 @@ fn view(_app: &App, _model: &Model, frame: Frame) {
     let draw = _app.draw();
 
     draw.background().color(BLACK);
-    _model.animators.draw_animator(&draw);
-    // _model.animators.draw_grid(&draw);
     _model.animators.draw_grid(&draw);
+    _model.animators.draw_animator(&draw);
     draw.to_frame(_app, &frame).unwrap();
 
     match _model.global_settings.app_mode {
         AppMode::Presentation => {}
-        AppMode::Edit => {
-            // _model.animators.draw_grid(&draw);
-            _model.settings_egui.draw_to_frame(&frame).unwrap()
-        }
+        AppMode::Edit => _model.settings_egui.draw_to_frame(&frame).unwrap(),
     }
 }
