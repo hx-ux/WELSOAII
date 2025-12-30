@@ -1,8 +1,11 @@
 use super::{AnimatedObject, ObjectShape};
-use nannou::prelude::*; 
+use nannou::prelude::*;
+use nannou_egui::egui;
 
 pub struct PulseBackgroundSettings {
+    #[allow(dead_code)]
     pub mode: i16,
+    #[allow(dead_code)]
     pub speed: f32,
 }
 
@@ -12,6 +15,13 @@ impl Default for PulseBackgroundSettings {
             mode: 0,
             speed: 4.0,
         }
+    }
+}
+
+impl PulseBackgroundSettings {
+    pub fn ui(&mut self, ui: &mut egui::Ui) -> bool {
+        ui.label("Pulse effect");
+        false
     }
 }
 
@@ -32,6 +42,7 @@ impl PulseBackground {
         }
     }
     pub fn factory(settings: &PulseBackgroundSettings, win_rect: &Rect, color: Rgba) -> Self {
+        let _ = settings; // Settings not used yet for PulseBackground
         Self::new(color, win_rect)
     }
 }

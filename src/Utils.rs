@@ -1,3 +1,4 @@
+use nannou::color::Rgb;
 use nannou::color::Rgba;
 
 use nannou::rand::random_range;
@@ -63,7 +64,6 @@ impl GlobalSettings {
                 .radio_value(&mut self.app_mode, AppMode::Edit, "Edit")
                 .changed();
         });
-    
 
         changed
     }
@@ -75,9 +75,21 @@ impl GlobalSettings {
 
 pub trait ColorHelpers {
     fn from_egui(col: egui::Color32) -> Rgba;
-    fn random() -> Rgba;
-    fn almost_transparent() -> Rgba;
+    fn random() -> Rgba {
+        Rgba::new(
+            random_range(0.0, 1.0),
+            random_range(0.0, 1.0),
+            random_range(0.0, 1.0),
+            1.0,
+        )
+    }
+    fn almost_transparent() -> Rgba {
+        Rgba::new(1.0, 1.0, 1.0, 0.1)
+    }
     fn hsv_to_rgb(h: f32, v: f32, s: f32) -> (u8, u8, u8);
+    fn red() -> Rgba {
+        Rgba::new(1.0, 0.0, 0.0, 1.0)
+    }
 }
 
 impl ColorHelpers for Rgba {
@@ -87,19 +99,6 @@ impl ColorHelpers for Rgba {
         let b = col.b() as f32 / 255.0;
         let a = col.a() as f32 / 255.0;
         Rgba::new(r, g, b, a)
-    }
-
-    fn random() -> Rgba {
-        Rgba::new(
-            random_range(0.0, 1.0),
-            random_range(0.0, 1.0),
-            random_range(0.0, 1.0),
-            1.0,
-        )
-    }
-
-    fn almost_transparent() -> Rgba {
-        Rgba::new(1.0, 1.0, 1.0, 0.1)
     }
 
     fn hsv_to_rgb(h: f32, s: f32, v: f32) -> (u8, u8, u8) {

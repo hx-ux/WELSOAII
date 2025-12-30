@@ -48,13 +48,11 @@ fn model(app: &App) -> Model {
 
     let win_rect: Rect = app.window_rect();
 
-    let mut animator = Animator::new(&win_rect);
+    let receiver_grid = ReciverGrid::new(Rect::from_x_y_w_h(0.0, 0.0, 400.0, 300.0), 15, 20, true);
+
+    let mut animator = Animator::new(&win_rect, receiver_grid);
     animator.reset(&win_rect);
 
-    let main_receiver_rect = Rect::from_x_y_w_h(0.0, 0.0, 400.0, 300.0);
-    let receiver_grid = ReciverGrid::new(main_receiver_rect, 15, 20, true); 
-
-    animator.link_grid(receiver_grid);
     app.set_loop_mode(LoopMode::RefreshSync);
 
     Model {

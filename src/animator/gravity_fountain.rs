@@ -1,5 +1,6 @@
 use super::{AnimatedObject, ObjectShape};
-use nannou::prelude::*; 
+use nannou::prelude::*;
+use nannou_egui::egui;
 
 
 #[derive(Debug)]
@@ -16,7 +17,8 @@ pub struct GravityFountainSettings {
 }
 
 impl GravityFountainSettings {
-    pub fn factory(win_rect: &Rect) -> Self {
+    
+    pub fn new(win_rect: &Rect) -> Self {
         Self {
             origin: vec2(0.0, win_rect.h()*0.2),
             min_angle: -PI / 3.0,
@@ -28,6 +30,76 @@ impl GravityFountainSettings {
             min_life: 1.0,
             max_life: 3.0,
         }
+    }
+
+    pub fn ui(&mut self, ui: &mut egui::Ui) -> bool {
+        let mut changed = false;
+
+        ui.heading("Fountain Settings");
+        egui::Grid::new("gravity_settings")
+            .num_columns(2)
+            .show(ui, |ui| {
+                ui.label("Origin Y:");
+                changed |= ui
+                    .add(
+                        egui::DragValue::new(&mut self.origin.y)
+                            .speed(1.0),
+                    )
+                    .changed();
+                ui.end_row();
+
+                ui.label("Speed (min/max):");
+                ui.horizontal(|ui| {
+                    changed |= ui
+                        .add(
+                            egui::DragValue::new(&mut self.min_speed)
+                                .speed(10.0),
+                        )
+                        .changed();
+                    changed |= ui
+                        .add(
+                            egui::DragValue::new(&mut self.max_speed)
+                                .speed(10.0),
+                        )
+                        .changed();
+                });
+                ui.end_row();
+
+                ui.label("Radius (min/max):");
+                ui.horizontal(|ui| {
+                    changed |= ui
+                        .add(
+                            egui::DragValue::new(&mut self.min_radius)
+                                .speed(0.5),
+                        )
+                        .changed();
+                    changed |= ui
+                        .add(
+                            egui::DragValue::new(&mut self.max_radius)
+                                .speed(0.5),
+                        )
+                        .changed();
+                });
+                ui.end_row();
+
+                ui.label("Life (min/max):");
+                ui.horizontal(|ui| {
+                    changed |= ui
+                        .add(
+                            egui::DragValue::new(&mut self.min_life)
+                                .speed(0.1),
+                        )
+                        .changed();
+                    changed |= ui
+                        .add(
+                            egui::DragValue::new(&mut self.max_life)
+                                .speed(0.1),
+                        )
+                        .changed();
+                });
+                ui.end_row();
+            });
+        changed
     }
 }
 

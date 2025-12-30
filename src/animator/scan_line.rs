@@ -6,11 +6,11 @@ use nannou_egui::egui;
 pub struct ScanLineSettings {
     pub mode: i16,
     pub speed: f32,
-    pub start_x: f32,
+    start_x: f32,
 }
 
 impl ScanLineSettings {
-    pub fn factory(win_rect: &Rect) -> Self {
+    pub fn new(win_rect: &Rect) -> Self {
         Self {
             mode: 0,
             speed: 300.0,
@@ -19,7 +19,6 @@ impl ScanLineSettings {
     }
 
     pub fn ui(&mut self, ui: &mut egui::Ui) -> bool {
-        
         let mut changed = false;
 
         ui.heading("ScanLine Settings");
@@ -37,24 +36,18 @@ impl ScanLineSettings {
                 ui.end_row();
 
                 ui.label("Mode:");
-                let mode_str = if self.mode == 0 {
-                    "Ping-Pong"
-                } else {
-                    "Wrap"
-                };
+                let mode_str = if self.mode == 0 { "Ping-Pong" } else { "Wrap" };
                 egui::ComboBox::from_label("")
                     .selected_text(mode_str)
                     .show_ui(ui, |ui| {
                         changed |= ui
                             .selectable_value(&mut self.mode, 0, "Ping-Pong")
                             .changed();
-                        changed |= ui
-                            .selectable_value(&mut self.mode, 1, "Wrap")
-                            .changed();
+                        changed |= ui.selectable_value(&mut self.mode, 1, "Wrap").changed();
                     });
                 ui.end_row();
             });
-            changed
+        changed
     }
 }
 
