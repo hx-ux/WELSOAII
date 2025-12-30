@@ -11,13 +11,13 @@ pub enum AnimationType {
 
 impl AnimationType {
     pub fn iterator() -> Iter<'static, AnimationType> {
-        static DIRECTIONS: [AnimationType; 4] = [
+        static ANIMATION_TYPE: [AnimationType; 4] = [
             AnimationType::BouncingBalls,
             AnimationType::GravityFountain,
             AnimationType::ScanLine,
             AnimationType::PulseBackground,
         ];
-        DIRECTIONS.iter()
+        ANIMATION_TYPE.iter()
     }
     pub fn as_str(&self) -> &'static str {
         match self {

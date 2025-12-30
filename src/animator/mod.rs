@@ -64,7 +64,7 @@ impl Animator {
                 multicolor: true,
                 curr_animation_type: AnimationType::BouncingBalls,
             },
-            grid: ReciverGrid::new(win_rect.pad(20.0), 10, 10),
+            grid: ReciverGrid::new(win_rect.pad(20.0), 10, 10,true),
             color: Rgba::new(1.0, 0.0, 0.0, 1.0),
             egui_color: egui::Color32::from_rgba_unmultiplied(255, 0, 0, 255),
             gravity_settings,
@@ -114,6 +114,7 @@ impl Animator {
     }
 
     pub fn update(&mut self, win_rect: &Rect, delta_time: f32) {
+
         // Update all objects
         for obj in self.objects.iter_mut() {
             obj.update(win_rect, delta_time);
@@ -122,6 +123,7 @@ impl Animator {
         // Remove dead objects
         self.objects.retain(|obj| !obj.is_dead());
 
+        // TODO in Animator class
         // Respawn particles for GravityFountain to maintain count
         if self.settings.curr_animation_type == AnimationType::GravityFountain {
             let dead_count = self.settings.count as i32 - self.objects.len() as i32;
@@ -169,7 +171,7 @@ impl Animator {
 
                 if intersects {
                     cell.is_active = true;
-                    cell.found_color = obj_color;
+                    cell.display_color = obj_color;
                 }
             }
         }

@@ -1,9 +1,9 @@
 use nannou::color::Rgba;
-use nannou::color::rgb::Rgb;
 
 use nannou::rand::random_range;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
+use std::time::{Duration, Instant};
 
 #[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize)]
 pub enum AppMode {
@@ -63,13 +63,9 @@ impl GlobalSettings {
                 .radio_value(&mut self.app_mode, AppMode::Edit, "Edit")
                 .changed();
         });
+    
 
-        if changed {
-            changed = false;
-            return true;
-        }
-
-        false
+        changed
     }
 
     pub fn app_name() -> String {
@@ -78,30 +74,19 @@ impl GlobalSettings {
 }
 
 pub trait ColorHelpers {
-    fn to_rgb(&self) -> Rgb;
-    fn placeholder() -> Rgba;
-    fn to_sendable(&self) -> (u8, u8, u8);
     fn from_egui(col: egui::Color32) -> Rgba;
     fn random() -> Rgba;
-    fn standard() -> Rgba;
+    fn almost_transparent() -> Rgba;
     fn hsv_to_rgb(h: f32, v: f32, s: f32) -> (u8, u8, u8);
 }
 
 impl ColorHelpers for Rgba {
-    fn to_rgb(&self) -> Rgb {
-        Rgb::from_components((self.red, self.green, self.blue))
-    }
-
-    fn placeholder() -> Rgba {
-        Rgba::new(1.0, 0.0, 0.0, 1.0)
-    }
-
     fn from_egui(col: egui::Color32) -> Rgba {
-        let _r = col.r() as f32 / 255.0;
-        let _g = col.g() as f32 / 255.0;
-        let _b = col.b() as f32 / 255.0;
-        let _a = col.a() as f32 / 255.0;
-        Rgba::new(_r, _g, _b, _a)
+        let r = col.r() as f32 / 255.0;
+        let g = col.g() as f32 / 255.0;
+        let b = col.b() as f32 / 255.0;
+        let a = col.a() as f32 / 255.0;
+        Rgba::new(r, g, b, a)
     }
 
     fn random() -> Rgba {
@@ -113,15 +98,8 @@ impl ColorHelpers for Rgba {
         )
     }
 
-    fn standard() -> Rgba {
+    fn almost_transparent() -> Rgba {
         Rgba::new(1.0, 1.0, 1.0, 0.1)
-    }
-
-    fn to_sendable(&self) -> (u8, u8, u8) {
-        let r = (self.red * 255.0) as u8;
-        let g = (self.green * 255.0) as u8;
-        let b = (self.blue * 255.0) as u8;
-        (r, g, b)
     }
 
     fn hsv_to_rgb(h: f32, s: f32, v: f32) -> (u8, u8, u8) {
