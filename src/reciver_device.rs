@@ -1,6 +1,6 @@
-use std::sync::{Arc, Mutex};
-
+use anyhow::{Result, anyhow};
 use ddp_rs::connection::DDPConnection;
+use std::sync::{Arc, Mutex};
 
 // https://crates.io/crates/ddp-rs
 #[derive(Clone)]
@@ -9,7 +9,7 @@ pub struct ReciverDevice {
     pub name: String,
     pub max_len: u64,
     con: Option<Arc<Mutex<DDPConnection>>>,
-    pub etash_conn: bool,
+    pub establish_conn: bool,
 }
 
 impl ReciverDevice {
@@ -21,16 +21,17 @@ impl ReciverDevice {
             name: "none".to_string(),
             con: None,
             max_len: 0,
-            etash_conn: false,
+            establish_conn: false,
         }
     }
 
-    pub fn send_data(&self, datat: Vec<u8>) -> Result<(), Box<dyn std::error::Error>> {
-        
-        if self.etash_conn {
+    pub fn send_data(&self, data: Vec<u8>) -> Result<()> {
+        if self.establish_conn {
             if let Some(conn) = &self.con {
-                let mut connection = conn.lock().unwrap();
-                connection.write_offset(&datat, 0)?;
+                let mut connection = conn
+                    .lock()
+                    .expect("Failed to acquire DDPConnection mutex lock");
+                connection.write_offset(&data, 0)?;
             }
         }
         Ok(())
@@ -46,25 +47,35 @@ impl ReciverDevice {
         vec
     }
 
-    pub fn open_connection(&mut self, ip: &str, name: &str, max_len: u64) {
+    pub fn open_connection(&mut self, ip: &str, name: &str, max_len: u64) -> Result<()> {
         let target_address = format!("{}:{}", &ip, ReciverDevice::RECIVER_PORT);
 
-        match DDPConnection::try_new(
-            target_address,
-            ddp_rs::protocol::PixelConfig::default(),
-            ddp_rs::protocol::ID::Default,
-            std::net::UdpSocket::bind("0.0.0.0:4048").unwrap(),
-        ) {
-            Ok(conn) => {
-                print!("open connection");
-                self.con = Some(Arc::new(Mutex::new(conn)));
-                self.etash_conn = true;
+        match std::net::UdpSocket::bind("0.0.0.0:4048") {
+            Ok(socket) => {
+                match DDPConnection::try_new(
+                    target_address,
+                    ddp_rs::protocol::PixelConfig::default(),
+                    ddp_rs::protocol::ID::Default,
+                    socket,
+                ) {
+                    Ok(conn) => {
+                        println!("open connection ");
+                        self.con = Some(Arc::new(Mutex::new(conn)));
+                        self.establish_conn = true;
+                    }
+                    Err(err) => {
+                        println!("Error creating DDP connection: {}", err);
+                    },
+                };
             }
-            Err(err) => panic!("Error creating DDP connection: {}", err),
-        };
+            Err(_) => {
+                println!("error opensing socket");
+            },
+        }
 
         self.ip = ip.to_string();
         self.name = name.to_string();
         self.max_len = max_len;
+        Ok(())
     }
 }

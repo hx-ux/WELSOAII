@@ -82,7 +82,13 @@ impl AnimatedObject for GravityParticle {
     fn draw(&self, draw: &Draw) {
         // Fade out as the particle dies
         let mut display_color = self.color;
-        display_color.alpha = (self.life / self.max_life).clamp(0.0, 1.0);
+
+        if self.max_life > 0.0 {
+            display_color.alpha = (self.life / self.max_life).clamp(0.0, 1.0);
+        } else {
+
+            display_color.alpha = if self.life > 0.0 { 1.0 } else { 0.0 };
+        }
 
         draw.ellipse()
             .xy(self.position)

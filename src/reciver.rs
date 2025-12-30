@@ -136,8 +136,7 @@ impl ReciverGrid {
             }
         }
 
-        self.device.send_data(data_to_send);
-        // std::thread::sleep(std::time::Duration::from_millis(100));
+        let _ = self.device.send_data(data_to_send);
     }
 
     pub fn move_by(&mut self, offset: Vec2) {

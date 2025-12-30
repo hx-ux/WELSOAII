@@ -1,9 +1,9 @@
 use nannou::color::Rgba;
-use nannou::color::rgb::Rgb;
 
 use nannou::rand::random_range;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
+use std::time::{Duration, Instant};
 
 #[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize)]
 pub enum AppMode {
@@ -63,13 +63,9 @@ impl GlobalSettings {
                 .radio_value(&mut self.app_mode, AppMode::Edit, "Edit")
                 .changed();
         });
+    
 
-        if changed {
-            changed = false;
-            return true;
-        }
-
-        false
+        changed
     }
 
     pub fn app_name() -> String {
@@ -78,7 +74,6 @@ impl GlobalSettings {
 }
 
 pub trait ColorHelpers {
-    fn to_rgb(&self) -> Rgb;
     fn from_egui(col: egui::Color32) -> Rgba;
     fn random() -> Rgba;
     fn almost_transparent() -> Rgba;
@@ -86,18 +81,12 @@ pub trait ColorHelpers {
 }
 
 impl ColorHelpers for Rgba {
-    fn to_rgb(&self) -> Rgb {
-        Rgb::from_components((self.red, self.green, self.blue))
-    }
-
-
-
     fn from_egui(col: egui::Color32) -> Rgba {
-        let _r = col.r() as f32 / 255.0;
-        let _g = col.g() as f32 / 255.0;
-        let _b = col.b() as f32 / 255.0;
-        let _a = col.a() as f32 / 255.0;
-        Rgba::new(_r, _g, _b, _a)
+        let r = col.r() as f32 / 255.0;
+        let g = col.g() as f32 / 255.0;
+        let b = col.b() as f32 / 255.0;
+        let a = col.a() as f32 / 255.0;
+        Rgba::new(r, g, b, a)
     }
 
     fn random() -> Rgba {

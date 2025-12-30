@@ -33,7 +33,6 @@ fn model(app: &App) -> Model {
     let view_window_id = app
         .new_window()
         .title(GlobalSettings::app_name())
-        //  .always_on_top(true)
         .size(
             global_settings.view_window_size.0,
             global_settings.view_window_size.1,
@@ -53,7 +52,7 @@ fn model(app: &App) -> Model {
     animator.reset(&win_rect);
 
     let main_receiver_rect = Rect::from_x_y_w_h(0.0, 0.0, 400.0, 300.0);
-    let receiver_grid = ReciverGrid::new(main_receiver_rect, 2, 20,true); // 10 columns, 8 rows
+    let receiver_grid = ReciverGrid::new(main_receiver_rect, 15, 20, true); 
 
     animator.link_grid(receiver_grid);
     app.set_loop_mode(LoopMode::RefreshSync);
@@ -73,9 +72,17 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
 
     let ctx = egui.begin_frame();
 
-    egui::Window::new("Global Settings").show(&ctx, |ui| if _model.global_settings.ui(ui) {});
+    egui::Window::new("Global Settings").show(&ctx, |ui| {
+        _model.global_settings.ui(ui);
+    });
 
-    egui::Window::new("Device").show(&ctx, |ui| if _model.animators.grid.ui(ui) {});
+    egui::Window::new("Device").show(&ctx, |ui| {
+        _model.animators.grid.ui(ui);
+    });
+
+    egui::Window::new("Device").show(&ctx, |ui| {
+        _model.animators.grid.ui(ui);
+    });
 
     egui::Window::new("Animator Controls").show(&ctx, |ui| {
         if _model.animators.ui(ui) {
