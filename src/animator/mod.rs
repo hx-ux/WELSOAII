@@ -49,7 +49,7 @@ pub struct Animator {
 
     // Settings for each animation type
     bouncing_ball_settings: BouncingBallSettings,
-    gravity_settings: GravityFountainSettings,
+    gravity_fountain_settings: GravityFountainSettings,
     scanline_settings: ScanLineSettings,
     pulse_settings: PulseBackgroundSettings,
 }
@@ -69,7 +69,7 @@ impl Animator {
             egui_color: egui::Color32::from_rgba_unmultiplied(255, 0, 0, 255),
 
             bouncing_ball_settings,
-            gravity_settings,
+            gravity_fountain_settings: gravity_settings,
             scanline_settings,
             pulse_settings,
         }
@@ -78,9 +78,17 @@ impl Animator {
     pub fn reset(&mut self, win_rect: &Rect) {
         self.objects.clear();
         // keep settings in sync with the current window
+        self.gravity_fountain_settings.set_dimension(win_rect);
         self.bouncing_ball_settings.set_dimension(win_rect);
+
         // self.objects =self.curr_an_type.cre
-        self.objects = self.bouncing_ball_settings.create();
+
+        self.objects = match self.curr_an_type {
+            AnimationType::BouncingBalls => self.bouncing_ball_settings.create(),
+            AnimationType::GravityFountain => self.gravity_fountain_settings.create(),
+            AnimationType::ScanLine => todo!(),
+            AnimationType::PulseBackground => todo!(),
+        };
     }
 
     pub fn update(&mut self, win_rect: &Rect, delta_time: f32) {
@@ -89,8 +97,13 @@ impl Animator {
             obj.update(win_rect, delta_time);
         }
 
-        // Remove dead objects (OBSOLETE)
+        // Remove dead objects ()
         self.objects.retain(|obj| !obj.is_dead());
+
+        // Restart animation loop if all particles are gone (for GravityFountain)
+        if self.objects.is_empty() && self.curr_an_type == AnimationType::GravityFountain {
+            self.objects = self.gravity_fountain_settings.create();
+        }
 
         // Reset grid cells
         for cell in self.grid.cells.iter_mut() {
@@ -169,7 +182,7 @@ impl Animator {
                 changed |= self.bouncing_ball_settings.ui(ui);
             }
             AnimationType::GravityFountain => {
-                changed |= self.gravity_settings.ui(ui);
+                changed |= self.gravity_fountain_settings.ui(ui);
             }
             AnimationType::ScanLine => {
                 changed |= self.scanline_settings.ui(ui);

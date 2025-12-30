@@ -1,9 +1,8 @@
 use std::slice::Iter;
 
-
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum AnimationType {
-    BouncingBalls, 
+    BouncingBalls,
     GravityFountain,
     ScanLine,
     PulseBackground,
@@ -25,6 +24,26 @@ impl AnimationType {
             AnimationType::GravityFountain => "Gravity Fountain",
             AnimationType::ScanLine => "Scan Line",
             AnimationType::PulseBackground => "Pulse",
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum ScanLineModes {
+    PingPong,
+    WrapAround,
+}
+
+impl ScanLineModes {
+    pub fn iterator() -> Iter<'static, ScanLineModes> {
+        static ANIMATION_TYPE: [ScanLineModes; 2] =
+            [ScanLineModes::PingPong, ScanLineModes::WrapAround];
+        ANIMATION_TYPE.iter()
+    }
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            ScanLineModes::PingPong => "Ping Pong",
+            ScanLineModes::WrapAround => "Wrap Around",
         }
     }
 }
