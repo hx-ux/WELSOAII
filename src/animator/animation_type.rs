@@ -1,5 +1,10 @@
 use std::slice::Iter;
 
+pub trait ModeHelper: Sized {
+    fn iterator() -> Iter<'static, Self>;
+    fn as_str(&self) -> &'static str;
+}
+
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum AnimationType {
     BouncingBalls,
@@ -8,8 +13,8 @@ pub enum AnimationType {
     PulseBackground,
 }
 
-impl AnimationType {
-    pub fn iterator() -> Iter<'static, AnimationType> {
+impl ModeHelper for AnimationType {
+    fn iterator() -> Iter<'static, AnimationType> {
         static ANIMATION_TYPE: [AnimationType; 4] = [
             AnimationType::BouncingBalls,
             AnimationType::GravityFountain,
@@ -18,7 +23,7 @@ impl AnimationType {
         ];
         ANIMATION_TYPE.iter()
     }
-    pub fn as_str(&self) -> &'static str {
+    fn as_str(&self) -> &'static str {
         match self {
             AnimationType::BouncingBalls => "Bouncing Balls",
             AnimationType::GravityFountain => "Gravity Fountain",
@@ -34,16 +39,36 @@ pub enum ScanLineModes {
     WrapAround,
 }
 
-impl ScanLineModes {
-    pub fn iterator() -> Iter<'static, ScanLineModes> {
+impl ModeHelper for ScanLineModes {
+    fn iterator() -> Iter<'static, ScanLineModes> {
         static ANIMATION_TYPE: [ScanLineModes; 2] =
             [ScanLineModes::PingPong, ScanLineModes::WrapAround];
         ANIMATION_TYPE.iter()
     }
-    pub fn as_str(&self) -> &'static str {
+    fn as_str(&self) -> &'static str {
         match self {
             ScanLineModes::PingPong => "Ping Pong",
             ScanLineModes::WrapAround => "Wrap Around",
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum PulseModes {
+    Smooth,
+    Flash,
+}
+
+impl ModeHelper for PulseModes {
+    fn iterator() -> Iter<'static, PulseModes> {
+        static ANIMATION_TYPE: [PulseModes; 2] =
+            [PulseModes::Smooth, PulseModes::Flash];
+        ANIMATION_TYPE.iter()
+    }
+    fn as_str(&self) -> &'static str {
+        match self {
+            PulseModes::Smooth => "Smooth",
+            PulseModes::Flash => "Flash",
         }
     }
 }

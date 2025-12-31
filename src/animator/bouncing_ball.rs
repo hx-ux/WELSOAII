@@ -1,10 +1,7 @@
 use crate::{
-    Utils::ColorHelpers,
     animator::{
-        AnimatorSettings,
-        animation_type::AnimationType,
-        animator_structs::{self, RangeHolder},
-    },
+        animation_type::{AnimationType, ModeHelper}, animator_structs::{self, RangeHolder}, AnimatorSettings
+    }, Utils::ColorHelpers
 };
 
 use super::{AnimatedObject, ObjectShape};

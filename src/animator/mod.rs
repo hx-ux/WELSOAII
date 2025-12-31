@@ -1,5 +1,5 @@
 extern crate nannou;
-use crate::{animator::animation_type::AnimationType, reciver::ReciverGrid};
+use crate::{animator::animation_type::{AnimationType, ModeHelper}, reciver::ReciverGrid};
 use nannou::prelude::*;
 use nannou_egui::egui;
 

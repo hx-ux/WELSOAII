@@ -1,10 +1,8 @@
 use super::{AnimatedObject, ObjectShape};
 use crate::{
-    Utils::ColorHelpers,
     animator::{
-        AnimatorSettings,
-        animation_type::{AnimationType, ScanLineModes},
-    },
+        animation_type::{AnimationType, ModeHelper, ScanLineModes}, AnimatorSettings
+    }, Utils::ColorHelpers
 };
 use nannou::prelude::*;
 use nannou_egui::egui;
