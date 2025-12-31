@@ -86,7 +86,7 @@ impl Animator {
         self.objects = match self.curr_an_type {
             AnimationType::BouncingBalls => self.bouncing_ball_settings.create(),
             AnimationType::GravityFountain => self.gravity_fountain_settings.create(),
-            AnimationType::ScanLine => todo!(),
+            AnimationType::ScanLine => self.scanline_settings.create(),
             AnimationType::PulseBackground => todo!(),
         };
     }
