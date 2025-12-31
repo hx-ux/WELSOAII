@@ -51,7 +51,7 @@ pub struct Animator {
     bouncing_ball_settings: BouncingBallSettings,
     gravity_fountain_settings: GravityFountainSettings,
     scanline_settings: ScanLineSettings,
-    pulse_settings: PulseBackgroundSettings,
+    pulse_bg_settings: PulseBackgroundSettings,
 }
 
 impl Animator {
@@ -59,7 +59,7 @@ impl Animator {
         let bouncing_ball_settings = BouncingBallSettings::new(win_rect);
         let scanline_settings = ScanLineSettings::new(win_rect);
         let gravity_settings = GravityFountainSettings::new(win_rect);
-        let pulse_settings = PulseBackgroundSettings::default();
+        let pulse_settings = PulseBackgroundSettings::new(win_rect);
 
         Animator {
             objects: Vec::new(),
@@ -71,7 +71,7 @@ impl Animator {
             bouncing_ball_settings,
             gravity_fountain_settings: gravity_settings,
             scanline_settings,
-            pulse_settings,
+            pulse_bg_settings: pulse_settings,
         }
     }
     /// Clears and repopulates objects based on current settings.
@@ -87,7 +87,7 @@ impl Animator {
             AnimationType::BouncingBalls => self.bouncing_ball_settings.create(),
             AnimationType::GravityFountain => self.gravity_fountain_settings.create(),
             AnimationType::ScanLine => self.scanline_settings.create(),
-            AnimationType::PulseBackground => todo!(),
+            AnimationType::PulseBackground => self.pulse_bg_settings.create(),
         };
     }
 
@@ -188,7 +188,7 @@ impl Animator {
                 changed |= self.scanline_settings.ui(ui);
             }
             AnimationType::PulseBackground => {
-                changed |= self.pulse_settings.ui(ui);
+                changed |= self.pulse_bg_settings.ui(ui);
             }
         }
         changed

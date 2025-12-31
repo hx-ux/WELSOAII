@@ -1,77 +1,169 @@
 use super::{AnimatedObject, ObjectShape};
-use nannou::prelude::*;
+use crate::{
+    Utils::ColorHelpers,
+    animator::{
+        AnimatorSettings,
+        animation_type::{AnimationType, ModeHelper, PulseModes},
+    },
+};
+use nannou::{prelude::*};
 use nannou_egui::egui;
 
 pub struct PulseBackgroundSettings {
-    #[allow(dead_code)]
-    pub mode: i16,
-    #[allow(dead_code)]
+    pub mode: PulseModes,
     pub speed: f32,
+    pub dimension: Rect,
+    pub color: Rgba,
+    pub limit:f32,
 }
 
-impl Default for PulseBackgroundSettings {
-    fn default() -> Self {
+impl AnimatorSettings for PulseBackgroundSettings {
+    fn new(win_rect: &Rect) -> Self {
         Self {
-            mode: 0,
-            speed: 4.0,
+            mode: PulseModes::Smooth,
+            speed: 100.0,
+            color: Rgba::red(),
+            dimension: win_rect.clone(),
+            limit:0.8,
         }
     }
-}
 
-impl PulseBackgroundSettings {
-    pub fn ui(&mut self, ui: &mut egui::Ui) -> bool {
-        ui.label("Pulse effect");
-        false
+    fn ui(&mut self, ui: &mut egui::Ui) -> bool {
+        let mut changed = false;
+
+        ui.heading(self.get_ani_type().as_str());
+        ui.add_space(5.0);
+
+        ui.label("Mode:");
+        ui.horizontal(|ui| {
+            for options in PulseModes::iterator() {
+                if ui
+                    .radio_value(&mut self.mode, *options, options.as_str())
+                    .changed()
+                {
+                    changed = true;
+                };
+            }
+        });
+
+        ui.label("Speed");
+        changed |= ui
+            .add(egui::Slider::new(&mut self.speed, 1.0..=200.0).text("Speed"))
+            .changed();
+        ui.add_space(5.0);
+
+        ui.label("Limit");
+        changed |= ui
+            .add(egui::Slider::new(&mut self.limit, 0.5..=1.0).text("Limit"))
+            .changed();
+        ui.add_space(5.0);
+
+
+        changed
+    }
+
+    fn get_ani_type(&self) -> AnimationType {
+        AnimationType::PulseBackground
+    }
+
+    fn create(&self) -> Vec<Box<dyn AnimatedObject>> {
+        let mut animated_objects: Vec<Box<dyn AnimatedObject>> = Vec::new();
+
+        animated_objects.push(Box::new(PulseBackground::new(
+            self.mode,
+            self.color,
+            self.speed,
+            self.dimension,
+            self.limit,
+        )));
+
+        animated_objects
     }
 }
 
 pub struct PulseBackground {
+    mode: PulseModes,
     color: Rgba,
-    current_alpha: f32,
+    speed: f32,
+    current_size_w: f32,
+    current_size_h: f32,
     time: f32,
-    window_dimension: (f32, f32),
+    window_dimension: Rect,
+    limit:f32,
 }
 
 impl PulseBackground {
-    fn new(color: Rgba, win_rect: &Rect) -> Self {
+    fn new(mode: PulseModes, color: Rgba, speed: f32, win_rect: Rect,limit:f32) -> Self {
         Self {
+            mode,
+            speed,
             color,
-            current_alpha: 0.0,
+            current_size_w: 20.0,
+            current_size_h: 20.0,
             time: 0.0,
-            window_dimension: win_rect.w_h(),
+            window_dimension: win_rect,
+            limit
+
         }
-    }
-    pub fn factory(settings: &PulseBackgroundSettings, win_rect: &Rect, color: Rgba) -> Self {
-        let _ = settings; // Settings not used yet for PulseBackground
-        Self::new(color, win_rect)
     }
 }
 
 impl AnimatedObject for PulseBackground {
-    fn update(&mut self, _win_rect: &Rect, delta_time: f32) {
+    fn update(&mut self, win_rect: &Rect, delta_time: f32) {
+        // TODO const
+        let min_w = 20.0;
+        let min_h = 20.0;
+
+        self.window_dimension = *win_rect;
+
+        let max_w = self.window_dimension.w();
+        let max_h = self.window_dimension.h();
+
+        let max_w_allowed = max_w * self.limit;
+        let max_h_allowed = max_h * self.limit;
+
         self.time += delta_time;
-        self.current_alpha = (self.time * 2.0).sin() * 0.5 + 0.5; // 0.0 to 1.0
+
+        match self.mode {
+            PulseModes::Smooth => {
+                self.current_size_w = self.time * self.speed;
+                self.current_size_h = self.time * self.speed;
+
+                if self.current_size_w >= max_w_allowed || self.current_size_h >= max_h_allowed {
+                    self.time = 0.0;
+                    self.current_size_w = min_w;
+                    self.current_size_h = min_h;
+                }
+            }
+            PulseModes::Flash => {
+                // let normalized = ((self.time * self.speed).sin() + 1.0) * 0.5; // 0.0..1.0
+                // let eased = normalized * normalized; // soften the peaks
+
+                // self.current_size_w = min_w + eased * (max_w_allowed - min_w);
+                // self.current_size_h = min_h + eased * (max_h_allowed - min_h);
+            }
+        }
     }
 
     fn draw(&self, draw: &Draw) {
-        let mut display_color = self.color;
-        display_color.alpha = self.current_alpha;
-
         draw.rect()
             .x(0.0)
             .y(0.0)
-            .w(self.window_dimension.0)
-            .h(self.window_dimension.1)
-            .color(display_color);
+            .width(self.current_size_w)
+            .height(self.current_size_h)
+            .color(self.color);
     }
 
     fn shape(&self) -> ObjectShape {
-        ObjectShape::Rect(Rect::from_w_h(0.0, 0.0)) // Empty rect
+        ObjectShape::Rect(Rect::from_x_y_w_h(
+            0.0,
+            0.0,
+            self.current_size_w,
+            self.current_size_h,
+        ))
     }
 
     fn color(&self) -> Rgba {
-        let mut c = self.color;
-        c.alpha = self.current_alpha;
-        c
+        self.color
     }
 }
