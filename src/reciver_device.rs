@@ -1,4 +1,4 @@
-use anyhow::{Result, anyhow};
+use anyhow::Result;
 use ddp_rs::connection::DDPConnection;
 use std::sync::{Arc, Mutex};
 
@@ -39,7 +39,7 @@ impl ReciverDevice {
 
     fn testfill_all(len: u64) -> Vec<u8> {
         let mut vec = Vec::new();
-        for i in 0..len {
+        for _ in 0..len {
             vec.push(255 as u8);
             vec.push(0 as u8);
             vec.push(0 as u8);

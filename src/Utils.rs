@@ -3,7 +3,6 @@ use nannou::color::Rgba;
 use nannou::rand::random_range;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
-use std::time::{Duration, Instant};
 
 #[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize)]
 pub enum AppMode {
@@ -21,7 +20,7 @@ pub struct GlobalSettings {
 
 impl GlobalSettings {
     pub fn load_or_default(path: &str) -> Self {
-        let result = std::fs::read_to_string(path);
+        let _result = std::fs::read_to_string(path);
 
         if !path.is_empty() {
             if let Ok(content) = std::fs::read_to_string(path) {
@@ -63,7 +62,6 @@ impl GlobalSettings {
                 .radio_value(&mut self.app_mode, AppMode::Edit, "Edit")
                 .changed();
         });
-    
 
         changed
     }
@@ -75,9 +73,21 @@ impl GlobalSettings {
 
 pub trait ColorHelpers {
     fn from_egui(col: egui::Color32) -> Rgba;
-    fn random() -> Rgba;
-    fn almost_transparent() -> Rgba;
+    fn random() -> Rgba {
+        Rgba::new(
+            random_range(0.0, 1.0),
+            random_range(0.0, 1.0),
+            random_range(0.0, 1.0),
+            1.0,
+        )
+    }
+    fn almost_transparent() -> Rgba {
+        Rgba::new(1.0, 1.0, 1.0, 0.1)
+    }
     fn hsv_to_rgb(h: f32, v: f32, s: f32) -> (u8, u8, u8);
+    fn red() -> Rgba {
+        Rgba::new(1.0, 0.0, 0.0, 1.0)
+    }
 }
 
 impl ColorHelpers for Rgba {
@@ -87,19 +97,6 @@ impl ColorHelpers for Rgba {
         let b = col.b() as f32 / 255.0;
         let a = col.a() as f32 / 255.0;
         Rgba::new(r, g, b, a)
-    }
-
-    fn random() -> Rgba {
-        Rgba::new(
-            random_range(0.0, 1.0),
-            random_range(0.0, 1.0),
-            random_range(0.0, 1.0),
-            1.0,
-        )
-    }
-
-    fn almost_transparent() -> Rgba {
-        Rgba::new(1.0, 1.0, 1.0, 0.1)
     }
 
     fn hsv_to_rgb(h: f32, s: f32, v: f32) -> (u8, u8, u8) {

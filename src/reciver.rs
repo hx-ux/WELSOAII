@@ -47,8 +47,6 @@ impl ReciverCells {
     }
 }
 
-
-
 #[derive(Clone)]
 pub struct ReciverGrid {
     main_rect: Rect,
@@ -92,7 +90,7 @@ impl ReciverGrid {
                 let x = start_x + c as f32 * cell_w;
                 let y = start_y - r as f32 * cell_h;
                 let cell_rect = Rect::from_x_y_w_h(x, y, cell_w, cell_h);
-                
+
                 self.cells
                     .push(ReciverCells::new_from_rect(cell_rect, _pos));
                 _pos += 1;
@@ -102,8 +100,6 @@ impl ReciverGrid {
 
     pub fn draw(&self, draw: &Draw) {
         let mut data_to_send: Vec<u8> = Vec::new();
-
-        let top_left = &self.cells[0].rect;
 
         for cell in &self.cells {
             let z = cell.get_send_color();
@@ -157,15 +153,33 @@ impl ReciverGrid {
     pub fn ui(&mut self, ui: &mut egui::Ui) -> bool {
         let mut changed = false;
 
+        ui.heading("Device");
+        ui.add_space(5.0);
         ui.label(format!("Name: {}", &self.device.name));
+        ui.add_space(5.0);
         ui.label(format!("IP: {}", &self.device.ip));
+        ui.add_space(5.0);
         ui.label(format!("Max Len: {}", &self.device.max_len));
+        ui.add_space(5.0);
+
+        let status = if self.device.establish_conn {
+            "Device connected"
+        } else {
+            "Device not connected"
+        };
+
+        ui.label(status);
+        ui.add_space(5.0);
 
         if ui.button("Connect").clicked() {
-            let _ = &self.device.open_connection("192.168.178.102", "ja", 400);
+            let _ = &self.device.open_connection("192.168.178.102", "ja", self.get_max_len());
             changed = true;
         }
 
         changed
+    }
+
+    pub fn get_max_len(&self) -> u64 {
+        self.cells.iter().count() as u64
     }
 }
