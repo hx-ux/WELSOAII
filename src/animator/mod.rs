@@ -10,10 +10,10 @@ pub mod gravity_fountain;
 pub mod pulse_background;
 pub mod scan_line;
 
-use bouncing_ball::{BouncingBall, BouncingBallSettings};
-use gravity_fountain::{GravityFountainSettings, GravityParticle};
-use pulse_background::{PulseBackground, PulseBackgroundSettings};
-use scan_line::{ScanLine, ScanLineSettings};
+use bouncing_ball::{BouncingBallSettings};
+use gravity_fountain::GravityFountainSettings;
+use pulse_background::PulseBackgroundSettings;
+use scan_line::ScanLineSettings;
 
 pub enum ObjectShape {
     Circle(Vec2, f32), // (position, radius)
@@ -80,8 +80,6 @@ impl Animator {
         // keep settings in sync with the current window
         self.gravity_fountain_settings.set_dimension(win_rect);
         self.bouncing_ball_settings.set_dimension(win_rect);
-
-        // self.objects =self.curr_an_type.cre
 
         self.objects = match self.curr_an_type {
             AnimationType::BouncingBalls => self.bouncing_ball_settings.create(),

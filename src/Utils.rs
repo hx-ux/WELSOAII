@@ -1,10 +1,8 @@
-use nannou::color::Rgb;
 use nannou::color::Rgba;
 
 use nannou::rand::random_range;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
-use std::time::{Duration, Instant};
 
 #[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize)]
 pub enum AppMode {
@@ -22,7 +20,7 @@ pub struct GlobalSettings {
 
 impl GlobalSettings {
     pub fn load_or_default(path: &str) -> Self {
-        let result = std::fs::read_to_string(path);
+        let _result = std::fs::read_to_string(path);
 
         if !path.is_empty() {
             if let Ok(content) = std::fs::read_to_string(path) {

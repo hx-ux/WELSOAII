@@ -1,6 +1,6 @@
 use crate::{
     animator::{
-        animation_type::{AnimationType, ModeHelper}, animator_structs::{self, RangeHolder}, AnimatorSettings
+        animation_type::{AnimationType, ModeHelper}, animator_structs::RangeHolder, AnimatorSettings
     }, Utils::ColorHelpers
 };
 

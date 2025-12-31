@@ -86,7 +86,7 @@ impl AnimatorSettings for GravityFountainSettings {
     fn create(&self) -> Vec<Box<dyn AnimatedObject>> {
         let mut animated_objects: Vec<Box<dyn AnimatedObject>> = Vec::new();
         for _ in 0..self.ball_count {
-            let particleBox = Box::new(GravityParticle::new(
+            let graivity_particle = Box::new(GravityParticle::new(
                 self.origin,
                 self.velocity,
                 self.speed,
@@ -95,7 +95,7 @@ impl AnimatorSettings for GravityFountainSettings {
                 self.spread,
             ));
 
-            animated_objects.push(particleBox);
+            animated_objects.push(graivity_particle);
         }
 
         animated_objects
