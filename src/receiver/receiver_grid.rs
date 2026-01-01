@@ -1,25 +1,21 @@
 extern crate nannou;
-
-use crate::{
-    Utils::*,
-    reciver_device::{self},
-};
+use crate::utils::ColorHelpers;
 use nannou::prelude::*;
 use nannou_egui::egui;
-use reciver_device::*;
+use crate::receiver::ReceiverDevice;
 
 #[derive(Clone)]
-pub struct ReciverCells {
+pub struct ReceiverCells {
     pub pos: u16,
     pub rect: Rect,
     pub display_color: Rgba,
     pub is_active: bool,
 }
 
-impl ReciverCells {
+impl ReceiverCells {
     // the single cell, which interacts with the animator
     pub fn new_from_rect(rect: Rect, pos: u16) -> Self {
-        ReciverCells {
+        ReceiverCells {
             rect,
             is_active: false,
             display_color: Rgba::almost_transparent(),
@@ -48,23 +44,23 @@ impl ReciverCells {
 }
 
 #[derive(Clone)]
-pub struct ReciverGrid {
+pub struct ReceiverGrid {
     main_rect: Rect,
-    pub cells: Vec<ReciverCells>,
+    pub cells: Vec<ReceiverCells>,
     pub cols: i32,
     pub rows: i32,
-    device: ReciverDevice,
+    device: ReceiverDevice,
     pub show_debug_info: bool,
 }
 
-impl ReciverGrid {
+impl ReceiverGrid {
     pub fn new(main_rect: Rect, cols: i32, rows: i32, debug: bool) -> Self {
-        let mut grid = ReciverGrid {
+        let mut grid = ReceiverGrid {
             main_rect,
             cells: Vec::new(),
             cols,
             rows,
-            device: ReciverDevice::factory(),
+            device: ReceiverDevice::factory(),
             show_debug_info: debug,
         };
 
@@ -92,7 +88,7 @@ impl ReciverGrid {
                 let cell_rect = Rect::from_x_y_w_h(x, y, cell_w, cell_h);
 
                 self.cells
-                    .push(ReciverCells::new_from_rect(cell_rect, _pos));
+                    .push(ReceiverCells::new_from_rect(cell_rect, _pos));
                 _pos += 1;
             }
         }
@@ -172,7 +168,9 @@ impl ReciverGrid {
         ui.add_space(5.0);
 
         if ui.button("Connect").clicked() {
-            let _ = &self.device.open_connection("192.168.178.102", "ja", self.get_max_len());
+            let _ = &self
+                .device
+                .open_connection("192.168.178.102", "ja", self.get_max_len());
             changed = true;
         }
 

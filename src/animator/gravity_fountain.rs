@@ -1,6 +1,6 @@
 use super::{AnimatedObject, ObjectShape};
 use crate::{
-    animator::{animation_type::{AnimationType, ModeHelper}, animator_structs::RangeHolder, AnimatorSettings}, Utils::ColorHelpers
+    animator::{animation_type::{AnimationType, ModeHelper}, animator_structs::RangeHolder, AnimatorSettings}, utils::ColorHelpers
 };
 use nannou::prelude::*;
 use nannou_egui::egui;

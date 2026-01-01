@@ -1,5 +1,5 @@
 extern crate nannou;
-use crate::{animator::animation_type::{AnimationType, ModeHelper}, reciver::ReciverGrid};
+use crate::{animator::animation_type::{AnimationType, ModeHelper}, receiver::ReceiverGrid};
 use nannou::prelude::*;
 use nannou_egui::egui;
 
@@ -42,7 +42,7 @@ pub trait AnimatorSettings {
 // These are the global settings
 pub struct Animator {
     pub objects: Vec<Box<dyn AnimatedObject>>,
-    pub grid: ReciverGrid,
+    pub grid: ReceiverGrid,
     pub color: Rgba,
     pub curr_an_type: AnimationType,
     egui_color: egui::Color32,
@@ -55,7 +55,7 @@ pub struct Animator {
 }
 
 impl Animator {
-    pub fn new(win_rect: &Rect, grid: ReciverGrid) -> Self {
+    pub fn new(win_rect: &Rect, grid: ReceiverGrid) -> Self {
         let bouncing_ball_settings = BouncingBallSettings::new(win_rect);
         let scanline_settings = ScanLineSettings::new(win_rect);
         let gravity_settings = GravityFountainSettings::new(win_rect);

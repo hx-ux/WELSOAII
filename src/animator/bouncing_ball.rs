@@ -1,8 +1,10 @@
 use crate::{
     animator::{
         animation_type::{AnimationType, ModeHelper}, animator_structs::RangeHolder, AnimatorSettings
-    }, Utils::ColorHelpers
+    }, utils::ColorHelpers
 };
+
+
 
 use super::{AnimatedObject, ObjectShape};
 use nannou::prelude::*;
