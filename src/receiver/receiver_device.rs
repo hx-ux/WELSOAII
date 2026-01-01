@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 
 // https://crates.io/crates/ddp-rs
 #[derive(Clone)]
-pub struct ReciverDevice {
+pub struct ReceiverDevice {
     pub ip: String,
     pub name: String,
     pub max_len: u64,
@@ -12,7 +12,7 @@ pub struct ReciverDevice {
     pub establish_conn: bool,
 }
 
-impl ReciverDevice {
+impl ReceiverDevice {
     const RECIVER_PORT: &str = "4048";
 
     pub fn factory() -> Self {
@@ -37,18 +37,8 @@ impl ReciverDevice {
         Ok(())
     }
 
-    fn testfill_all(len: u64) -> Vec<u8> {
-        let mut vec = Vec::new();
-        for _ in 0..len {
-            vec.push(255 as u8);
-            vec.push(0 as u8);
-            vec.push(0 as u8);
-        }
-        vec
-    }
-
     pub fn open_connection(&mut self, ip: &str, name: &str, max_len: u64) -> Result<()> {
-        let target_address = format!("{}:{}", &ip, ReciverDevice::RECIVER_PORT);
+        let target_address = format!("{}:{}", &ip, ReceiverDevice::RECIVER_PORT);
 
         match std::net::UdpSocket::bind("0.0.0.0:4048") {
             Ok(socket) => {

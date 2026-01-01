@@ -2,7 +2,7 @@ use super::{AnimatedObject, ObjectShape};
 use crate::{
     animator::{
         animation_type::{AnimationType, ModeHelper, ScanLineModes}, AnimatorSettings
-    }, Utils::ColorHelpers
+    }, utils::ColorHelpers
 };
 use nannou::prelude::*;
 use nannou_egui::egui;

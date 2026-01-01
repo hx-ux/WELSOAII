@@ -1,6 +1,6 @@
 use super::{AnimatedObject, ObjectShape};
 use crate::{
-    Utils::ColorHelpers,
+    utils::ColorHelpers,
     animator::{
         AnimatorSettings,
         animation_type::{AnimationType, ModeHelper, PulseModes},
