@@ -4,8 +4,6 @@ use nannou::rand::random_range;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 
-
-
 pub trait ColorHelpers {
     fn from_egui(col: egui::Color32) -> Rgba;
     fn random() -> Rgba {

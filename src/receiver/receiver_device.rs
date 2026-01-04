@@ -55,12 +55,12 @@ impl ReceiverDevice {
                     }
                     Err(err) => {
                         println!("Error creating DDP connection: {}", err);
-                    },
+                    }
                 };
             }
             Err(_) => {
                 println!("error opensing socket");
-            },
+            }
         }
 
         self.ip = ip.to_string();

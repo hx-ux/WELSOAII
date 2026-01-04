@@ -1,8 +1,8 @@
 extern crate nannou;
+use crate::receiver::ReceiverDevice;
 use crate::utils::ColorHelpers;
 use nannou::prelude::*;
 use nannou_egui::egui;
-use crate::receiver::ReceiverDevice;
 
 #[derive(Clone)]
 pub struct ReceiverCells {
