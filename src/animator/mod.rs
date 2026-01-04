@@ -1,6 +1,14 @@
 extern crate nannou;
-use crate::{animator::animation_type::{AnimationType, ModeHelper}, receiver::ReceiverGrid};
-use nannou::prelude::*;
+// use std::{fs, path::PathBuf};
+
+use std::fs;
+
+use crate::{
+    animator::animation_type::{AnimationType, ModeHelper},
+    receiver::ReceiverGrid,
+    utils::GlobalSettings,
+};
+use nannou::{prelude::*};
 use nannou_egui::egui;
 
 pub mod animation_type;
@@ -10,13 +18,13 @@ pub mod gravity_fountain;
 pub mod pulse_background;
 pub mod scan_line;
 
-use bouncing_ball::{BouncingBallSettings};
+use bouncing_ball::BouncingBallSettings;
 use gravity_fountain::GravityFountainSettings;
 use pulse_background::PulseBackgroundSettings;
 use scan_line::ScanLineSettings;
 
 pub enum ObjectShape {
-    Circle(Vec2, f32), // (position, radius)
+    Circle(Vec2, f32),
     Rect(Rect),
 }
 
@@ -34,20 +42,44 @@ pub trait AnimatedObject {
 pub trait AnimatorSettings {
     fn new(win_rect: &Rect) -> Self;
     fn ui(&mut self, ui: &mut egui::Ui) -> bool;
-    fn get_ani_type(&self) -> AnimationType;
+    fn animation_type(&self) -> AnimationType;
     fn create(&self) -> Vec<Box<dyn AnimatedObject>>;
     fn set_dimension(&mut self, window_rect: &Rect) {}
+
+    fn save(&self, filename: &str) -> Result<(), Box<dyn std::error::Error>>
+    where
+        Self: serde::Serialize,
+    {
+        let json = serde_json::to_string_pretty(self)?;
+        let path = GlobalSettings::get_preset_folder(&self.animation_type()).join(filename);
+        std::fs::write(path, json)?;
+        Ok(())
+    }
+
+    fn load(&self) -> Result<Vec<Self>, Box<dyn std::error::Error>>
+    where
+        Self: serde::de::DeserializeOwned,
+    {
+        let presets = Vec::<Self>::new();
+
+        let path = GlobalSettings::get_preset_folder(&self.animation_type());
+        let entries = fs::read_dir(path)?;
+        
+            for entry in entries {
+                let entry = entry?;
+                let file_name = entry.file_name();
+                let content = std::fs::read_to_string(file_name)?;
+            }
+
+        Ok(presets)
+    }
 }
 
-// These are the global settings
 pub struct Animator {
     pub objects: Vec<Box<dyn AnimatedObject>>,
     pub grid: ReceiverGrid,
-    pub color: Rgba,
     pub curr_an_type: AnimationType,
-    egui_color: egui::Color32,
 
-    // Settings for each animation type
     bouncing_ball_settings: BouncingBallSettings,
     gravity_fountain_settings: GravityFountainSettings,
     scanline_settings: ScanLineSettings,
@@ -65,9 +97,6 @@ impl Animator {
             objects: Vec::new(),
             curr_an_type: AnimationType::BouncingBalls,
             grid,
-            color: Rgba::new(1.0, 0.0, 0.0, 1.0),
-            egui_color: egui::Color32::from_rgba_unmultiplied(255, 0, 0, 255),
-
             bouncing_ball_settings,
             gravity_fountain_settings: gravity_settings,
             scanline_settings,

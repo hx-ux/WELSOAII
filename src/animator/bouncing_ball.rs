@@ -1,22 +1,21 @@
-use crate::{
-    animator::{
-        animation_type::{AnimationType, ModeHelper}, animator_structs::RangeHolder, AnimatorSettings
-    }, utils::ColorHelpers
-};
+use crate::animator::{animation_type::ModeHelper, animator_structs::RangeHolder};
+use crate::utils::ColorHelpers;
+use serde::{Deserialize, Serialize};
 
-
-
-use super::{AnimatedObject, ObjectShape};
+use super::{AnimatedObject, AnimatorSettings, ObjectShape};
+use crate::animator::animation_type::AnimationType;
 use nannou::prelude::*;
 use nannou_egui::egui;
 
+#[derive(Serialize, Deserialize, Default)]
 pub struct BouncingBallSettings {
     ball_count: u32,
     speed: f32,
     radius: f32,
     ball_vel_range_x: RangeHolder<f32>,
     ball_vel_range_y: RangeHolder<f32>,
-    dimension: Rect,
+    #[serde(skip)]
+    dimension: Option<Rect>,
     color: Rgba,
 }
 
@@ -24,7 +23,7 @@ impl AnimatorSettings for BouncingBallSettings {
     fn new(win_rect: &Rect) -> Self {
         Self {
             ball_count: 20,
-            dimension: win_rect.to_owned(),
+            dimension: Some(win_rect.to_owned()),
             radius: 10.0,
             ball_vel_range_x: RangeHolder {
                 lower: -100.0,
@@ -41,14 +40,8 @@ impl AnimatorSettings for BouncingBallSettings {
 
     fn ui(&mut self, ui: &mut egui::Ui) -> bool {
         let mut changed = false;
-        // let mut e_color = self.color.to_egui().clone();
-
-        // if ui.color_edit_button_rgba_unmultiplied(&mut self.color).changed() {
-        //     self.color = Rgba::from_egui(e_color);
-        //     changed = true;
-        // }
-
-        ui.heading(self.get_ani_type().as_str());
+        
+        ui.heading(self.animation_type().as_str());
         ui.add_space(5.0);
 
         // Object Count
@@ -103,7 +96,7 @@ impl AnimatorSettings for BouncingBallSettings {
         changed
     }
 
-    fn get_ani_type(&self) -> AnimationType {
+    fn animation_type(&self) -> AnimationType {
         AnimationType::BouncingBalls
     }
 
@@ -111,7 +104,7 @@ impl AnimatorSettings for BouncingBallSettings {
         let mut animated_objects: Vec<Box<dyn AnimatedObject>> = Vec::new();
         for _ in 0..self.ball_count {
             let new_obj = Box::new(BouncingBall::new(
-                &self.dimension,
+                self.dimension.as_ref().unwrap(),
                 self.color,
                 self.radius,
                 &self.ball_vel_range_x,
@@ -124,7 +117,7 @@ impl AnimatorSettings for BouncingBallSettings {
     }
 
     fn set_dimension(&mut self, window_rect: &Rect) {
-        self.dimension = *window_rect;
+        self.dimension = Some(*window_rect);
     }
 }
 

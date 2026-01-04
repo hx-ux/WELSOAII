@@ -1,11 +1,12 @@
 use std::slice::Iter;
+use serde::{Deserialize, Serialize};
 
 pub trait ModeHelper: Sized {
     fn iterator() -> Iter<'static, Self>;
     fn as_str(&self) -> &'static str;
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize)]
 pub enum AnimationType {
     BouncingBalls,
     GravityFountain,
@@ -33,7 +34,7 @@ impl ModeHelper for AnimationType {
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize)]
 pub enum ScanLineModes {
     PingPong,
     WrapAround,
@@ -53,7 +54,7 @@ impl ModeHelper for ScanLineModes {
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize)]
 pub enum PulseModes {
     Smooth,
     Flash,

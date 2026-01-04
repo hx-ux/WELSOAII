@@ -1,19 +1,17 @@
-use super::{AnimatedObject, ObjectShape};
-use crate::{
-    animator::{
-        animation_type::{AnimationType, ModeHelper, ScanLineModes}, AnimatorSettings
-    }, utils::ColorHelpers
-};
+use super::{AnimatedObject, AnimatorSettings, ObjectShape};
+use crate::animator::animation_type::{AnimationType, ModeHelper, ScanLineModes};
+use crate::utils::ColorHelpers;
 use nannou::prelude::*;
 use nannou_egui::egui;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug)]
+// #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct ScanLineSettings {
     mode: ScanLineModes,
     speed: f32,
     width: f32,
     color: Rgba,
-    dimension: Rect,
+    height: f32,
 }
 
 impl AnimatorSettings for ScanLineSettings {
@@ -23,14 +21,14 @@ impl AnimatorSettings for ScanLineSettings {
             speed: 300.0,
             width: 20.0,
             color: Rgba::red(),
-            dimension: win_rect.clone(),
+            height: win_rect.h(),
         }
     }
 
     fn ui(&mut self, ui: &mut egui::Ui) -> bool {
         let mut changed = false;
 
-        ui.heading(self.get_ani_type().as_str());
+        ui.heading(self.animation_type().as_str());
         ui.add_space(5.0);
 
         ui.label("Speed");
@@ -60,7 +58,7 @@ impl AnimatorSettings for ScanLineSettings {
         changed
     }
 
-    fn get_ani_type(&self) -> AnimationType {
+    fn animation_type(&self) -> AnimationType {
         AnimationType::ScanLine
     }
 
@@ -71,8 +69,8 @@ impl AnimatorSettings for ScanLineSettings {
             self.mode,
             self.speed,
             self.color,
-            &self.dimension,
             self.width,
+            self.height,
         )));
 
         animated_objects
@@ -85,12 +83,13 @@ pub struct ScanLine {
     color: Rgba,
     position: Vec2,
     // TODO as rect
-    window_dimension: (f32, f32),
+    height: f32,
+    // window_dimension: (f32, f32),
     width: f32,
 }
 
 impl ScanLine {
-    pub fn new(mode: ScanLineModes, speed: f32, color: Rgba, win_rect: &Rect, width: f32) -> Self {
+    pub fn new(mode: ScanLineModes, speed: f32, color: Rgba, width: f32, height: f32) -> Self {
         // TODO init pos on the left side
         let pos = vec2(0.0, 0.0);
 
@@ -99,7 +98,7 @@ impl ScanLine {
             speed,
             color,
             position: pos,
-            window_dimension: (win_rect.w(), win_rect.h()),
+            height,
             width,
         }
     }
@@ -107,7 +106,7 @@ impl ScanLine {
 
 impl AnimatedObject for ScanLine {
     fn update(&mut self, win_rect: &Rect, delta_time: f32) {
-        self.window_dimension = win_rect.w_h();
+        // self.window_dimension = win_rect.w_h();
 
         self.position.x += self.speed * delta_time;
 
@@ -138,7 +137,7 @@ impl AnimatedObject for ScanLine {
     fn draw(&self, draw: &Draw) {
         draw.rect()
             .xy(self.position)
-            .height(self.window_dimension.1)
+            .height(self.height)
             .width(self.width)
             .color(self.color);
     }
@@ -148,7 +147,7 @@ impl AnimatedObject for ScanLine {
             self.position.x,
             self.position.y,
             self.width,
-            self.window_dimension.1,
+            self.height,
         ))
     }
 

@@ -1,19 +1,18 @@
-use super::{AnimatedObject, ObjectShape};
-use crate::{
-    animator::{animation_type::{AnimationType, ModeHelper}, animator_structs::RangeHolder, AnimatorSettings}, utils::ColorHelpers
-};
+use super::{AnimatedObject, AnimatorSettings, ObjectShape};
+use crate::animator::animation_type::ModeHelper;
+use crate::animator::{animation_type::AnimationType, animator_structs::RangeHolder};
+use crate::utils::ColorHelpers;
 use nannou::prelude::*;
 use nannou_egui::egui;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct GravityFountainSettings {
     origin: Vec2,
-    velocity: Vec2,
     ball_count: u32,
     speed: f32,
     spread: f32,
     radius: f32,
-    dimension: Rect,
     color: Rgba,
 }
 
@@ -21,12 +20,10 @@ impl AnimatorSettings for GravityFountainSettings {
     fn new(win_rect: &Rect) -> Self {
         Self {
             origin: vec2(0.0, win_rect.h() * 0.2),
-            velocity: vec2(0.0, -10.0),
             spread: 50.0,
-            ball_count: 20,
-            speed: 4.0,
+            ball_count: 50,
+            speed: 1.0,
             radius: 5.0,
-            dimension: win_rect.to_owned(),
             color: Rgba::red(),
         }
     }
@@ -34,7 +31,7 @@ impl AnimatorSettings for GravityFountainSettings {
     fn ui(&mut self, ui: &mut egui::Ui) -> bool {
         let mut changed = false;
 
-        ui.heading(self.get_ani_type().as_str());
+        ui.heading(self.animation_type().as_str());
         ui.add_space(5.0);
 
         ui.label("Ball Count");
@@ -79,7 +76,7 @@ impl AnimatorSettings for GravityFountainSettings {
         changed
     }
 
-    fn get_ani_type(&self) -> AnimationType {
+    fn animation_type(&self) -> AnimationType {
         AnimationType::GravityFountain
     }
 
@@ -88,7 +85,7 @@ impl AnimatorSettings for GravityFountainSettings {
         for _ in 0..self.ball_count {
             let graivity_particle = Box::new(GravityParticle::new(
                 self.origin,
-                self.velocity,
+                // self.velocity,
                 self.speed,
                 self.radius,
                 self.color,
@@ -102,7 +99,7 @@ impl AnimatorSettings for GravityFountainSettings {
     }
 
     fn set_dimension(&mut self, window_rect: &Rect) {
-        self.dimension = *window_rect;
+        // self.dimension = Some(*window_rect);
     }
 }
 
@@ -118,15 +115,15 @@ pub struct GravityParticle {
 
 impl GravityParticle {
     const GRAVITY: f32 = -980.0; // Gravity points down
-    // TODO values always constant, no way to change
+                                 // TODO values always constant, no way to change
     const FALL_ANGLE: RangeHolder<f32> = RangeHolder {
         lower: -PI / 3.0,
         upper: PI / 3.0,
     };
+    
 
     pub fn new(
         origin: Vec2,
-        velocity: Vec2,
         speed: f32,
         radius: f32,
         color: Rgba,
@@ -151,7 +148,7 @@ impl GravityParticle {
 impl AnimatedObject for GravityParticle {
     fn update(&mut self, win_rect: &Rect, delta_time: f32) {
         self.velocity.y += Self::GRAVITY * delta_time * (self.speed / 10.0);
-        self.position += self.velocity * delta_time;
+        self.position += self.velocity * delta_time*self.spread;
 
         // Kill particle if it hits the floor
         if self.position.y < win_rect.bottom() - self.radius {

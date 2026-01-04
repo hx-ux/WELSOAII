@@ -1,20 +1,16 @@
-use super::{AnimatedObject, ObjectShape};
-use crate::{
-    utils::ColorHelpers,
-    animator::{
-        AnimatorSettings,
-        animation_type::{AnimationType, ModeHelper, PulseModes},
-    },
-};
-use nannou::{prelude::*};
+use super::{AnimatedObject, AnimatorSettings, ObjectShape};
+use crate::animator::animation_type::{AnimationType, ModeHelper, PulseModes};
+use crate::utils::ColorHelpers;
+use nannou::prelude::*;
 use nannou_egui::egui;
+use serde::{Deserialize, Serialize};
 
+// #[derive(Serialize, Deserialize)]
 pub struct PulseBackgroundSettings {
     pub mode: PulseModes,
     pub speed: f32,
-    pub dimension: Rect,
     pub color: Rgba,
-    pub limit:f32,
+    pub limit: f32,
 }
 
 impl AnimatorSettings for PulseBackgroundSettings {
@@ -23,15 +19,16 @@ impl AnimatorSettings for PulseBackgroundSettings {
             mode: PulseModes::Smooth,
             speed: 100.0,
             color: Rgba::red(),
-            dimension: win_rect.clone(),
-            limit:0.8,
+            limit: 0.8,
         }
+
+       
     }
 
     fn ui(&mut self, ui: &mut egui::Ui) -> bool {
         let mut changed = false;
 
-        ui.heading(self.get_ani_type().as_str());
+        ui.heading(self.animation_type().as_str());
         ui.add_space(5.0);
 
         ui.label("Mode:");
@@ -58,11 +55,10 @@ impl AnimatorSettings for PulseBackgroundSettings {
             .changed();
         ui.add_space(5.0);
 
-
         changed
     }
 
-    fn get_ani_type(&self) -> AnimationType {
+    fn animation_type(&self) -> AnimationType {
         AnimationType::PulseBackground
     }
 
@@ -70,15 +66,16 @@ impl AnimatorSettings for PulseBackgroundSettings {
         let mut animated_objects: Vec<Box<dyn AnimatedObject>> = Vec::new();
 
         animated_objects.push(Box::new(PulseBackground::new(
-            self.mode,
-            self.color,
-            self.speed,
-            self.dimension,
+            self.mode, self.color, self.speed, 
             self.limit,
         )));
 
         animated_objects
     }
+    
+    fn set_dimension(&mut self, window_rect: &Rect) {}
+    
+  
 }
 
 pub struct PulseBackground {
@@ -88,12 +85,12 @@ pub struct PulseBackground {
     current_size_w: f32,
     current_size_h: f32,
     time: f32,
-    window_dimension: Rect,
-    limit:f32,
+    // window_dimension: Rect,
+    limit: f32,
 }
 
 impl PulseBackground {
-    fn new(mode: PulseModes, color: Rgba, speed: f32, win_rect: Rect,limit:f32) -> Self {
+    fn new(mode: PulseModes, color: Rgba, speed: f32, limit: f32) -> Self {
         Self {
             mode,
             speed,
@@ -101,23 +98,19 @@ impl PulseBackground {
             current_size_w: 20.0,
             current_size_h: 20.0,
             time: 0.0,
-            window_dimension: win_rect,
-            limit
-
+            limit,
         }
     }
 }
 
 impl AnimatedObject for PulseBackground {
     fn update(&mut self, win_rect: &Rect, delta_time: f32) {
-        // TODO const
         let min_w = 20.0;
         let min_h = 20.0;
 
-        self.window_dimension = *win_rect;
 
-        let max_w = self.window_dimension.w();
-        let max_h = self.window_dimension.h();
+        let max_w = win_rect.w();
+        let max_h = win_rect.h();
 
         let max_w_allowed = max_w * self.limit;
         let max_h_allowed = max_h * self.limit;
