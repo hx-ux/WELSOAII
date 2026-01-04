@@ -1,30 +1,32 @@
 use super::{AnimatedObject, AnimatorSettings, ObjectShape};
 use crate::animator::animation_type::ModeHelper;
+use crate::animator::animator_structs::AnimationParam;
 use crate::animator::{animation_type::AnimationType, animator_structs::RangeHolder};
-use crate::utils::ColorHelpers;
 use nannou::prelude::*;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct GravityFountainSettings {
-    origin: Vec2,
-    ball_count: u32,
-    speed: f32,
-    spread: f32,
-    radius: f32,
-    color: Rgba,
+    origin_x: AnimationParam<f32>,
+    origin_y: AnimationParam<f32>,
+    ball_count: AnimationParam<u32>,
+    speed: AnimationParam<f32>,
+    spread: AnimationParam<f32>,
+    radius: AnimationParam<f32>,
+    color: AnimationParam<Rgba>,
 }
 
 impl AnimatorSettings for GravityFountainSettings {
     fn new(win_rect: &Rect) -> Self {
         Self {
-            origin: vec2(0.0, win_rect.h() * 0.2),
-            spread: 50.0,
-            ball_count: 50,
-            speed: 1.0,
-            radius: 5.0,
-            color: Rgba::red(),
+            origin_x: AnimationParam::new(0.0, 0.0, win_rect.w(), "Origin_X"),
+            origin_y: AnimationParam::new(win_rect.h() * 0.2, 0.0, win_rect.h(), "Origin_Y"),
+            ball_count: AnimationParam::new(20, 1, 200, "Ball_Count"),
+            spread: AnimationParam::new(20.0, 1.0, 200.0, "Spread"),
+            speed: AnimationParam::new(-800.0, -800.0, 800.0, "Speed"),
+            radius: AnimationParam::new(5.0, 1.0, 20.0, "Radius"),
+            color: AnimationParam::new_without_range(Rgba::new(1.0, 0.0, 0.0, 1.0), "Color"),
         }
     }
 
@@ -35,44 +37,33 @@ impl AnimatorSettings for GravityFountainSettings {
         ui.add_space(5.0);
 
         ui.label("Ball Count");
-        changed |= ui
-            .add(egui::Slider::new(&mut self.ball_count, 1..=200).text("Spread"))
-            .changed();
-        ui.add_space(5.0);
+        changed |= self.ball_count.to_slider(ui);
 
+        ui.add_space(5.0);
         ui.label("Origin X/Y:");
         changed |= ui
             .horizontal(|ui| {
-                let c1 = ui
-                    .add(egui::DragValue::new(&mut self.origin.x).speed(1.0))
-                    .changed();
-                let c2 = ui
-                    .add(egui::DragValue::new(&mut self.origin.y).speed(1.0))
-                    .changed();
+                let c1 = self.origin_x.to_slider(ui);
+                let c2 = self.origin_y.to_slider(ui);
                 c1 || c2
             })
             .inner;
         ui.add_space(5.0);
 
         ui.label("Speed");
-        changed |= ui
-            .add(egui::Slider::new(&mut self.speed, 1.0..=10.0).text("Speed"))
-            .changed();
+        changed |= self.speed.to_slider(ui);
         ui.add_space(5.0);
 
         ui.label("Spread");
-        changed |= ui
-            .add(egui::Slider::new(&mut self.spread, 1.0..=200.0).text("Spread"))
-            .changed();
+        changed |= self.spread.to_slider(ui);
         ui.add_space(5.0);
 
         ui.label("Radius:");
-        changed |= ui
-            .add(egui::Slider::new(&mut self.radius, 1.0..=10.0).text("Radius"))
-            .changed();
+        changed |= self.radius.to_slider(ui);
 
         ui.add_space(5.0);
 
+         changed |= self.color.to_color_picker(ui);
         changed
     }
 
@@ -82,14 +73,13 @@ impl AnimatorSettings for GravityFountainSettings {
 
     fn create(&self) -> Vec<Box<dyn AnimatedObject>> {
         let mut animated_objects: Vec<Box<dyn AnimatedObject>> = Vec::new();
-        for _ in 0..self.ball_count {
+        for _ in 0..self.ball_count.value {
             let graivity_particle = Box::new(GravityParticle::new(
-                self.origin,
-                // self.velocity,
-                self.speed,
-                self.radius,
-                self.color,
-                self.spread,
+                Vec2::new(self.origin_x.value, self.origin_y.value),
+                self.speed.value,
+                self.radius.value,
+                self.color.value,
+                self.spread.value,
             ));
 
             animated_objects.push(graivity_particle);
@@ -114,21 +104,12 @@ pub struct GravityParticle {
 }
 
 impl GravityParticle {
-    const GRAVITY: f32 = -980.0; // Gravity points down
-                                 // TODO values always constant, no way to change
     const FALL_ANGLE: RangeHolder<f32> = RangeHolder {
         lower: -PI / 3.0,
         upper: PI / 3.0,
     };
-    
 
-    pub fn new(
-        origin: Vec2,
-        speed: f32,
-        radius: f32,
-        color: Rgba,
-        spread: f32,
-    ) -> Self {
+    pub fn new(origin: Vec2, speed: f32, radius: f32, color: Rgba, spread: f32) -> Self {
         let angle = random_range(Self::FALL_ANGLE.lower, Self::FALL_ANGLE.upper) + PI / 2.0;
 
         let velocity = vec2(angle.cos(), angle.sin()) * spread;
@@ -147,8 +128,8 @@ impl GravityParticle {
 
 impl AnimatedObject for GravityParticle {
     fn update(&mut self, win_rect: &Rect, delta_time: f32) {
-        self.velocity.y += Self::GRAVITY * delta_time * (self.speed / 10.0);
-        self.position += self.velocity * delta_time*self.spread;
+        self.velocity.y += self.speed * delta_time;
+        self.position += self.velocity * delta_time * self.spread;
 
         // Kill particle if it hits the floor
         if self.position.y < win_rect.bottom() - self.radius {

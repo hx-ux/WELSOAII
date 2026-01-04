@@ -1,6 +1,7 @@
+use nannou::color::Rgba;
 use nannou_egui::egui::{self, Ui};
 use serde::{ser::SerializeStruct, Deserialize, Serialize, Serializer};
-use std::ops::RangeInclusive;
+use std::{default, ops::RangeInclusive};
 
 /// Defines a simple range between two values
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
@@ -13,6 +14,7 @@ impl<T> RangeHolder<T> {
     pub fn new(lower: T, upper: T) -> Self {
         Self { lower, upper }
     }
+
     pub fn as_range(&self) -> RangeInclusive<T>
     where
         T: Copy,
@@ -21,7 +23,7 @@ impl<T> RangeHolder<T> {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct AnimationParam<T> {
     pub value: T,
     pub range: RangeHolder<T>,
@@ -39,24 +41,43 @@ impl<T> AnimationParam<T> {
             desc: desc.to_string(),
         }
     }
-    pub fn new_with_range(default: T, range: RangeHolder<T>, desc: &str) -> Self
+    pub fn new_without_range(default: T, desc: &str) -> Self
     where
         T: Copy,
+        T: Default,
     {
         Self {
             value: default,
-            range,
+            range: RangeHolder::default(),
             desc: desc.to_string(),
         }
     }
+
     pub fn to_slider(&mut self, ui: &mut egui::Ui) -> bool
     where
         T: egui::emath::Numeric,
     {
-        ui.add(
-            egui::Slider::new(&mut self.value, self.range.lower..=self.range.upper)
-                .text(self.desc.to_string()),
-        )
+        ui.add(egui::Slider::new(
+            &mut self.value,
+            self.range.lower..=self.range.upper,
+        ))
         .changed()
+    }
+}
+
+impl AnimationParam<Rgba> {
+    pub fn to_color_picker(&mut self, ui: &mut egui::Ui) -> bool {
+        let (r, g, b, a): (f32, f32, f32, f32) = self.value.into();
+        let mut col = egui::Rgba::from_rgba_unmultiplied(r, g, b, a);
+        let changed = egui::color_picker::color_edit_button_rgba(
+            ui,
+            &mut col,
+            egui::color_picker::Alpha::BlendOrAdditive,
+        )
+        .changed();
+        if changed {
+            self.value = Rgba::new(col.r(), col.g(), col.b(), col.a());
+        }
+        changed
     }
 }

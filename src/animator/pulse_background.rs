@@ -21,8 +21,6 @@ impl AnimatorSettings for PulseBackgroundSettings {
             color: Rgba::red(),
             limit: 0.8,
         }
-
-       
     }
 
     fn ui(&mut self, ui: &mut egui::Ui) -> bool {
@@ -66,16 +64,13 @@ impl AnimatorSettings for PulseBackgroundSettings {
         let mut animated_objects: Vec<Box<dyn AnimatedObject>> = Vec::new();
 
         animated_objects.push(Box::new(PulseBackground::new(
-            self.mode, self.color, self.speed, 
-            self.limit,
+            self.mode, self.color, self.speed, self.limit,
         )));
 
         animated_objects
     }
-    
+
     fn set_dimension(&mut self, window_rect: &Rect) {}
-    
-  
 }
 
 pub struct PulseBackground {
@@ -107,7 +102,6 @@ impl AnimatedObject for PulseBackground {
     fn update(&mut self, win_rect: &Rect, delta_time: f32) {
         let min_w = 20.0;
         let min_h = 20.0;
-
 
         let max_w = win_rect.w();
         let max_h = win_rect.h();

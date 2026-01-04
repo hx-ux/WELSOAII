@@ -1,6 +1,5 @@
 use super::{AnimatedObject, AnimatorSettings, ObjectShape};
 use crate::animator::animation_type::{AnimationType, ModeHelper, ScanLineModes};
-use crate::utils::ColorHelpers;
 use nannou::prelude::*;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
@@ -20,7 +19,7 @@ impl AnimatorSettings for ScanLineSettings {
             mode: ScanLineModes::PingPong,
             speed: 300.0,
             width: 20.0,
-            color: Rgba::red(),
+            color: Rgba::new(1.0, 0.0, 0.0, 1.0),
             height: win_rect.h(),
         }
     }

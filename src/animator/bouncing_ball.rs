@@ -40,7 +40,7 @@ impl AnimatorSettings for BouncingBallSettings {
 
     fn ui(&mut self, ui: &mut egui::Ui) -> bool {
         let mut changed = false;
-        
+
         ui.heading(self.animation_type().as_str());
         ui.add_space(5.0);
 
