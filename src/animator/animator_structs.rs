@@ -1,7 +1,10 @@
-use nannou::color::Rgba;
+use nannou::{color::Rgba, lyon::path::iterator};
 use nannou_egui::egui::{self, Ui};
-use serde::{ser::SerializeStruct, Deserialize, Serialize, Serializer};
+use serde::{Deserialize, Serialize, Serializer, ser::SerializeStruct};
+// use strum::{IntoEnumIterator, AsRefStr};
 use std::{default, ops::RangeInclusive};
+
+use crate::animator::animation_type::{AnimationType, ModeHelper};
 
 /// Defines a simple range between two values
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
@@ -26,6 +29,7 @@ impl<T> RangeHolder<T> {
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct AnimationParam<T> {
     pub value: T,
+    #[serde(skip_serializing)]
     pub range: RangeHolder<T>,
     pub desc: String,
 }
@@ -52,6 +56,17 @@ impl<T> AnimationParam<T> {
             desc: desc.to_string(),
         }
     }
+    pub fn new_options(default: T, desc: &str) -> Self
+    where
+        T: Copy,
+        T: Default,
+    {
+        Self {
+            value: default,
+            range: RangeHolder::default(),
+            desc: desc.to_string(),
+        }
+    }
 
     pub fn to_slider(&mut self, ui: &mut egui::Ui) -> bool
     where
@@ -63,6 +78,28 @@ impl<T> AnimationParam<T> {
         ))
         .changed()
     }
+
+    // pub fn to_options(&mut self, ui: &mut egui::Ui) -> bool
+    // where
+    //     T: Copy + PartialEq,
+    // {
+
+    //     // let mut changed = false;
+    //     // ui.horizontal(|ui| {
+
+
+
+    //     //     for variant in T::iter() {
+    //     //         if ui
+    //     //             .radio_value(&mut self.value, *variant, variant.as_str())
+    //     //             .changed()
+    //     //         {
+    //     //             changed = true;
+    //     //         }
+    //     //     }
+    //     // });
+    //     // changed
+    // }
 }
 
 impl AnimationParam<Rgba> {
