@@ -20,13 +20,13 @@ pub struct GravityFountainSettings {
 impl AnimatorSettings for GravityFountainSettings {
     fn new(win_rect: &Rect) -> Self {
         Self {
-            origin_x: AnimationParam::new(0.0, 0.0, win_rect.w(), "Origin_X"),
-            origin_y: AnimationParam::new(win_rect.h() * 0.2, 0.0, win_rect.h(), "Origin_Y"),
-            ball_count: AnimationParam::new(20, 1, 200, "Ball_Count"),
-            spread: AnimationParam::new(20.0, 1.0, 200.0, "Spread"),
-            speed: AnimationParam::new(-800.0, -800.0, 800.0, "Speed"),
-            radius: AnimationParam::new(5.0, 1.0, 20.0, "Radius"),
-            color: AnimationParam::new_without_range(Rgba::new(1.0, 0.0, 0.0, 1.0), "Color"),
+            origin_x: AnimationParam::new(0.0, 0.0, win_rect.w(), "origin_X"),
+            origin_y: AnimationParam::new(win_rect.h() * 0.2, 0.0, win_rect.h(), "origin_Y"),
+            ball_count: AnimationParam::new(20, 1, 200, "ball_Count"),
+            spread: AnimationParam::new(20.0, 1.0, 200.0, "spread"),
+            speed: AnimationParam::new(-150.0, -500.0, 500.0, "speed"),
+            radius: AnimationParam::new(5.0, 1.0, 20.0, "radius"),
+            color: AnimationParam::new_without_range(Rgba::new(1.0, 0.0, 0.0, 1.0), "color"),
         }
     }
 
@@ -63,7 +63,18 @@ impl AnimatorSettings for GravityFountainSettings {
 
         ui.add_space(5.0);
 
-         changed |= self.color.to_color_picker(ui);
+        changed |= self.color.to_color_picker(ui);
+
+        ui.add_space(5.0);
+
+        ui.label("Save preset");
+        if ui.button("Save Preset").clicked() {
+            match self.save("idk") {
+                Ok(_) => println!("Preset saved successfully"),
+                Err(e) => eprintln!("Failed to save preset: {}", e),
+            }
+        }
+
         changed
     }
 
