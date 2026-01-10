@@ -3,12 +3,12 @@ use crate::animator::animation_type::{AnimationType, ModeHelper, PulseModes};
 use crate::animator::animator_structs::AnimationParam;
 use crate::utils::ColorHelpers;
 use nannou::prelude::*;
-use nannou_egui::egui::{self, Slider};
+use nannou_egui::egui::{self};
 use serde::{Deserialize, Serialize};
 
 // #[derive(Serialize, Deserialize)]
 pub struct PulseBackgroundSettings {
-    pub mode: AnimationParam<PulseModes>,
+    pub mode: PulseModes,
     pub speed: AnimationParam<f32>,
     pub color: AnimationParam<Rgba>,
     pub limit: AnimationParam<f32>
@@ -17,7 +17,7 @@ pub struct PulseBackgroundSettings {
 impl AnimatorSettings for PulseBackgroundSettings {
     fn new(win_rect: &Rect) -> Self {
         Self {
-            mode: AnimationParam::new_options(PulseModes::default(),  "Mode"),
+            mode: PulseModes::default(),
             speed: AnimationParam::new(100.0, 1.0, 200.0, "Speed"),
             color: AnimationParam::new_without_range(Rgba::red(), "Color"),
             limit: AnimationParam::new(0.8, 0.1, 1.0, "Speed"),
@@ -31,16 +31,17 @@ impl AnimatorSettings for PulseBackgroundSettings {
         ui.add_space(5.0);
 
         ui.label("Mode:");
-        // ui.horizontal(|ui| {
-        //     for options in PulseModes::iterator() {
-        //         if ui
-        //             .radio_value(&mut self.mode, *options, options.as_str())
-        //             .changed()
-        //         {
-        //             changed = true;
-        //         };
-        //     }
-        // });
+
+        ui.horizontal(|ui| {
+            for options in PulseModes::iterator() {
+                if ui
+                    .radio_value(&mut self.mode, *options, options.as_str())
+                    .changed()
+                {
+                    changed = true;
+                };
+            }
+        });
 
         ui.label("Speed");
         changed |= self.speed.to_slider(ui);
@@ -63,7 +64,7 @@ impl AnimatorSettings for PulseBackgroundSettings {
         let mut animated_objects: Vec<Box<dyn AnimatedObject>> = Vec::new();
 
         animated_objects.push(Box::new(PulseBackground::new(
-            self.mode.value, self.color.value, self.speed.value, self.limit.value,
+            self.mode, self.color.value, self.speed.value, self.limit.value,
         )));
 
         animated_objects

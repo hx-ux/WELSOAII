@@ -34,8 +34,7 @@ impl ModeHelper for AnimationType {
         }
     }
 }
-
-#[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize,Default)]
+#[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize, Default)]
 pub enum ScanLineModes {
     #[default]
     PingPong,

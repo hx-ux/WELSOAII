@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex};
 pub struct ReceiverDevice {
     pub ip: String,
     pub name: String,
-    pub max_len: u64,
+    pub max_len: u32,
     con: Option<Arc<Mutex<DDPConnection>>>,
     pub establish_conn: bool,
 }
@@ -37,7 +37,7 @@ impl ReceiverDevice {
         Ok(())
     }
 
-    pub fn open_connection(&mut self, ip: &str, name: &str, max_len: u64) -> Result<()> {
+    pub fn open_connection(&mut self, ip: &str, name: &str, max_len: u32) -> Result<()> {
         let target_address = format!("{}:{}", &ip, ReceiverDevice::RECIVER_PORT);
 
         match std::net::UdpSocket::bind("0.0.0.0:4048") {

@@ -5,16 +5,16 @@ use nannou::prelude::*;
 use nannou_egui::egui;
 
 #[derive(Clone)]
+/// the single cell, which interacts with the animator
 pub struct ReceiverCells {
-    pub pos: u16,
+    pub pos: u32,
     pub rect: Rect,
     pub display_color: Rgba,
     pub is_active: bool,
 }
 
 impl ReceiverCells {
-    // the single cell, which interacts with the animator
-    pub fn new_from_rect(rect: Rect, pos: u16) -> Self {
+    pub fn new_from_rect(rect: Rect, pos: u32) -> Self {
         ReceiverCells {
             rect,
             is_active: false,
@@ -47,17 +47,19 @@ impl ReceiverCells {
 pub struct ReceiverGrid {
     main_rect: Rect,
     pub cells: Vec<ReceiverCells>,
-    pub cols: i32,
-    pub rows: i32,
+    pub cols: u32,
+    pub rows: u32,
     device: ReceiverDevice,
     pub show_debug_info: bool,
 }
 
 impl ReceiverGrid {
-    pub fn new(main_rect: Rect, cols: i32, rows: i32, debug: bool) -> Self {
+    pub fn new(main_rect: Rect, cols: u32, rows: u32, debug: bool) -> Self {
+        let cells = ReceiverGrid::create_grid(&main_rect, rows, cols);
+
         let mut grid = ReceiverGrid {
             main_rect,
-            cells: Vec::new(),
+            cells,
             cols,
             rows,
             device: ReceiverDevice::factory(),
@@ -69,29 +71,33 @@ impl ReceiverGrid {
     }
 
     pub fn update_cells(&mut self) {
-        self.cells.clear();
+        // self.cells.clear();
+        // self.create_grid();
+    }
 
-        if self.cols == 0 || self.rows == 0 {
-            return;
+    fn create_grid(dimension: &Rect, rows: u32, cols: u32) -> Vec<ReceiverCells> {
+        let mut grid: Vec<ReceiverCells> = Vec::new();
+        if cols == 0 || rows == 0 {
+            return grid;
         }
 
-        let cell_w = self.main_rect.w() / self.cols as f32;
-        let cell_h = self.main_rect.h() / self.rows as f32;
-        let start_x = self.main_rect.left() + cell_w / 2.0;
-        let start_y = self.main_rect.top() - cell_h / 2.0;
+        let cell_w = dimension.w() / cols as f32;
+        let cell_h = dimension.h() / rows as f32;
+        let start_x = dimension.left() + cell_w / 2.0;
+        let start_y = dimension.top() - cell_h / 2.0;
 
         let mut _pos = 0;
-        for r in 0..self.rows {
-            for c in 0..self.cols {
+        for r in 0..rows {
+            for c in 0..cols {
                 let x = start_x + c as f32 * cell_w;
                 let y = start_y - r as f32 * cell_h;
                 let cell_rect = Rect::from_x_y_w_h(x, y, cell_w, cell_h);
-
-                self.cells
-                    .push(ReceiverCells::new_from_rect(cell_rect, _pos));
+                grid.push(ReceiverCells::new_from_rect(cell_rect, _pos));
                 _pos += 1;
             }
         }
+
+        grid
     }
 
     pub fn draw(&self, draw: &Draw) {
@@ -177,7 +183,7 @@ impl ReceiverGrid {
         changed
     }
 
-    pub fn get_max_len(&self) -> u64 {
-        self.cells.iter().count() as u64
+    pub fn get_max_len(&self) -> u32 {
+        self.cells.iter().count() as u32
     }
 }

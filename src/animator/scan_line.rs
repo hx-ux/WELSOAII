@@ -1,15 +1,17 @@
+use std::clone;
+
 use super::{AnimatedObject, AnimatorSettings, ObjectShape};
 use crate::animator::{
     animation_type::{AnimationType, ModeHelper, ScanLineModes},
     animator_structs::AnimationParam,
 };
-use nannou::prelude::*;
+use nannou::{draw::background::new, prelude::*};
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 
 // #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct ScanLineSettings {
-    mode: AnimationParam<ScanLineModes>,
+    mode: ScanLineModes,
     speed: AnimationParam<f32>,
     width: AnimationParam<f32>,
     color: AnimationParam<Rgba>,
@@ -20,7 +22,7 @@ pub struct ScanLineSettings {
 impl AnimatorSettings for ScanLineSettings {
     fn new(win_rect: &Rect) -> Self {
         Self {
-            mode: AnimationParam::new_without_range(ScanLineModes::default(), "Mode"),
+            mode: ScanLineModes::default(),
             speed: AnimationParam::new(300.0, 0.0, 1000.0, "Speed"),
             width: AnimationParam::new(20.0, 5.0, 20.0, "Width"),
             color: AnimationParam::new_without_range(Rgba::new(1.0, 0.0, 0.0, 1.0), "Color"),
@@ -45,17 +47,16 @@ impl AnimatorSettings for ScanLineSettings {
 
         ui.label("Mode:");
 
-        //  changed |= self.mode.to_drop_down<ScanLineModes>(ui);
-        // ui.horizontal(|ui| {
-        //     for options in ScanLineModes::iterator() {
-        //         if ui
-        //             .radio_value(&mut self.mode, *options, options.as_str())
-        //             .changed()
-        //         {
-        //             changed = true;
-        //         };
-        //     }
-        // });
+        ui.horizontal(|ui| {
+            for options in ScanLineModes::iterator() {
+                if ui
+                    .radio_value(&mut self.mode, *options, options.as_str())
+                    .changed()
+                {
+                    changed = true;
+                };
+            }
+        });
 
         changed |= self.color.to_color_picker(ui);
 
@@ -70,7 +71,7 @@ impl AnimatorSettings for ScanLineSettings {
         let mut animated_objects: Vec<Box<dyn AnimatedObject>> = Vec::new();
 
         animated_objects.push(Box::new(ScanLine::new(
-            self.mode.value,
+            self.mode,
             self.speed.value,
             self.color.value,
             self.width.value,
@@ -116,7 +117,6 @@ impl ScanLine {
 
 impl AnimatedObject for ScanLine {
     fn update(&mut self, win_rect: &Rect, delta_time: f32) {
-
         self.position.x += self.speed * delta_time;
 
         let half_width = self.width / 2.0;

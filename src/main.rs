@@ -50,7 +50,7 @@ fn model(app: &App) -> Model {
 
     let win_rect: Rect = app.window_rect();
 
-    let receiver_grid = ReceiverGrid::new(Rect::from_x_y_w_h(0.0, 0.0, 400.0, 300.0), 15, 20, true);
+    let receiver_grid = ReceiverGrid::new(Rect::from_x_y_w_h(0.0, 0.0, 400.0, 300.0), 20, 20, true);
 
     let mut animator = Animator::new(&win_rect, receiver_grid);
     animator.reset(&win_rect);

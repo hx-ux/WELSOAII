@@ -1,12 +1,10 @@
 use nannou::{color::Rgba, lyon::path::iterator};
 use nannou_egui::egui::{self, Ui};
 use serde::{Deserialize, Serialize, Serializer, ser::SerializeStruct};
-// use strum::{IntoEnumIterator, AsRefStr};
 use std::{default, ops::RangeInclusive};
 
-use crate::animator::animation_type::{AnimationType, ModeHelper};
+use crate::animator::animation_type::{AnimationType, ModeHelper, PulseModes};
 
-/// Defines a simple range between two values
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct RangeHolder<T> {
     pub lower: T,
@@ -20,9 +18,9 @@ impl<T> RangeHolder<T> {
 
     pub fn as_range(&self) -> RangeInclusive<T>
     where
-        T: Copy,
+        T: Clone,
     {
-        RangeInclusive::new(self.lower, self.upper)
+        RangeInclusive::new(self.lower.to_owned(), self.upper.to_owned())
     }
 }
 
@@ -37,7 +35,7 @@ pub struct AnimationParam<T> {
 impl<T> AnimationParam<T> {
     pub fn new(default: T, lower: T, upper: T, desc: &str) -> Self
     where
-        T: Copy,
+        T: Clone,
     {
         Self {
             value: default,
@@ -47,18 +45,7 @@ impl<T> AnimationParam<T> {
     }
     pub fn new_without_range(default: T, desc: &str) -> Self
     where
-        T: Copy,
-        T: Default,
-    {
-        Self {
-            value: default,
-            range: RangeHolder::default(),
-            desc: desc.to_string(),
-        }
-    }
-    pub fn new_options(default: T, desc: &str) -> Self
-    where
-        T: Copy,
+        T: Clone,
         T: Default,
     {
         Self {
@@ -79,28 +66,9 @@ impl<T> AnimationParam<T> {
         .changed()
     }
 
-    // pub fn to_options(&mut self, ui: &mut egui::Ui) -> bool
-    // where
-    //     T: Copy + PartialEq,
-    // {
 
-    //     // let mut changed = false;
-    //     // ui.horizontal(|ui| {
-
-
-
-    //     //     for variant in T::iter() {
-    //     //         if ui
-    //     //             .radio_value(&mut self.value, *variant, variant.as_str())
-    //     //             .changed()
-    //     //         {
-    //     //             changed = true;
-    //     //         }
-    //     //     }
-    //     // });
-    //     // changed
-    // }
 }
+
 
 impl AnimationParam<Rgba> {
     pub fn to_color_picker(&mut self, ui: &mut egui::Ui) -> bool {
