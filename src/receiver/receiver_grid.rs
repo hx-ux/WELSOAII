@@ -6,16 +6,16 @@ use nannou_egui::egui;
 
 #[derive(Clone)]
 /// the single cell, which interacts with the animator
-pub struct ReceiverCells {
+pub struct GridCell {
     pub pos: u32,
     pub rect: Rect,
     pub display_color: Rgba,
     pub is_active: bool,
 }
 
-impl ReceiverCells {
+impl GridCell {
     pub fn new_from_rect(rect: Rect, pos: u32) -> Self {
-        ReceiverCells {
+        GridCell {
             rect,
             is_active: false,
             display_color: Rgba::almost_transparent(),
@@ -39,18 +39,18 @@ impl ReceiverCells {
         if self.is_active {
             return self.display_color;
         }
-        Rgba::new(0.1, 0.1, 0.1, 0.1)
+        Rgba::almost_transparent()
     }
 }
 
 #[derive(Clone)]
 pub struct ReceiverGrid {
     main_rect: Rect,
-    pub cells: Vec<ReceiverCells>,
-    pub cols: u32,
-    pub rows: u32,
+    pub cells: Vec<GridCell>,
+    cols: u32,
+    rows: u32,
     device: ReceiverDevice,
-    pub show_debug_info: bool,
+    show_debug_info: bool,
 }
 
 impl ReceiverGrid {
@@ -62,10 +62,11 @@ impl ReceiverGrid {
             cells,
             cols,
             rows,
-            device: ReceiverDevice::factory(),
+            device: ReceiverDevice::new("192.168.178.102", "Leds 1", 100),
             show_debug_info: debug,
         };
 
+        grid.device.max_len = grid.cells.iter().count() as u32;
         grid.update_cells();
         grid
     }
@@ -75,8 +76,8 @@ impl ReceiverGrid {
         // self.create_grid();
     }
 
-    fn create_grid(dimension: &Rect, rows: u32, cols: u32) -> Vec<ReceiverCells> {
-        let mut grid: Vec<ReceiverCells> = Vec::new();
+    fn create_grid(dimension: &Rect, rows: u32, cols: u32) -> Vec<GridCell> {
+        let mut grid: Vec<GridCell> = Vec::new();
         if cols == 0 || rows == 0 {
             return grid;
         }
@@ -92,7 +93,7 @@ impl ReceiverGrid {
                 let x = start_x + c as f32 * cell_w;
                 let y = start_y - r as f32 * cell_h;
                 let cell_rect = Rect::from_x_y_w_h(x, y, cell_w, cell_h);
-                grid.push(ReceiverCells::new_from_rect(cell_rect, _pos));
+                grid.push(GridCell::new_from_rect(cell_rect, _pos));
                 _pos += 1;
             }
         }
@@ -155,9 +156,7 @@ impl ReceiverGrid {
     pub fn ui(&mut self, ui: &mut egui::Ui) -> bool {
         let mut changed = false;
 
-        ui.heading("Device");
-        ui.add_space(5.0);
-        ui.label(format!("Name: {}", &self.device.name));
+        ui.heading(&self.device.name);
         ui.add_space(5.0);
         ui.label(format!("IP: {}", &self.device.ip));
         ui.add_space(5.0);
@@ -176,7 +175,7 @@ impl ReceiverGrid {
         if ui.button("Connect").clicked() {
             let _ = &self
                 .device
-                .open_connection("192.168.178.102", "ja", self.get_max_len());
+                .open_connection();
             changed = true;
         }
 
