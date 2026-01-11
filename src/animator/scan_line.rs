@@ -1,66 +1,82 @@
-use super::{AnimatedObject, ObjectShape};
-use crate::{
-    animator::{
-        animation_type::{AnimationType, ModeHelper, ScanLineModes}, AnimatorSettings
-    }, utils::ColorHelpers
+use super::{AnimatedObject, AnimatorSettings, ObjectShape, UpdateBehaviour};
+use crate::animator::{
+    animation_type::{AnimationType, ModeHelper, ScanLineModes},
+    animator_structs::AnimationParam,
+    presets_manager::PresetManager,
 };
 use nannou::prelude::*;
 use nannou_egui::egui;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize)]
 pub struct ScanLineSettings {
     mode: ScanLineModes,
-    speed: f32,
-    width: f32,
-    color: Rgba,
-    dimension: Rect,
+    speed: AnimationParam<f32>,
+    width: AnimationParam<f32>,
+    color: AnimationParam<Rgba>,
+    #[serde(skip)]
+    height: f32,
+    #[serde(skip)]
+    begin_pos: f32,
+    #[serde(skip)]
+    presets: PresetManager,
 }
 
 impl AnimatorSettings for ScanLineSettings {
     fn new(win_rect: &Rect) -> Self {
         Self {
-            mode: ScanLineModes::PingPong,
-            speed: 300.0,
-            width: 20.0,
-            color: Rgba::red(),
-            dimension: win_rect.clone(),
+            mode: ScanLineModes::default(),
+            speed: AnimationParam::new(300.0, 0.0, 1000.0, "Speed"),
+            width: AnimationParam::new(20.0, 5.0, 20.0, "Width"),
+            color: AnimationParam::new_without_range(Rgba::new(1.0, 0.0, 0.0, 1.0), "Color"),
+            height: win_rect.h(),
+            begin_pos: win_rect.left(),
+            presets: PresetManager::new(AnimationType::ScanLine),
         }
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui) -> bool {
-        let mut changed = false;
+    fn ui(&mut self, ui: &mut egui::Ui) -> UpdateBehaviour {
+        let mut change_type = UpdateBehaviour::None;
 
-        ui.heading(self.get_ani_type().as_str());
+        ui.heading(self.animation_type().as_str());
         ui.add_space(5.0);
 
         ui.label("Speed");
-        changed |= ui
-            .add(egui::Slider::new(&mut self.speed, -1000.0..=1000.0).text("Speed"))
-            .changed();
+        if self.speed.to_slider(ui) {
+            change_type = UpdateBehaviour::HotUpdate;
+        }
         ui.add_space(5.0);
 
         ui.label("Width");
-        changed |= ui
-            .add(egui::Slider::new(&mut self.width, 5.0..=20.0).text("Width"))
-            .changed();
+        if self.width.to_slider(ui) {
+            change_type = UpdateBehaviour::HotUpdate;
+        }
         ui.add_space(5.0);
 
         ui.label("Mode:");
+
         ui.horizontal(|ui| {
             for options in ScanLineModes::iterator() {
                 if ui
                     .radio_value(&mut self.mode, *options, options.as_str())
                     .changed()
                 {
-                    changed = true;
+                    change_type = UpdateBehaviour::NeedsReset;
                 };
             }
         });
 
-        changed
+        if self.color.to_color_picker(ui) {
+            change_type = UpdateBehaviour::HotUpdate;
+        }
+
+        ui.separator();
+        ui.add_space(5.0);
+        self.presets.ui(ui);
+        change_type
     }
 
-    fn get_ani_type(&self) -> AnimationType {
+    fn animation_type(&self) -> AnimationType {
         AnimationType::ScanLine
     }
 
@@ -69,13 +85,34 @@ impl AnimatorSettings for ScanLineSettings {
 
         animated_objects.push(Box::new(ScanLine::new(
             self.mode,
-            self.speed,
-            self.color,
-            &self.dimension,
-            self.width,
+            self.speed.value,
+            self.color.value,
+            self.width.value,
+            self.height,
+            self.begin_pos,
         )));
 
         animated_objects
+    }
+
+    fn set_dimension(&mut self, window_rect: &Rect) {
+        self.height = window_rect.h();
+        self.begin_pos = window_rect.left();
+    }
+
+    fn update_behaviour(&self, objects: &mut Vec<Box<dyn AnimatedObject>>) {
+        for obj in objects.iter_mut() {
+            if let Some(scan_line) = obj.as_any_mut().downcast_mut::<ScanLine>() {
+                scan_line.color = self.color.value;
+                scan_line.width = self.width.value;
+                scan_line.mode = self.mode;
+                scan_line.height = self.height;
+
+                // Update speed, preserving direction
+                let direction = scan_line.speed.signum();
+                scan_line.speed = self.speed.value.abs() * direction;
+            }
+        }
     }
 }
 
@@ -84,22 +121,28 @@ pub struct ScanLine {
     speed: f32,
     color: Rgba,
     position: Vec2,
-    // TODO as rect
-    window_dimension: (f32, f32),
+    height: f32,
     width: f32,
 }
 
 impl ScanLine {
-    pub fn new(mode: ScanLineModes, speed: f32, color: Rgba, win_rect: &Rect, width: f32) -> Self {
-        // TODO init pos on the left side
-        let pos = vec2(0.0, 0.0);
+    pub fn new(
+        mode: ScanLineModes,
+        speed: f32,
+        color: Rgba,
+        width: f32,
+        height: f32,
+        begin_pos: f32,
+    ) -> Self {
+        let half_width = width / 2.0;
+        let position = vec2(begin_pos + half_width, 0.0);
 
         ScanLine {
             mode,
             speed,
             color,
-            position: pos,
-            window_dimension: (win_rect.w(), win_rect.h()),
+            position,
+            height,
             width,
         }
     }
@@ -107,8 +150,6 @@ impl ScanLine {
 
 impl AnimatedObject for ScanLine {
     fn update(&mut self, win_rect: &Rect, delta_time: f32) {
-        self.window_dimension = win_rect.w_h();
-
         self.position.x += self.speed * delta_time;
 
         let half_width = self.width / 2.0;
@@ -138,7 +179,7 @@ impl AnimatedObject for ScanLine {
     fn draw(&self, draw: &Draw) {
         draw.rect()
             .xy(self.position)
-            .height(self.window_dimension.1)
+            .height(self.height)
             .width(self.width)
             .color(self.color);
     }
@@ -148,11 +189,15 @@ impl AnimatedObject for ScanLine {
             self.position.x,
             self.position.y,
             self.width,
-            self.window_dimension.1,
+            self.height,
         ))
     }
 
     fn color(&self) -> Rgba {
         self.color
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
     }
 }

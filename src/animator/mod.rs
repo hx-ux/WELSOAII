@@ -1,5 +1,10 @@
 extern crate nannou;
-use crate::{animator::animation_type::{AnimationType, ModeHelper}, receiver::ReceiverGrid};
+use anyhow::Result;
+
+use crate::{
+    animator::animation_type::{AnimationType, ModeHelper},
+    receiver::ReceiverGrid,
+};
 use nannou::prelude::*;
 use nannou_egui::egui;
 
@@ -7,47 +12,73 @@ pub mod animation_type;
 pub mod animator_structs;
 pub mod bouncing_ball;
 pub mod gravity_fountain;
+pub mod presets_manager;
 pub mod pulse_background;
 pub mod scan_line;
 
-use bouncing_ball::{BouncingBallSettings};
+use bouncing_ball::BouncingBallSettings;
 use gravity_fountain::GravityFountainSettings;
+use presets_manager::PresetManager;
 use pulse_background::PulseBackgroundSettings;
 use scan_line::ScanLineSettings;
 
+#[derive(Debug, PartialEq)]
+// Defines, how the animators behave, if an Param is changed 
+pub enum UpdateBehaviour {
+    None,
+    // Resets the current animator and its object.
+    // Mainly used for switching between Animators
+    // Does call Animator::new()
+    NeedsReset,
+    // Hot updates, which affect the animator in the next frame(s)
+    // Does not call Animator::new()
+    HotUpdate,
+}
+
+// An animated object, which every animator does emit
 pub enum ObjectShape {
-    Circle(Vec2, f32), // (position, radius)
+    Circle(Vec2, f32),
     Rect(Rect),
 }
 
 pub trait AnimatedObject {
     fn update(&mut self, win_rect: &Rect, delta_time: f32);
     fn draw(&self, draw: &Draw);
+
     // partial obsolete
     fn is_dead(&self) -> bool {
         false
     }
     fn shape(&self) -> ObjectShape;
     fn color(&self) -> Rgba;
+
+    // For downcasting to concrete types
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any;
 }
 
 pub trait AnimatorSettings {
     fn new(win_rect: &Rect) -> Self;
-    fn ui(&mut self, ui: &mut egui::Ui) -> bool;
-    fn get_ani_type(&self) -> AnimationType;
+    fn ui(&mut self, ui: &mut egui::Ui) -> UpdateBehaviour;
+    fn animation_type(&self) -> AnimationType;
     fn create(&self) -> Vec<Box<dyn AnimatedObject>>;
     fn set_dimension(&mut self, window_rect: &Rect) {}
+    fn update_behaviour(&self, objects: &mut Vec<Box<dyn AnimatedObject>>);
+
+    fn save(&self, filename: &str, animation_type: AnimationType) -> Result<bool>
+    where
+        Self: serde::Serialize,
+    {
+        let json = serde_json::to_string_pretty(self)?;
+        PresetManager::save_to_file(filename, &animation_type, json)?;
+        Ok(true)
+    }
 }
 
-// These are the global settings
 pub struct Animator {
     pub objects: Vec<Box<dyn AnimatedObject>>,
     pub grid: ReceiverGrid,
-    pub color: Rgba,
     pub curr_an_type: AnimationType,
-    egui_color: egui::Color32,
 
-    // Settings for each animation type
     bouncing_ball_settings: BouncingBallSettings,
     gravity_fountain_settings: GravityFountainSettings,
     scanline_settings: ScanLineSettings,
@@ -65,21 +96,21 @@ impl Animator {
             objects: Vec::new(),
             curr_an_type: AnimationType::BouncingBalls,
             grid,
-            color: Rgba::new(1.0, 0.0, 0.0, 1.0),
-            egui_color: egui::Color32::from_rgba_unmultiplied(255, 0, 0, 255),
-
             bouncing_ball_settings,
             gravity_fountain_settings: gravity_settings,
             scanline_settings,
             pulse_bg_settings: pulse_settings,
         }
     }
-    /// Clears and repopulates objects based on current settings.
+    /// Clears and repopulates the animations objects based on current settings.
     pub fn reset(&mut self, win_rect: &Rect) {
         self.objects.clear();
         // keep settings in sync with the current window
+        // if reset in bind to on_window_resize
+        self.scanline_settings.set_dimension(win_rect);
         self.gravity_fountain_settings.set_dimension(win_rect);
         self.bouncing_ball_settings.set_dimension(win_rect);
+        self.pulse_bg_settings.set_dimension(win_rect);
 
         self.objects = match self.curr_an_type {
             AnimationType::BouncingBalls => self.bouncing_ball_settings.create(),
@@ -87,6 +118,26 @@ impl Animator {
             AnimationType::ScanLine => self.scanline_settings.create(),
             AnimationType::PulseBackground => self.pulse_bg_settings.create(),
         };
+    }
+
+    /// Apply hot updates to existing objects without recreating them
+    pub fn set_behaviour(&mut self) {
+        match self.curr_an_type {
+            AnimationType::BouncingBalls => {
+                self.bouncing_ball_settings
+                    .update_behaviour(&mut self.objects);
+            }
+            AnimationType::GravityFountain => {
+                self.gravity_fountain_settings
+                    .update_behaviour(&mut self.objects);
+            }
+            AnimationType::ScanLine => {
+                self.scanline_settings.update_behaviour(&mut self.objects);
+            }
+            AnimationType::PulseBackground => {
+                self.pulse_bg_settings.update_behaviour(&mut self.objects);
+            }
+        }
     }
 
     pub fn update(&mut self, win_rect: &Rect, delta_time: f32) {
@@ -152,20 +203,20 @@ impl Animator {
     }
 
     /// Draws the main UI panel
-    pub fn ui(&mut self, ui: &mut egui::Ui) -> bool {
-        let mut changed = false;
+    pub fn ui(&mut self, ui: &mut egui::Ui) -> UpdateBehaviour {
+        let mut change_type = UpdateBehaviour::None;
         ui.separator();
 
         // --- General Settings ---
         ui.label("Animation Type");
-        // Radio buttons for selecting the animation type
+        // Select the current animation Type
         ui.horizontal(|ui| {
             for options in AnimationType::iterator() {
                 if ui
                     .radio_value(&mut self.curr_an_type, *options, options.as_str())
                     .changed()
                 {
-                    changed = true;
+                    change_type = UpdateBehaviour::NeedsReset;
                 };
             }
         });
@@ -174,21 +225,21 @@ impl Animator {
 
         ui.separator();
 
-        // --- Show controls of each animator settings
-        match self.curr_an_type {
-            AnimationType::BouncingBalls => {
-                changed |= self.bouncing_ball_settings.ui(ui);
-            }
-            AnimationType::GravityFountain => {
-                changed |= self.gravity_fountain_settings.ui(ui);
-            }
-            AnimationType::ScanLine => {
-                changed |= self.scanline_settings.ui(ui);
-            }
-            AnimationType::PulseBackground => {
-                changed |= self.pulse_bg_settings.ui(ui);
-            }
+        // --- Show controls for each animator settings
+        let settings_change = match self.curr_an_type {
+            AnimationType::BouncingBalls => self.bouncing_ball_settings.ui(ui),
+            AnimationType::GravityFountain => self.gravity_fountain_settings.ui(ui),
+            AnimationType::ScanLine => self.scanline_settings.ui(ui),
+            AnimationType::PulseBackground => self.pulse_bg_settings.ui(ui),
+        };
+
+        // Prioritize NeedsReset over CanHotUpdate
+        if change_type == UpdateBehaviour::NeedsReset {
+            change_type
+        } else if settings_change != UpdateBehaviour::None {
+            settings_change
+        } else {
+            UpdateBehaviour::None
         }
-        changed
     }
 }

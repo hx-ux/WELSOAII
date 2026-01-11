@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex};
 pub struct ReceiverDevice {
     pub ip: String,
     pub name: String,
-    pub max_len: u64,
+    pub max_len: usize,
     con: Option<Arc<Mutex<DDPConnection>>>,
     pub establish_conn: bool,
 }
@@ -24,6 +24,15 @@ impl ReceiverDevice {
             establish_conn: false,
         }
     }
+    pub fn new(ip: &str, name: &str, max_len: usize) -> Self {
+        Self {
+            ip: ip.to_string(),
+            name: name.to_string(),
+            con: None,
+            max_len,
+            establish_conn: false,
+        }
+    }
 
     pub fn send_data(&self, data: Vec<u8>) -> Result<()> {
         if self.establish_conn {
@@ -37,8 +46,8 @@ impl ReceiverDevice {
         Ok(())
     }
 
-    pub fn open_connection(&mut self, ip: &str, name: &str, max_len: u64) -> Result<()> {
-        let target_address = format!("{}:{}", &ip, ReceiverDevice::RECIVER_PORT);
+    pub fn open_connection(&mut self) -> Result<bool> {
+        let target_address = format!("{}:{}", self.ip, ReceiverDevice::RECIVER_PORT);
 
         match std::net::UdpSocket::bind("0.0.0.0:4048") {
             Ok(socket) => {
@@ -55,17 +64,14 @@ impl ReceiverDevice {
                     }
                     Err(err) => {
                         println!("Error creating DDP connection: {}", err);
-                    },
+                    }
                 };
             }
             Err(_) => {
                 println!("error opensing socket");
-            },
+            }
         }
 
-        self.ip = ip.to_string();
-        self.name = name.to_string();
-        self.max_len = max_len;
-        Ok(())
+        Ok(self.establish_conn)
     }
 }

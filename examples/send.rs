@@ -33,7 +33,7 @@ fn main() -> Result<()> {
 
 fn testfill_all(len: u64) -> Result<Vec<u8>> {
     let mut vec = Vec::new();
-    for i in 0..len {
+    for _ in 0..len {
         vec.push(255 as u8);
         vec.push(0 as u8);
         vec.push(0 as u8);

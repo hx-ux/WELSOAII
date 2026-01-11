@@ -1,108 +1,179 @@
-use super::{AnimatedObject, ObjectShape};
-use crate::{
-    animator::{animation_type::{AnimationType, ModeHelper}, animator_structs::RangeHolder, AnimatorSettings}, utils::ColorHelpers
-};
+use super::{AnimatedObject, AnimatorSettings, ObjectShape, UpdateBehaviour};
+use crate::animator::animation_type::AnimationType;
+use crate::animator::animation_type::ModeHelper;
+use crate::animator::animator_structs::AnimationParam;
+use crate::animator::presets_manager::PresetManager;
 use nannou::prelude::*;
 use nannou_egui::egui;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Default)]
 pub struct GravityFountainSettings {
-    origin: Vec2,
-    velocity: Vec2,
-    ball_count: u32,
-    speed: f32,
-    spread: f32,
-    radius: f32,
-    dimension: Rect,
-    color: Rgba,
+    origin_x: AnimationParam<f32>,
+    origin_y: AnimationParam<f32>,
+    ball_count: AnimationParam<u32>,
+    speed: AnimationParam<f32>,
+    spread: AnimationParam<f32>,
+    radius: AnimationParam<f32>,
+    color: AnimationParam<Rgba>,
+    angle_min: AnimationParam<f32>, // In degrees
+    angle_max: AnimationParam<f32>, // In degrees
+
+    #[serde(skip)]
+    presets: PresetManager,
 }
 
 impl AnimatorSettings for GravityFountainSettings {
     fn new(win_rect: &Rect) -> Self {
         Self {
-            origin: vec2(0.0, win_rect.h() * 0.2),
-            velocity: vec2(0.0, -10.0),
-            spread: 50.0,
-            ball_count: 20,
-            speed: 4.0,
-            radius: 5.0,
-            dimension: win_rect.to_owned(),
-            color: Rgba::red(),
+            origin_x: AnimationParam::new(0.0, 0.0, win_rect.w(), "origin_X"),
+            origin_y: AnimationParam::new(win_rect.h() * 0.2, 0.0, win_rect.h(), "origin_Y"),
+            ball_count: AnimationParam::new(20, 1, 400, "ball_Count"),
+            spread: AnimationParam::new(20.0, 1.0, 200.0, "spread"),
+            speed: AnimationParam::new(-150.0, -500.0, 500.0, "speed"),
+            radius: AnimationParam::new(5.0, 1.0, 20.0, "radius"),
+            color: AnimationParam::new_without_range(Rgba::new(1.0, 0.0, 0.0, 1.0), "color"),
+            angle_min: AnimationParam::new(-60.0, -180.0, 180.0, "Min Angle"),
+            angle_max: AnimationParam::new(60.0, -180.0, 180.0, "Max Angle"),
+            presets: PresetManager::new(AnimationType::GravityFountain),
         }
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui) -> bool {
-        let mut changed = false;
+    fn ui(&mut self, ui: &mut egui::Ui) -> UpdateBehaviour {
+        let mut change_type = UpdateBehaviour::None;
 
-        ui.heading(self.get_ani_type().as_str());
+        ui.heading(self.animation_type().as_str());
         ui.add_space(5.0);
 
         ui.label("Ball Count");
-        changed |= ui
-            .add(egui::Slider::new(&mut self.ball_count, 1..=200).text("Spread"))
-            .changed();
-        ui.add_space(5.0);
+        if self.ball_count.to_slider(ui) {
+            change_type = UpdateBehaviour::NeedsReset;
+        }
 
+        ui.add_space(5.0);
         ui.label("Origin X/Y:");
-        changed |= ui
+        if ui
             .horizontal(|ui| {
-                let c1 = ui
-                    .add(egui::DragValue::new(&mut self.origin.x).speed(1.0))
-                    .changed();
-                let c2 = ui
-                    .add(egui::DragValue::new(&mut self.origin.y).speed(1.0))
-                    .changed();
+                let c1 = self.origin_x.to_slider(ui);
+                let c2 = self.origin_y.to_slider(ui);
                 c1 || c2
             })
-            .inner;
+            .inner
+        {
+            change_type = UpdateBehaviour::NeedsReset;
+        }
         ui.add_space(5.0);
 
         ui.label("Speed");
-        changed |= ui
-            .add(egui::Slider::new(&mut self.speed, 1.0..=10.0).text("Speed"))
-            .changed();
+        if self.speed.to_slider(ui) {
+            change_type = UpdateBehaviour::HotUpdate;
+        }
         ui.add_space(5.0);
 
         ui.label("Spread");
-        changed |= ui
-            .add(egui::Slider::new(&mut self.spread, 1.0..=200.0).text("Spread"))
-            .changed();
+        if self.spread.to_slider(ui) {
+            change_type = UpdateBehaviour::HotUpdate;
+        }
         ui.add_space(5.0);
 
         ui.label("Radius:");
-        changed |= ui
-            .add(egui::Slider::new(&mut self.radius, 1.0..=10.0).text("Radius"))
-            .changed();
+        if self.radius.to_slider(ui) {
+            change_type = UpdateBehaviour::HotUpdate;
+        }
 
         ui.add_space(5.0);
+        if self.color.to_color_picker(ui) {
+            change_type = UpdateBehaviour::HotUpdate;
+        }
 
-        changed
+        ui.add_space(5.0);
+        ui.label("Spray Angle Range (degrees):");
+        ui.label("(-90° = left, 0° = up, 90° = right)");
+        if ui
+            .horizontal(|ui| {
+                ui.label("Min:");
+                let c1 = self.angle_min.to_slider(ui);
+                ui.label("Max:");
+                let c2 = self.angle_max.to_slider(ui);
+
+                // Ensure min <= max
+                if self.angle_min.value > self.angle_max.value {
+                    std::mem::swap(&mut self.angle_min.value, &mut self.angle_max.value);
+                }
+
+                c1 || c2
+            })
+            .inner
+        {
+            change_type = UpdateBehaviour::HotUpdate;
+        }
+
+        change_type
     }
 
-    fn get_ani_type(&self) -> AnimationType {
+    fn animation_type(&self) -> AnimationType {
         AnimationType::GravityFountain
     }
 
     fn create(&self) -> Vec<Box<dyn AnimatedObject>> {
         let mut animated_objects: Vec<Box<dyn AnimatedObject>> = Vec::new();
-        for _ in 0..self.ball_count {
-            let graivity_particle = Box::new(GravityParticle::new(
-                self.origin,
-                self.velocity,
-                self.speed,
-                self.radius,
-                self.color,
-                self.spread,
+        for _ in 0..self.ball_count.value {
+            let gravity_particle = Box::new(GravityParticle::new(
+                Vec2::new(self.origin_x.value, self.origin_y.value),
+                self.speed.value,
+                self.radius.value,
+                self.color.value,
+                self.spread.value,
+                self.angle_min.value.to_radians(),
+                self.angle_max.value.to_radians(),
             ));
 
-            animated_objects.push(graivity_particle);
+            animated_objects.push(gravity_particle);
         }
 
         animated_objects
     }
 
     fn set_dimension(&mut self, window_rect: &Rect) {
-        self.dimension = *window_rect;
+        // self.dimension = Some(*window_rect);
+    }
+
+    fn update_behaviour(&self, objects: &mut Vec<Box<dyn AnimatedObject>>) {
+        let current_count = objects.len();
+        let target_count = self.ball_count.value as usize;
+
+        // Add seamless new particles
+        if target_count > current_count {
+            for _ in current_count..target_count {
+                let gravity_particle = Box::new(GravityParticle::new(
+                    Vec2::new(self.origin_x.value, self.origin_y.value),
+                    self.speed.value,
+                    self.radius.value,
+                    self.color.value,
+                    self.spread.value,
+                    self.angle_min.value.to_radians(),
+                    self.angle_max.value.to_radians(),
+                ));
+                objects.push(gravity_particle);
+            }
+        } else if target_count < current_count {
+            // Mark excess particles as dead (they'll be removed in update)
+            for obj in objects.iter_mut().skip(target_count) {
+                if let Some(particle) = obj.as_any_mut().downcast_mut::<GravityParticle>() {
+                    particle.is_dead = true;
+                }
+            }
+        }
+
+        // Update existing particles with new parameters
+        for obj in objects.iter_mut().take(target_count) {
+            if let Some(particle) = obj.as_any_mut().downcast_mut::<GravityParticle>() {
+                particle.color = self.color.value;
+                particle.speed = self.speed.value;
+                particle.radius = self.radius.value;
+                particle.spread = self.spread.value;
+            }
+        }
     }
 }
 
@@ -117,22 +188,16 @@ pub struct GravityParticle {
 }
 
 impl GravityParticle {
-    const GRAVITY: f32 = -980.0; // Gravity points down
-    // TODO values always constant, no way to change
-    const FALL_ANGLE: RangeHolder<f32> = RangeHolder {
-        lower: -PI / 3.0,
-        upper: PI / 3.0,
-    };
-
     pub fn new(
         origin: Vec2,
-        velocity: Vec2,
         speed: f32,
         radius: f32,
         color: Rgba,
         spread: f32,
+        angle_min: f32, // in radians
+        angle_max: f32, // in radians
     ) -> Self {
-        let angle = random_range(Self::FALL_ANGLE.lower, Self::FALL_ANGLE.upper) + PI / 2.0;
+        let angle = random_range(angle_min, angle_max) + PI / 2.0;
 
         let velocity = vec2(angle.cos(), angle.sin()) * spread;
 
@@ -141,7 +206,7 @@ impl GravityParticle {
             velocity,
             radius,
             color,
-            is_dead: false, // life,
+            is_dead: false,
             speed,
             spread,
         }
@@ -150,8 +215,8 @@ impl GravityParticle {
 
 impl AnimatedObject for GravityParticle {
     fn update(&mut self, win_rect: &Rect, delta_time: f32) {
-        self.velocity.y += Self::GRAVITY * delta_time * (self.speed / 10.0);
-        self.position += self.velocity * delta_time;
+        self.velocity.y += self.speed * delta_time;
+        self.position += self.velocity * delta_time * self.spread;
 
         // Kill particle if it hits the floor
         if self.position.y < win_rect.bottom() - self.radius {
@@ -176,5 +241,9 @@ impl AnimatedObject for GravityParticle {
 
     fn color(&self) -> Rgba {
         self.color
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
     }
 }

@@ -1,6 +1,6 @@
 extern crate nannou;
 use nannou::prelude::*;
-use nannou_egui::{self, Egui, egui};
+use nannou_egui::{self, egui, Egui};
 
 // mod utils;
 mod animator;
@@ -8,11 +8,10 @@ mod receiver;
 mod utils;
 
 use animator::Animator;
-use utils::GlobalSettings;
+use animator::UpdateBehaviour;
 use receiver::ReceiverGrid;
 pub use utils::AppMode;
-
-
+use utils::GlobalSettings;
 
 fn main() {
     nannou::app(model).update(update).run();
@@ -29,13 +28,13 @@ fn settings_window_event(app: &App, model: &mut Model, event: &nannou::winit::ev
 }
 
 fn model(app: &App) -> Model {
-    let global_settings = GlobalSettings::load_or_default("");
+    let global_settings = GlobalSettings::load_or_default();
 
     app.set_loop_mode(LoopMode::rate_fps(global_settings.framerate));
 
     let view_window_id = app
         .new_window()
-        .title(GlobalSettings::app_name())
+        .title(GlobalSettings::APP_NAME)
         .size(
             global_settings.view_window_size.0,
             global_settings.view_window_size.1,
@@ -51,7 +50,7 @@ fn model(app: &App) -> Model {
 
     let win_rect: Rect = app.window_rect();
 
-    let receiver_grid = ReceiverGrid::new(Rect::from_x_y_w_h(0.0, 0.0, 400.0, 300.0), 15, 20, true);
+    let receiver_grid = ReceiverGrid::new(Rect::from_x_y_w_h(0.0, 0.0, 400.0, 300.0), 20, 20, true);
 
     let mut animator = Animator::new(&win_rect, receiver_grid);
     animator.reset(&win_rect);
@@ -85,10 +84,14 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
         _model.animators.grid.ui(ui);
     });
 
-    egui::Window::new("Animator Controls").show(&ctx, |ui| {
-        if _model.animators.ui(ui) {
+    egui::Window::new("Animator Controls").show(&ctx, |ui| match _model.animators.ui(ui) {
+        UpdateBehaviour::NeedsReset => {
             _model.animators.reset(&win_rect);
         }
+        UpdateBehaviour::HotUpdate => {
+            _model.animators.set_behaviour();
+        }
+        UpdateBehaviour::None => {}
     });
 
     _model

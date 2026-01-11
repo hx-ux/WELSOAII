@@ -1,5 +1,10 @@
+use anyhow::Result;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
+use std::fs;
+use std::path::PathBuf;
+
+use crate::animator::animation_type::{AnimationType, ModeHelper};
 
 #[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize)]
 pub enum AppMode {
@@ -16,25 +21,26 @@ pub struct GlobalSettings {
 }
 
 impl GlobalSettings {
-    pub fn load_or_default(path: &str) -> Self {
-        let _result = std::fs::read_to_string(path);
+    pub const APP_NAME: &str = "Welosa2";
+    const EFFECTS_FOLDER: &str = "Effects";
 
-        if !path.is_empty() {
-            if let Ok(content) = std::fs::read_to_string(path) {
-                if let Ok(parsed) = serde_json::from_str::<GlobalSettings>(&content) {
-                    return parsed;
-                } else {
-                    eprintln!(
-                        "Warning: failed to parse settings JSON at '{}', using defaults",
-                        path
-                    );
-                }
-            } else {
-                println!("No settings file found at '{}', using defaults", path);
-            }
-        }
+    pub fn get_root_path() -> PathBuf {
+        let mut doc_dir = dirs::document_dir().unwrap();
+        doc_dir.push(Self::APP_NAME);
+        fs::create_dir_all(&doc_dir).unwrap();
+        doc_dir
+    }
 
-        // defaults
+    pub fn get_preset_path() -> PathBuf {
+        let mut doc_dir = dirs::document_dir().unwrap();
+        doc_dir.push(Self::APP_NAME);
+        doc_dir.push(Self::EFFECTS_FOLDER);
+
+        fs::create_dir_all(&doc_dir).unwrap();
+        doc_dir
+    }
+
+    pub fn new() -> Self {
         Self {
             framerate: 60.0,
             view_window_size: (1000, 1000),
@@ -42,10 +48,38 @@ impl GlobalSettings {
         }
     }
 
-    pub fn save(&self, path: &str) -> Result<(), Box<dyn std::error::Error>> {
-        let json_string = serde_json::to_string_pretty(self)?;
-        std::fs::write(path, json_string)?;
-        println!("Successfully saved settings to '{}'", path);
+    pub fn create_settings_folder() -> Result<bool> {
+        // todo use result
+        let z: PathBuf = Self::get_preset_path();
+        fs::create_dir_all(&z).unwrap();
+
+        for animation in AnimationType::iterator() {
+            let e_path = z.join(animation.as_str());
+            fs::create_dir_all(&e_path).unwrap();
+        }
+
+        Ok(true)
+    }
+
+    pub fn get_preset_folder(animation_type: &AnimationType) -> PathBuf {
+        let path = Self::get_preset_path().join(animation_type.as_str());
+        path
+    }
+
+    pub fn settings_path() -> PathBuf {
+        let mut path = Self::get_root_path();
+        path.push("settings.json");
+        path
+    }
+
+    pub fn load_or_default() -> Self {
+        match Self::create_settings_folder() {
+            Ok(_) => GlobalSettings::new(),
+            Err(_) => GlobalSettings::new(),
+        }
+    }
+
+    pub fn save(&self) -> Result<(), Box<dyn std::error::Error>> {
         Ok(())
     }
     pub fn ui(&mut self, ui: &mut egui::Ui) -> bool {
@@ -60,10 +94,10 @@ impl GlobalSettings {
                 .changed();
         });
 
-        changed
-    }
+        if changed {
+            let _ = self.save();
+        }
 
-    pub fn app_name() -> String {
-        String::from("WELOSA II")
+        changed
     }
 }

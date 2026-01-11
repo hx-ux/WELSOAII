@@ -1,31 +1,44 @@
-use crate::{
-    animator::{
-        animation_type::{AnimationType, ModeHelper}, animator_structs::RangeHolder, AnimatorSettings
-    }, utils::ColorHelpers
-};
+use crate::animator::animator_structs::AnimationParam;
+use crate::animator::presets_manager::PresetManager;
+// use crate::animator::presets_manager::PresetManager;
+use crate::animator::{animation_type::ModeHelper, animator_structs::RangeHolder};
+use crate::utils::ColorHelpers;
+use serde::Serialize;
 
-
-
-use super::{AnimatedObject, ObjectShape};
+use super::{AnimatedObject, AnimatorSettings, ObjectShape, UpdateBehaviour};
+use crate::animator::animation_type::AnimationType;
 use nannou::prelude::*;
 use nannou_egui::egui;
 
+
+
+fn default_rect() -> Rect {
+    Rect::from_w_h(800.0, 600.0)
+}
+
+#[derive(Serialize)]
 pub struct BouncingBallSettings {
-    ball_count: u32,
-    speed: f32,
-    radius: f32,
+    ball_count: AnimationParam<u32>,
+    speed: AnimationParam<f32>,
+    radius: AnimationParam<f32>,
     ball_vel_range_x: RangeHolder<f32>,
     ball_vel_range_y: RangeHolder<f32>,
+    #[serde(skip)]
+    #[serde(default = "default_rect")]
     dimension: Rect,
-    color: Rgba,
+    color: AnimationParam<Rgba>,
+    #[serde(skip)]
+    presets: PresetManager,
 }
 
 impl AnimatorSettings for BouncingBallSettings {
     fn new(win_rect: &Rect) -> Self {
         Self {
-            ball_count: 20,
-            dimension: win_rect.to_owned(),
-            radius: 10.0,
+            ball_count: AnimationParam::new(20, 1, 400, "Ball_Count"),
+            speed: AnimationParam::new(1.0, 1.0, 5.0, "Speed"),
+            dimension: *win_rect,
+            radius: AnimationParam::new(10.0, 6.0, 30.0, "Radius"),
+
             ball_vel_range_x: RangeHolder {
                 lower: -100.0,
                 upper: 100.0,
@@ -34,43 +47,38 @@ impl AnimatorSettings for BouncingBallSettings {
                 lower: -100.0,
                 upper: 100.0,
             },
-            speed: 1.0,
-            color: Rgba::red(),
+            color: AnimationParam::new_without_range(Rgba::red(), "Color"),
+            presets: PresetManager::new(AnimationType::BouncingBalls),
         }
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui) -> bool {
-        let mut changed = false;
-        // let mut e_color = self.color.to_egui().clone();
+    fn ui(&mut self, ui: &mut egui::Ui) -> UpdateBehaviour {
+        let mut change_type = UpdateBehaviour::None;
 
-        // if ui.color_edit_button_rgba_unmultiplied(&mut self.color).changed() {
-        //     self.color = Rgba::from_egui(e_color);
-        //     changed = true;
-        // }
-
-        ui.heading(self.get_ani_type().as_str());
+        ui.heading(self.animation_type().as_str());
         ui.add_space(5.0);
 
-        // Object Count
-        changed |= ui
-            .add(egui::Slider::new(&mut self.ball_count, 1..=300).text("Ball Count"))
-            .changed();
+        ui.label("Ball Count");
+        if self.ball_count.to_slider(ui) {
+            change_type = UpdateBehaviour::NeedsReset;
+        }
+
         ui.add_space(5.0);
+        ui.label("Speed");
+        if self.speed.to_slider(ui) {
+            change_type = UpdateBehaviour::HotUpdate;
+        }
 
-        // Speed
-        changed |= ui
-            .add(egui::Slider::new(&mut self.speed, 1.0..=5.0).text("Speed"))
-            .changed();
-
-        // Radius
-        changed |= ui
-            .add(egui::Slider::new(&mut self.radius, 6.0..=30.0).text("Radius"))
-            .changed();
         ui.add_space(5.0);
+        ui.label("Radius");
+        if self.radius.to_slider(ui) {
+            change_type = UpdateBehaviour::HotUpdate;
+        }
 
+        ui.add_space(5.0);
         ui.label("Velocity Range (X-axis)");
-        // TODO Limit range
-        changed |= ui
+
+        if ui
             .horizontal(|ui| {
                 let c1 = ui
                     .add(egui::DragValue::new(&mut self.ball_vel_range_x.lower).speed(1.0))
@@ -78,15 +86,26 @@ impl AnimatorSettings for BouncingBallSettings {
                 let c2 = ui
                     .add(egui::DragValue::new(&mut self.ball_vel_range_x.upper).speed(1.0))
                     .changed();
+
+                // Ensure lower <= upper
+                if self.ball_vel_range_x.lower > self.ball_vel_range_x.upper {
+                    std::mem::swap(
+                        &mut self.ball_vel_range_x.lower,
+                        &mut self.ball_vel_range_x.upper,
+                    );
+                }
+
                 let _ = ui.label("Random Range");
                 c1 || c2
             })
-            .inner;
+            .inner
+        {
+            change_type = UpdateBehaviour::HotUpdate;
+        }
         ui.add_space(5.0);
 
         ui.label("Velocity Range (Y-axis)");
-        // TODO Limit range
-        changed |= ui
+        if ui
             .horizontal(|ui| {
                 let c1 = ui
                     .add(egui::DragValue::new(&mut self.ball_vel_range_y.lower).speed(1.0))
@@ -94,29 +113,51 @@ impl AnimatorSettings for BouncingBallSettings {
                 let c2 = ui
                     .add(egui::DragValue::new(&mut self.ball_vel_range_y.upper).speed(1.0))
                     .changed();
+
+                // Ensure lower <= upper
+                if self.ball_vel_range_y.lower > self.ball_vel_range_y.upper {
+                    std::mem::swap(
+                        &mut self.ball_vel_range_y.lower,
+                        &mut self.ball_vel_range_y.upper,
+                    );
+                }
+
                 let _ = ui.label("Random Range");
                 c1 || c2
             })
-            .inner;
-        ui.add_space(5.0);
+            .inner
+        {
+            change_type = UpdateBehaviour::HotUpdate;
+        }
 
-        changed
+        ui.add_space(5.0);
+        ui.label("Ball Color");
+        if self.color.to_color_picker(ui) {
+            change_type = UpdateBehaviour::HotUpdate;
+        }
+
+        // Preset Management UI
+        ui.separator();
+        ui.add_space(5.0);
+        self.presets.ui(ui);
+
+        change_type
     }
 
-    fn get_ani_type(&self) -> AnimationType {
+    fn animation_type(&self) -> AnimationType {
         AnimationType::BouncingBalls
     }
 
     fn create(&self) -> Vec<Box<dyn AnimatedObject>> {
         let mut animated_objects: Vec<Box<dyn AnimatedObject>> = Vec::new();
-        for _ in 0..self.ball_count {
+        for _ in 0..self.ball_count.value {
             let new_obj = Box::new(BouncingBall::new(
                 &self.dimension,
-                self.color,
-                self.radius,
+                self.color.value,
+                self.radius.value,
                 &self.ball_vel_range_x,
                 &self.ball_vel_range_y,
-                self.speed,
+                self.speed.value,
             ));
             animated_objects.push(new_obj);
         }
@@ -125,6 +166,45 @@ impl AnimatorSettings for BouncingBallSettings {
 
     fn set_dimension(&mut self, window_rect: &Rect) {
         self.dimension = *window_rect;
+    }
+
+    fn update_behaviour(&self, objects: &mut Vec<Box<dyn AnimatedObject>>) {
+        let current_count = objects.len();
+        let target_count = self.ball_count.value as usize;
+
+        // Adjust ball count
+        if target_count > current_count {
+            // Add new balls
+            for _ in current_count..target_count {
+                let new_obj = Box::new(BouncingBall::new(
+                    &self.dimension,
+                    self.color.value,
+                    self.radius.value,
+                    &self.ball_vel_range_x,
+                    &self.ball_vel_range_y,
+                    self.speed.value,
+                ));
+                objects.push(new_obj);
+            }
+        } else if target_count < current_count {
+            // Remove excess balls
+            objects.truncate(target_count);
+        }
+
+        // Update existing balls with new parameters
+        for obj in objects.iter_mut() {
+            if let Some(ball) = obj.as_any_mut().downcast_mut::<BouncingBall>() {
+                ball.color = self.color.value;
+                ball.speed = self.speed.value;
+                ball.radius = self.radius.value;
+
+                // Re-randomize velocity within new range
+                ball.velocity = vec2(
+                    random_range(self.ball_vel_range_x.lower, self.ball_vel_range_x.upper),
+                    random_range(self.ball_vel_range_y.lower, self.ball_vel_range_y.upper),
+                );
+            }
+        }
     }
 }
 
@@ -201,5 +281,9 @@ impl AnimatedObject for BouncingBall {
 
     fn color(&self) -> Rgba {
         self.color
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
     }
 }
