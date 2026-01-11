@@ -2,7 +2,7 @@ use anyhow::Result;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use std::{env, fs};
+use std::fs;
 
 use crate::animator::animation_type::{AnimationType, ModeHelper};
 
@@ -48,9 +48,9 @@ impl GlobalSettings {
         }
     }
 
-    pub fn create_settings_folder() -> Result<PathBuf, Box<dyn std::error::Error>> {
+    pub fn create_settings_folder() -> Result<bool> {
         // todo use result
-        let z = Self::get_preset_path();
+        let z: PathBuf = Self::get_preset_path();
         fs::create_dir_all(&z).unwrap();
 
         for animation in AnimationType::iterator() {
@@ -58,11 +58,11 @@ impl GlobalSettings {
             fs::create_dir_all(&e_path).unwrap();
         }
 
-        Ok(z)
+        Ok(true)
     }
 
     pub fn get_preset_folder(animation_type: &AnimationType) -> PathBuf {
-        let mut path = Self::get_preset_path().join(animation_type.as_str());
+        let path = Self::get_preset_path().join(animation_type.as_str());
         path
     }
 
