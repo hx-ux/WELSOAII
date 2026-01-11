@@ -1,22 +1,25 @@
-use std::clone;
-
 use super::{AnimatedObject, AnimatorSettings, ObjectShape};
 use crate::animator::{
     animation_type::{AnimationType, ModeHelper, ScanLineModes},
     animator_structs::AnimationParam,
+    presets_manager::PresetManager,
 };
-use nannou::{draw::background::new, prelude::*};
+use nannou::prelude::*;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 
-// #[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize)]
 pub struct ScanLineSettings {
     mode: ScanLineModes,
     speed: AnimationParam<f32>,
     width: AnimationParam<f32>,
     color: AnimationParam<Rgba>,
+    #[serde(skip)]
     height: f32,
+    #[serde(skip)]
     begin_pos: f32,
+    #[serde(skip)]
+    presets: PresetManager,
 }
 
 impl AnimatorSettings for ScanLineSettings {
@@ -28,6 +31,7 @@ impl AnimatorSettings for ScanLineSettings {
             color: AnimationParam::new_without_range(Rgba::new(1.0, 0.0, 0.0, 1.0), "Color"),
             height: win_rect.h(),
             begin_pos: win_rect.left(),
+            presets: PresetManager::new(AnimationType::ScanLine),
         }
     }
 
@@ -60,6 +64,9 @@ impl AnimatorSettings for ScanLineSettings {
 
         changed |= self.color.to_color_picker(ui);
 
+        ui.separator();
+        ui.add_space(5.0);
+        self.presets.ui(ui);
         changed
     }
 
@@ -80,6 +87,11 @@ impl AnimatorSettings for ScanLineSettings {
         )));
 
         animated_objects
+    }
+
+    fn set_dimension(&mut self, window_rect: &Rect) {
+        self.height = window_rect.h();
+        self.begin_pos = window_rect.left();
     }
 }
 

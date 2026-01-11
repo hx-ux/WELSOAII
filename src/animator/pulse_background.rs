@@ -1,17 +1,21 @@
 use super::{AnimatedObject, AnimatorSettings, ObjectShape};
-use crate::animator::animation_type::{AnimationType, ModeHelper, PulseModes};
+use crate::animator::animation_type::{self, AnimationType, ModeHelper, PulseModes};
 use crate::animator::animator_structs::AnimationParam;
+use crate::animator::presets_manager::PresetManager;
 use crate::utils::ColorHelpers;
 use nannou::prelude::*;
 use nannou_egui::egui::{self};
 use serde::{Deserialize, Serialize};
 
-// #[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct PulseBackgroundSettings {
     pub mode: PulseModes,
     pub speed: AnimationParam<f32>,
     pub color: AnimationParam<Rgba>,
-    pub limit: AnimationParam<f32>
+    pub limit: AnimationParam<f32>,
+
+    #[serde(skip)]
+    pub presets: PresetManager,
 }
 
 impl AnimatorSettings for PulseBackgroundSettings {
@@ -20,7 +24,8 @@ impl AnimatorSettings for PulseBackgroundSettings {
             mode: PulseModes::default(),
             speed: AnimationParam::new(100.0, 1.0, 200.0, "Speed"),
             color: AnimationParam::new_without_range(Rgba::red(), "Color"),
-            limit: AnimationParam::new(0.8, 0.1, 1.0, "Speed"),
+            limit: AnimationParam::new(0.8, 0.1, 1.0, "Limit"),
+            presets: PresetManager::new(AnimationType::PulseBackground),
         }
     }
 
@@ -45,7 +50,7 @@ impl AnimatorSettings for PulseBackgroundSettings {
 
         ui.label("Speed");
         changed |= self.speed.to_slider(ui);
-        
+
         ui.add_space(5.0);
         ui.label("Limit");
         changed |= self.limit.to_slider(ui);
@@ -53,6 +58,8 @@ impl AnimatorSettings for PulseBackgroundSettings {
         ui.add_space(5.0);
         changed |= self.color.to_color_picker(ui);
 
+        ui.add_space(5.0);
+        self.presets.ui(ui);
         changed
     }
 
@@ -64,7 +71,10 @@ impl AnimatorSettings for PulseBackgroundSettings {
         let mut animated_objects: Vec<Box<dyn AnimatedObject>> = Vec::new();
 
         animated_objects.push(Box::new(PulseBackground::new(
-            self.mode, self.color.value, self.speed.value, self.limit.value,
+            self.mode,
+            self.color.value,
+            self.speed.value,
+            self.limit.value,
         )));
 
         animated_objects
@@ -80,7 +90,6 @@ pub struct PulseBackground {
     current_size_w: f32,
     current_size_h: f32,
     time: f32,
-    // window_dimension: Rect,
     limit: f32,
 }
 
@@ -122,12 +131,13 @@ impl AnimatedObject for PulseBackground {
                     self.current_size_h = min_h;
                 }
             }
-            PulseModes::Flash => {
-                // let normalized = ((self.time * self.speed).sin() + 1.0) * 0.5; // 0.0..1.0
-                // let eased = normalized * normalized; // soften the peaks
+            PulseModes::Elastic => {
+                // Use sine wave for rhythmic pulsing (same speed param as Smooth)
+                let normalized = ((self.time * self.speed / 100.0).sin() + 1.0) * 0.5; // 0.0..1.0
+                let eased = normalized * normalized; // Quadratic easing for smoother effect
 
-                // self.current_size_w = min_w + eased * (max_w_allowed - min_w);
-                // self.current_size_h = min_h + eased * (max_h_allowed - min_h);
+                self.current_size_w = min_w + eased * (max_w_allowed - min_w);
+                self.current_size_h = min_h + eased * (max_h_allowed - min_h);
             }
         }
     }

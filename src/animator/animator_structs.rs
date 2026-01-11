@@ -1,9 +1,9 @@
-use nannou::{color::Rgba, lyon::path::iterator};
+use nannou::color::Rgba;
 use nannou_egui::egui::{self, Ui};
-use serde::{Deserialize, Serialize, Serializer, ser::SerializeStruct};
-use std::{default, ops::RangeInclusive};
+use serde::{ser::SerializeStruct, Deserialize, Serialize, Serializer};
+use std::ops::RangeInclusive;
 
-use crate::animator::animation_type::{AnimationType, ModeHelper, PulseModes};
+// use crate::animator::animation_type::{};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct RangeHolder<T> {
@@ -65,10 +65,7 @@ impl<T> AnimationParam<T> {
         ))
         .changed()
     }
-
-
 }
-
 
 impl AnimationParam<Rgba> {
     pub fn to_color_picker(&mut self, ui: &mut egui::Ui) -> bool {

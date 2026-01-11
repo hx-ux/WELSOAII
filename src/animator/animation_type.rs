@@ -59,18 +59,18 @@ impl ModeHelper for ScanLineModes {
 pub enum PulseModes {
     #[default]
     Smooth,
-    Flash,
+    Elastic,
 }
 
 impl ModeHelper for PulseModes {
     fn iterator() -> Iter<'static, PulseModes> {
-        static ANIMATION_TYPE: [PulseModes; 2] = [PulseModes::Smooth, PulseModes::Flash];
+        static ANIMATION_TYPE: [PulseModes; 2] = [PulseModes::Smooth, PulseModes::Elastic];
         ANIMATION_TYPE.iter()
     }
     fn as_str(&self) -> &'static str {
         match self {
             PulseModes::Smooth => "Smooth",
-            PulseModes::Flash => "Flash",
+            PulseModes::Elastic => "Elastic",
         }
     }
 }

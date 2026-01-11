@@ -1,6 +1,5 @@
 extern crate nannou;
-// use std::{fs, path::PathBuf};
-
+use anyhow::Result;
 use std::fs;
 
 use crate::{
@@ -8,18 +7,20 @@ use crate::{
     receiver::ReceiverGrid,
     utils::GlobalSettings,
 };
-use nannou::{prelude::*};
+use nannou::prelude::*;
 use nannou_egui::egui;
 
 pub mod animation_type;
 pub mod animator_structs;
 pub mod bouncing_ball;
 pub mod gravity_fountain;
+pub mod presets_manager;
 pub mod pulse_background;
 pub mod scan_line;
 
 use bouncing_ball::BouncingBallSettings;
 use gravity_fountain::GravityFountainSettings;
+use presets_manager::PresetManager;
 use pulse_background::PulseBackgroundSettings;
 use scan_line::ScanLineSettings;
 
@@ -46,32 +47,13 @@ pub trait AnimatorSettings {
     fn create(&self) -> Vec<Box<dyn AnimatedObject>>;
     fn set_dimension(&mut self, window_rect: &Rect) {}
 
-    fn save(&self, filename: &str) -> Result<(), Box<dyn std::error::Error>>
+    fn save(&self, filename: &str, animation_type: AnimationType) -> Result<bool>
     where
         Self: serde::Serialize,
     {
         let json = serde_json::to_string_pretty(self)?;
-        let path = GlobalSettings::get_preset_folder(&self.animation_type()).join(filename);
-        std::fs::write(path, json)?;
-        Ok(())
-    }
-
-    fn load(&self) -> Result<Vec<Self>, Box<dyn std::error::Error>>
-    where
-        Self: serde::de::DeserializeOwned,
-    {
-        let presets = Vec::<Self>::new();
-
-        let path = GlobalSettings::get_preset_folder(&self.animation_type());
-        let entries = fs::read_dir(path)?;
-        
-            for entry in entries {
-                let entry = entry?;
-                let file_name = entry.file_name();
-                let content = std::fs::read_to_string(file_name)?;
-            }
-
-        Ok(presets)
+        PresetManager::save_to_file(filename, &animation_type, json)?;
+        Ok(true)
     }
 }
 
@@ -187,7 +169,6 @@ impl Animator {
 
         // --- General Settings ---
         ui.label("Animation Type");
-        // Radio buttons for selecting the animation type
         ui.horizontal(|ui| {
             for options in AnimationType::iterator() {
                 if ui
