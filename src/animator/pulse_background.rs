@@ -1,4 +1,4 @@
-use super::{AnimatedObject, AnimatorSettings, ObjectShape};
+use super::{AnimatedObject, AnimatorSettings, ObjectShape, UpdateBehaviour};
 use crate::animator::animation_type::{AnimationType, ModeHelper, PulseModes};
 use crate::animator::animator_structs::AnimationParam;
 use crate::animator::presets_manager::PresetManager;
@@ -29,8 +29,8 @@ impl AnimatorSettings for PulseBackgroundSettings {
         }
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui) -> bool {
-        let mut changed = false;
+    fn ui(&mut self, ui: &mut egui::Ui) -> UpdateBehaviour {
+        let mut change_type = UpdateBehaviour::None;
 
         ui.heading(self.animation_type().as_str());
         ui.add_space(5.0);
@@ -43,24 +43,31 @@ impl AnimatorSettings for PulseBackgroundSettings {
                     .radio_value(&mut self.mode, *options, options.as_str())
                     .changed()
                 {
-                    changed = true;
+                    change_type = UpdateBehaviour::NeedsReset;
                 };
             }
         });
 
         ui.label("Speed");
-        changed |= self.speed.to_slider(ui);
+        if self.speed.to_slider(ui) {
+            change_type = UpdateBehaviour::HotUpdate;
+        }
 
         ui.add_space(5.0);
         ui.label("Limit");
-        changed |= self.limit.to_slider(ui);
+        if self.limit.to_slider(ui) {
+            change_type = UpdateBehaviour::HotUpdate;
+        }
 
         ui.add_space(5.0);
-        changed |= self.color.to_color_picker(ui);
+
+        if self.color.to_color_picker(ui) {
+             change_type = UpdateBehaviour::HotUpdate;
+         }
 
         ui.add_space(5.0);
         self.presets.ui(ui);
-        changed
+        change_type
     }
 
     fn animation_type(&self) -> AnimationType {
@@ -81,6 +88,17 @@ impl AnimatorSettings for PulseBackgroundSettings {
     }
 
     fn set_dimension(&mut self, window_rect: &Rect) {}
+
+    fn update_behaviour(&self, objects: &mut Vec<Box<dyn AnimatedObject>>) {
+        for obj in objects.iter_mut() {
+            if let Some(pulse_bg) = obj.as_any_mut().downcast_mut::<PulseBackground>() {
+                pulse_bg.color = self.color.value;
+                pulse_bg.speed = self.speed.value;
+                pulse_bg.mode = self.mode;
+                pulse_bg.limit = self.limit.value;
+            }
+        }
+    }
 }
 
 pub struct PulseBackground {
@@ -162,5 +180,9 @@ impl AnimatedObject for PulseBackground {
 
     fn color(&self) -> Rgba {
         self.color
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
     }
 }

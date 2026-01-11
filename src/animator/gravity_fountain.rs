@@ -1,13 +1,13 @@
-use super::{AnimatedObject, AnimatorSettings, ObjectShape};
+use super::{AnimatedObject, AnimatorSettings, ObjectShape, UpdateBehaviour};
+use crate::animator::animation_type::AnimationType;
 use crate::animator::animation_type::ModeHelper;
 use crate::animator::animator_structs::AnimationParam;
 use crate::animator::presets_manager::PresetManager;
-use crate::animator::{animation_type::AnimationType};
 use nannou::prelude::*;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 
-#[derive( Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Default)]
 pub struct GravityFountainSettings {
     origin_x: AnimationParam<f32>,
     origin_y: AnimationParam<f32>,
@@ -28,57 +28,68 @@ impl AnimatorSettings for GravityFountainSettings {
         Self {
             origin_x: AnimationParam::new(0.0, 0.0, win_rect.w(), "origin_X"),
             origin_y: AnimationParam::new(win_rect.h() * 0.2, 0.0, win_rect.h(), "origin_Y"),
-            ball_count: AnimationParam::new(20, 1, 200, "ball_Count"),
+            ball_count: AnimationParam::new(20, 1, 400, "ball_Count"),
             spread: AnimationParam::new(20.0, 1.0, 200.0, "spread"),
             speed: AnimationParam::new(-150.0, -500.0, 500.0, "speed"),
             radius: AnimationParam::new(5.0, 1.0, 20.0, "radius"),
             color: AnimationParam::new_without_range(Rgba::new(1.0, 0.0, 0.0, 1.0), "color"),
             angle_min: AnimationParam::new(-60.0, -180.0, 180.0, "Min Angle"),
             angle_max: AnimationParam::new(60.0, -180.0, 180.0, "Max Angle"),
-            presets: PresetManager::new(AnimationType::GravityFountain)
-           
+            presets: PresetManager::new(AnimationType::GravityFountain),
         }
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui) -> bool {
-        let mut changed = false;
+    fn ui(&mut self, ui: &mut egui::Ui) -> UpdateBehaviour {
+        let mut change_type = UpdateBehaviour::None;
 
         ui.heading(self.animation_type().as_str());
         ui.add_space(5.0);
 
         ui.label("Ball Count");
-        changed |= self.ball_count.to_slider(ui);
+        if self.ball_count.to_slider(ui) {
+            change_type = UpdateBehaviour::NeedsReset;
+        }
 
         ui.add_space(5.0);
         ui.label("Origin X/Y:");
-        changed |= ui
+        if ui
             .horizontal(|ui| {
                 let c1 = self.origin_x.to_slider(ui);
                 let c2 = self.origin_y.to_slider(ui);
                 c1 || c2
             })
-            .inner;
+            .inner
+        {
+            change_type = UpdateBehaviour::NeedsReset;
+        }
         ui.add_space(5.0);
 
         ui.label("Speed");
-        changed |= self.speed.to_slider(ui);
+        if self.speed.to_slider(ui) {
+            change_type = UpdateBehaviour::HotUpdate;
+        }
         ui.add_space(5.0);
 
         ui.label("Spread");
-        changed |= self.spread.to_slider(ui);
+        if self.spread.to_slider(ui) {
+            change_type = UpdateBehaviour::HotUpdate;
+        }
         ui.add_space(5.0);
 
         ui.label("Radius:");
-        changed |= self.radius.to_slider(ui);
+        if self.radius.to_slider(ui) {
+            change_type = UpdateBehaviour::HotUpdate;
+        }
 
         ui.add_space(5.0);
-
-        changed |= self.color.to_color_picker(ui);
+        if self.color.to_color_picker(ui) {
+            change_type = UpdateBehaviour::HotUpdate;
+        }
 
         ui.add_space(5.0);
         ui.label("Spray Angle Range (degrees):");
         ui.label("(-90° = left, 0° = up, 90° = right)");
-        changed |= ui
+        if ui
             .horizontal(|ui| {
                 ui.label("Min:");
                 let c1 = self.angle_min.to_slider(ui);
@@ -92,9 +103,12 @@ impl AnimatorSettings for GravityFountainSettings {
 
                 c1 || c2
             })
-            .inner;
+            .inner
+        {
+            change_type = UpdateBehaviour::HotUpdate;
+        }
 
-        changed
+        change_type
     }
 
     fn animation_type(&self) -> AnimationType {
@@ -122,6 +136,44 @@ impl AnimatorSettings for GravityFountainSettings {
 
     fn set_dimension(&mut self, window_rect: &Rect) {
         // self.dimension = Some(*window_rect);
+    }
+
+    fn update_behaviour(&self, objects: &mut Vec<Box<dyn AnimatedObject>>) {
+        let current_count = objects.len();
+        let target_count = self.ball_count.value as usize;
+
+        // Add seamless new particles
+        if target_count > current_count {
+            for _ in current_count..target_count {
+                let gravity_particle = Box::new(GravityParticle::new(
+                    Vec2::new(self.origin_x.value, self.origin_y.value),
+                    self.speed.value,
+                    self.radius.value,
+                    self.color.value,
+                    self.spread.value,
+                    self.angle_min.value.to_radians(),
+                    self.angle_max.value.to_radians(),
+                ));
+                objects.push(gravity_particle);
+            }
+        } else if target_count < current_count {
+            // Mark excess particles as dead (they'll be removed in update)
+            for obj in objects.iter_mut().skip(target_count) {
+                if let Some(particle) = obj.as_any_mut().downcast_mut::<GravityParticle>() {
+                    particle.is_dead = true;
+                }
+            }
+        }
+
+        // Update existing particles with new parameters
+        for obj in objects.iter_mut().take(target_count) {
+            if let Some(particle) = obj.as_any_mut().downcast_mut::<GravityParticle>() {
+                particle.color = self.color.value;
+                particle.speed = self.speed.value;
+                particle.radius = self.radius.value;
+                particle.spread = self.spread.value;
+            }
+        }
     }
 }
 
@@ -189,5 +241,9 @@ impl AnimatedObject for GravityParticle {
 
     fn color(&self) -> Rgba {
         self.color
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
     }
 }

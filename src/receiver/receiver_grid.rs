@@ -3,6 +3,7 @@ use crate::receiver::ReceiverDevice;
 use crate::utils::ColorHelpers;
 use nannou::prelude::*;
 use nannou_egui::egui;
+use std::cell::RefCell;
 
 #[derive(Clone)]
 /// the single cell, which interacts with the animator
@@ -51,22 +52,27 @@ pub struct ReceiverGrid {
     rows: u32,
     device: ReceiverDevice,
     show_debug_info: bool,
+    led_buffer: RefCell<Vec<u8>>, // Pre-allocated buffer for LED data
 }
 
 impl ReceiverGrid {
     pub fn new(main_rect: Rect, cols: u32, rows: u32, debug: bool) -> Self {
-        let cells = ReceiverGrid::create_grid(&main_rect, rows, cols);
+
+        let cell_count = (rows * cols) as usize;
+
+        // Pre-allocate LED buffer (3 bytes per cell: RGB)
+        let led_buffer = RefCell::new(vec![0u8; cell_count * 3]);
 
         let mut grid = ReceiverGrid {
             main_rect,
-            cells,
+            cells:ReceiverGrid::create_grid(&main_rect, rows, cols),
             cols,
             rows,
-            device: ReceiverDevice::new("192.168.178.102", "Leds 1", 100),
+            device: ReceiverDevice::new("192.168.178.102", "Leds 1", cell_count),
             show_debug_info: debug,
+            led_buffer,
         };
 
-        grid.device.max_len = grid.cells.iter().count() as u32;
         grid.update_cells();
         grid
     }
@@ -77,6 +83,7 @@ impl ReceiverGrid {
     }
 
     fn create_grid(dimension: &Rect, rows: u32, cols: u32) -> Vec<GridCell> {
+
         let mut grid: Vec<GridCell> = Vec::new();
         if cols == 0 || rows == 0 {
             return grid;
@@ -102,40 +109,44 @@ impl ReceiverGrid {
     }
 
     pub fn draw(&self, draw: &Draw) {
-        let mut data_to_send: Vec<u8> = Vec::new();
+        // Reuse pre-allocated buffer 
+        let mut led_buffer = self.led_buffer.borrow_mut();
 
-        for cell in &self.cells {
-            let z = cell.get_send_color();
-            data_to_send.push((z.red * 255.0) as u8);
-            data_to_send.push((z.green * 255.0) as u8);
-            data_to_send.push((z.blue * 255.0) as u8);
+        // check if buffer has changed 
+        let buffer_len = self.cells.len() * 3;
 
-            // Cells
+        if led_buffer.len() != buffer_len {
+            led_buffer.resize(buffer_len, 0);
+        }
+
+        // Fill LED buffer and draw cells 
+        for (idx, cell) in self.cells.iter().enumerate() {
+            let cell_send_col = cell.get_send_color();
+            
+            let base_idx = idx * 3;
+            led_buffer[base_idx] = (cell_send_col.red * 255.0) as u8;
+            led_buffer[base_idx + 1] = (cell_send_col.green * 255.0) as u8;
+            led_buffer[base_idx + 2] = (cell_send_col.blue * 255.0) as u8;
+
+            // Draw filled cell 
             draw.rect()
                 .xy(cell.rect.xy())
                 .wh(cell.rect.wh())
-                .stroke_color(BLACK)
+                .stroke_color(SNOW)
                 .stroke_weight(1.0)
                 .color(cell.get_display_color());
 
-            // Backdrop / Outer Rect
-            draw.rect()
-                .xy(cell.rect.xy())
-                .wh(cell.rect.wh())
-                .no_fill()
-                .stroke_weight(1.0)
-                .stroke(SNOW);
-
-            // Draw the position number on each cell
+            // Draw the position number on each cell 
             if self.show_debug_info {
                 draw.text(&cell.pos.to_string())
-                    .xy(cell.rect.xy())
-                    .color(WHITE)
-                    .font_size(12);
+                        .xy(cell.rect.xy())
+                        .color(WHITE)
+                        .font_size(12);
             }
         }
 
-        let _ = self.device.send_data(data_to_send);
+        // TODO check, if led device is ready
+        let _ = self.device.send_data(led_buffer.clone());
     }
 
     pub fn move_by(&mut self, offset: Vec2) {
@@ -173,16 +184,11 @@ impl ReceiverGrid {
         ui.add_space(5.0);
 
         if ui.button("Connect").clicked() {
-            let _ = &self
-                .device
-                .open_connection();
+            let _ = &self.device.open_connection();
             changed = true;
         }
 
         changed
     }
 
-    pub fn get_max_len(&self) -> u32 {
-        self.cells.iter().count() as u32
-    }
 }

@@ -8,6 +8,7 @@ mod receiver;
 mod utils;
 
 use animator::Animator;
+use animator::UpdateBehaviour;
 use receiver::ReceiverGrid;
 pub use utils::AppMode;
 use utils::GlobalSettings;
@@ -27,7 +28,6 @@ fn settings_window_event(app: &App, model: &mut Model, event: &nannou::winit::ev
 }
 
 fn model(app: &App) -> Model {
-    
     let global_settings = GlobalSettings::load_or_default();
 
     app.set_loop_mode(LoopMode::rate_fps(global_settings.framerate));
@@ -84,10 +84,14 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
         _model.animators.grid.ui(ui);
     });
 
-    egui::Window::new("Animator Controls").show(&ctx, |ui| {
-        if _model.animators.ui(ui) {
+    egui::Window::new("Animator Controls").show(&ctx, |ui| match _model.animators.ui(ui) {
+        UpdateBehaviour::NeedsReset => {
             _model.animators.reset(&win_rect);
         }
+        UpdateBehaviour::HotUpdate => {
+            _model.animators.set_behaviour();
+        }
+        UpdateBehaviour::None => {}
     });
 
     _model

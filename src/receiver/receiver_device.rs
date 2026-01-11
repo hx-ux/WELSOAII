@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex};
 pub struct ReceiverDevice {
     pub ip: String,
     pub name: String,
-    pub max_len: u32,
+    pub max_len: usize,
     con: Option<Arc<Mutex<DDPConnection>>>,
     pub establish_conn: bool,
 }
@@ -24,7 +24,7 @@ impl ReceiverDevice {
             establish_conn: false,
         }
     }
-    pub fn new(ip: &str, name: &str, max_len: u32) -> Self {
+    pub fn new(ip: &str, name: &str, max_len: usize) -> Self {
         Self {
             ip: ip.to_string(),
             name: name.to_string(),
