@@ -1,11 +1,11 @@
-use std::{fs, path::PathBuf};
-        use chrono::prelude::*;
 use crate::{
-    animator::{AnimatorSettings, animation_type::AnimationType},
+    animator::{animation_type::AnimationType, AnimatorSettings},
     utils::GlobalSettings,
 };
 use anyhow::Result;
+use chrono::prelude::*;
 use nannou_egui::egui::{self};
+use std::{fs, path::PathBuf};
 #[derive(Default)]
 pub struct Preset {
     pub name: String,
@@ -128,7 +128,7 @@ impl PresetManager {
         format!("preset_{}.json", now.format("%Y%m%d_%H%M%S"))
     }
 
-   pub fn save_to_file(
+    pub fn save_to_file(
         filename: &str,
         animation_type: &AnimationType,
         content: String,

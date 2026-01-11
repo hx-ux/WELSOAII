@@ -24,7 +24,7 @@ impl ReceiverDevice {
             establish_conn: false,
         }
     }
-    pub fn new(ip: &str, name: &str, max_len: u32)->Self {
+    pub fn new(ip: &str, name: &str, max_len: u32) -> Self {
         Self {
             ip: ip.to_string(),
             name: name.to_string(),
@@ -33,7 +33,6 @@ impl ReceiverDevice {
             establish_conn: false,
         }
     }
-
 
     pub fn send_data(&self, data: Vec<u8>) -> Result<()> {
         if self.establish_conn {
@@ -48,7 +47,6 @@ impl ReceiverDevice {
     }
 
     pub fn open_connection(&mut self) -> Result<bool> {
-
         let target_address = format!("{}:{}", self.ip, ReceiverDevice::RECIVER_PORT);
 
         match std::net::UdpSocket::bind("0.0.0.0:4048") {

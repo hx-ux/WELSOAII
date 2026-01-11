@@ -1,8 +1,8 @@
 use anyhow::Result;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
 use std::fs;
+use std::path::PathBuf;
 
 use crate::animator::animation_type::{AnimationType, ModeHelper};
 

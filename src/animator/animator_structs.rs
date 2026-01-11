@@ -3,6 +3,8 @@ use nannou_egui::egui::{self};
 use serde::{Deserialize, Serialize};
 use std::ops::RangeInclusive;
 
+use crate::animator::UpdateBehaviour;
+
 // use crate::animator::animation_type::{};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
