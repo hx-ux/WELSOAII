@@ -3,7 +3,7 @@ use crate::animator::presets_manager::PresetManager;
 // use crate::animator::presets_manager::PresetManager;
 use crate::animator::{animation_type::ModeHelper, animator_structs::RangeHolder};
 use crate::utils::ColorHelpers;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use super::{AnimatedObject, AnimatorSettings, ObjectShape};
 use crate::animator::animation_type::AnimationType;

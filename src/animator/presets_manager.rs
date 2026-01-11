@@ -1,4 +1,4 @@
-use std::{fs, path::PathBuf, result};
+use std::{fs, path::PathBuf};
         use chrono::prelude::*;
 use crate::{
     animator::{AnimatorSettings, animation_type::AnimationType},
@@ -36,7 +36,7 @@ impl PresetManager {
     }
 
     pub fn ui(&mut self, ui: &mut egui::Ui) -> bool {
-        let mut changed = false;
+        let changed = false;
         ui.collapsing("Preset Management", |ui| {
             if self.available_preset_paths.is_empty() {}
 

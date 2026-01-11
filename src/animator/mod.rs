@@ -1,11 +1,9 @@
 extern crate nannou;
 use anyhow::Result;
-use std::fs;
 
 use crate::{
     animator::animation_type::{AnimationType, ModeHelper},
     receiver::ReceiverGrid,
-    utils::GlobalSettings,
 };
 use nannou::prelude::*;
 use nannou_egui::egui;

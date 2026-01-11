@@ -1,5 +1,5 @@
 use super::{AnimatedObject, AnimatorSettings, ObjectShape};
-use crate::animator::animation_type::{self, AnimationType, ModeHelper, PulseModes};
+use crate::animator::animation_type::{AnimationType, ModeHelper, PulseModes};
 use crate::animator::animator_structs::AnimationParam;
 use crate::animator::presets_manager::PresetManager;
 use crate::utils::ColorHelpers;

@@ -1,6 +1,6 @@
 use nannou::color::Rgba;
-use nannou_egui::egui::{self, Ui};
-use serde::{ser::SerializeStruct, Deserialize, Serialize, Serializer};
+use nannou_egui::egui::{self};
+use serde::{Deserialize, Serialize};
 use std::ops::RangeInclusive;
 
 // use crate::animator::animation_type::{};
