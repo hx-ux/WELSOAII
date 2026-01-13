@@ -12,6 +12,7 @@ pub struct GridCell {
     pub rect: Rect,
     pub display_color: Rgba,
     pub is_active: bool,
+    pos_string: String, // Cached string representation
 }
 
 impl GridCell {
@@ -21,6 +22,7 @@ impl GridCell {
             is_active: false,
             display_color: Rgba::almost_transparent(),
             pos,
+            pos_string: pos.to_string(), // Cache the string
         }
     }
 
@@ -48,8 +50,8 @@ impl GridCell {
 pub struct ReceiverGrid {
     main_rect: Rect,
     pub cells: Vec<GridCell>,
-    cols: u32,
-    rows: u32,
+    pub cols: u32,
+    pub rows: u32,
     device: ReceiverDevice,
     show_debug_info: bool,
     led_buffer: RefCell<Vec<u8>>, // Pre-allocated buffer for LED data
@@ -57,7 +59,6 @@ pub struct ReceiverGrid {
 
 impl ReceiverGrid {
     pub fn new(main_rect: Rect, cols: u32, rows: u32, debug: bool) -> Self {
-
         let cell_count = (rows * cols) as usize;
 
         // Pre-allocate LED buffer (3 bytes per cell: RGB)
@@ -65,7 +66,7 @@ impl ReceiverGrid {
 
         let mut grid = ReceiverGrid {
             main_rect,
-            cells:ReceiverGrid::create_grid(&main_rect, rows, cols),
+            cells: ReceiverGrid::create_grid(&main_rect, rows, cols),
             cols,
             rows,
             device: ReceiverDevice::new("192.168.178.102", "Leds 1", cell_count),
@@ -82,8 +83,41 @@ impl ReceiverGrid {
         // self.create_grid();
     }
 
-    fn create_grid(dimension: &Rect, rows: u32, cols: u32) -> Vec<GridCell> {
+    /// Returns the range of cells (col_min, col_max, row_min, row_max) that could intersect
 
+    pub fn get_cell_range(
+        &self,
+        left: f32,
+        right: f32,
+        bottom: f32,
+        top: f32,
+    ) -> (u32, u32, u32, u32) {
+        if self.cols == 0 || self.rows == 0 {
+            return (0, 0, 0, 0);
+        }
+
+        let cell_w = self.main_rect.w() / self.cols as f32;
+        let cell_h = self.main_rect.h() / self.rows as f32;
+
+        // Convert world coordinates to grid indices
+        let min_col = ((left - self.main_rect.left()) / cell_w).floor().max(0.0) as u32;
+        let max_col = ((right - self.main_rect.left()) / cell_w)
+            .ceil()
+            .min(self.cols as f32) as u32;
+        let min_row = ((self.main_rect.top() - top) / cell_h).floor().max(0.0) as u32;
+        let max_row = ((self.main_rect.top() - bottom) / cell_h)
+            .ceil()
+            .min(self.rows as f32) as u32;
+
+        (
+            min_col.min(self.cols - 1),
+            max_col.min(self.cols - 1),
+            min_row.min(self.rows - 1),
+            max_row.min(self.rows - 1),
+        )
+    }
+
+    fn create_grid(dimension: &Rect, rows: u32, cols: u32) -> Vec<GridCell> {
         let mut grid: Vec<GridCell> = Vec::new();
         if cols == 0 || rows == 0 {
             return grid;
@@ -109,26 +143,26 @@ impl ReceiverGrid {
     }
 
     pub fn draw(&self, draw: &Draw) {
-        // Reuse pre-allocated buffer 
+        // Reuse pre-allocated buffer
         let mut led_buffer = self.led_buffer.borrow_mut();
 
-        // check if buffer has changed 
+        // check if buffer has changed
         let buffer_len = self.cells.len() * 3;
 
         if led_buffer.len() != buffer_len {
             led_buffer.resize(buffer_len, 0);
         }
 
-        // Fill LED buffer and draw cells 
+        // Fill LED buffer and draw cells
         for (idx, cell) in self.cells.iter().enumerate() {
             let cell_send_col = cell.get_send_color();
-            
+
             let base_idx = idx * 3;
             led_buffer[base_idx] = (cell_send_col.red * 255.0) as u8;
             led_buffer[base_idx + 1] = (cell_send_col.green * 255.0) as u8;
             led_buffer[base_idx + 2] = (cell_send_col.blue * 255.0) as u8;
 
-            // Draw filled cell 
+            // Draw filled cell
             draw.rect()
                 .xy(cell.rect.xy())
                 .wh(cell.rect.wh())
@@ -136,17 +170,22 @@ impl ReceiverGrid {
                 .stroke_weight(1.0)
                 .color(cell.get_display_color());
 
-            // Draw the position number on each cell 
+
+            let mut size = 12;
+            if self.cells.len() >= 100 {
+                size = 10;
+            }
+            // Draw the position number on each cell
             if self.show_debug_info {
-                draw.text(&cell.pos.to_string())
-                        .xy(cell.rect.xy())
-                        .color(WHITE)
-                        .font_size(12);
+                draw.text(&cell.pos_string)
+                    .xy(cell.rect.xy())
+                    .color(WHITE)
+                    .font_size(size);
             }
         }
 
         // TODO check, if led device is ready
-        let _ = self.device.send_data(led_buffer.clone());
+        let _ = self.device.send_data(&led_buffer);
     }
 
     pub fn move_by(&mut self, offset: Vec2) {
@@ -190,5 +229,4 @@ impl ReceiverGrid {
 
         changed
     }
-
 }
