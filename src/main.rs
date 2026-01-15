@@ -1,6 +1,6 @@
 extern crate nannou;
 use nannou::prelude::*;
-use nannou_egui::{self, egui, Egui};
+use nannou_egui::{self, Egui, egui};
 
 // mod utils;
 mod animator;
@@ -9,7 +9,7 @@ mod utils;
 
 use animator::Animator;
 use animator::UpdateBehaviour;
-use receiver::ReceiverGrid;
+use receiver::{LayoutMode, ReceiverGrid};
 pub use utils::AppMode;
 use utils::GlobalSettings;
 
@@ -50,7 +50,13 @@ fn model(app: &App) -> Model {
 
     let win_rect: Rect = app.window_rect();
 
-    let receiver_grid = ReceiverGrid::new(Rect::from_x_y_w_h(0.0, 0.0, 400.0, 300.0), 20, 20, true);
+    let receiver_grid = ReceiverGrid::new(
+        Rect::from_x_y_w_h(0.0, 0.0, 400.0, 300.0),
+        20,
+        20,
+        true,
+        LayoutMode::FollowColum, 
+    );
 
     let mut animator = Animator::new(&win_rect, receiver_grid);
     animator.reset(&win_rect);

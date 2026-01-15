@@ -34,13 +34,13 @@ impl ReceiverDevice {
         }
     }
 
-    pub fn send_data(&self, data: Vec<u8>) -> Result<()> {
+    pub fn send_data(&self, data: &[u8]) -> Result<()> {
         if self.establish_conn {
             if let Some(conn) = &self.con {
                 let mut connection = conn
                     .lock()
                     .expect("Failed to acquire DDPConnection mutex lock");
-                connection.write_offset(&data, 0)?;
+                connection.write_offset(data, 0)?;
             }
         }
         Ok(())

@@ -23,7 +23,7 @@ use pulse_background::PulseBackgroundSettings;
 use scan_line::ScanLineSettings;
 
 #[derive(Debug, PartialEq)]
-// Defines, how the animators behave, if an Param is changed 
+// Defines, how the animators behave, if an Param is changed
 pub enum UpdateBehaviour {
     None,
     // Resets the current animator and its object.
@@ -149,6 +149,7 @@ impl Animator {
         // Remove dead objects ()
         self.objects.retain(|obj| !obj.is_dead());
 
+        // TODO Refactor
         // Restart animation loop if all particles are gone (for GravityFountain)
         if self.objects.is_empty() && self.curr_an_type == AnimationType::GravityFountain {
             self.objects = self.gravity_fountain_settings.create();
@@ -163,29 +164,58 @@ impl Animator {
             let obj_shape = obj.shape();
             let obj_color = obj.color();
 
-            for cell in self.grid.cells.iter_mut() {
-                if cell.is_active {
-                    continue;
-                }
-                // Extended Collsion detection
-                let intersects = match obj_shape {
-                    ObjectShape::Circle(pos, radius) => {
-                        let closest_x = pos.x.clamp(cell.rect.left(), cell.rect.right());
-                        let closest_y = pos.y.clamp(cell.rect.bottom(), cell.rect.top());
-                        let distance_sq = (pos.x - closest_x).powi(2) + (pos.y - closest_y).powi(2);
-                        distance_sq < (radius * radius)
-                    }
-                    ObjectShape::Rect(obj_rect) => {
-                        obj_rect.left() < cell.rect.right()
-                            && obj_rect.right() > cell.rect.left()
-                            && obj_rect.top() > cell.rect.bottom()
-                            && obj_rect.bottom() < cell.rect.top()
-                    }
-                };
+            // Spatial optimization: calculate which cells could possibly intersect
+            let (min_col, max_col, min_row, max_row) = match obj_shape {
+                ObjectShape::Circle(pos, radius) => {
+                    let left = pos.x - radius;
+                    let right = pos.x + radius;
+                    let bottom = pos.y - radius;
+                    let top = pos.y + radius;
 
-                if intersects {
-                    cell.is_active = true;
-                    cell.display_color = obj_color;
+                    self.grid.get_cell_range(left, right, bottom, top)
+                }
+                ObjectShape::Rect(obj_rect) => self.grid.get_cell_range(
+                    obj_rect.left(),
+                    obj_rect.right(),
+                    obj_rect.bottom(),
+                    obj_rect.top(),
+                ),
+            };
+
+            // Only check cells in the relevant range
+            for row in min_row..=max_row {
+                for col in min_col..=max_col {
+                    let idx = self.grid.get_cell_index(row, col);
+                    if idx >= self.grid.cells.len() {
+                        continue;
+                    }
+
+                    let cell = &mut self.grid.cells[idx];
+                    if cell.is_active {
+                        continue;
+                    }
+
+                    // Collision detection
+                    let intersects = match obj_shape {
+                        ObjectShape::Circle(pos, radius) => {
+                            let closest_x = pos.x.clamp(cell.rect.left(), cell.rect.right());
+                            let closest_y = pos.y.clamp(cell.rect.bottom(), cell.rect.top());
+                            let distance_sq =
+                                (pos.x - closest_x).powi(2) + (pos.y - closest_y).powi(2);
+                            distance_sq < (radius * radius)
+                        }
+                        ObjectShape::Rect(obj_rect) => {
+                            obj_rect.left() < cell.rect.right()
+                                && obj_rect.right() > cell.rect.left()
+                                && obj_rect.top() > cell.rect.bottom()
+                                && obj_rect.bottom() < cell.rect.top()
+                        }
+                    };
+
+                    if intersects {
+                        cell.is_active = true;
+                        cell.display_color = obj_color;
+                    }
                 }
             }
         }

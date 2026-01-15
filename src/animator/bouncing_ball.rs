@@ -10,8 +10,6 @@ use crate::animator::animation_type::AnimationType;
 use nannou::prelude::*;
 use nannou_egui::egui;
 
-
-
 fn default_rect() -> Rect {
     Rect::from_w_h(800.0, 600.0)
 }

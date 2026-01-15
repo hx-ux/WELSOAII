@@ -62,8 +62,8 @@ impl AnimatorSettings for PulseBackgroundSettings {
         ui.add_space(5.0);
 
         if self.color.to_color_picker(ui) {
-             change_type = UpdateBehaviour::HotUpdate;
-         }
+            change_type = UpdateBehaviour::HotUpdate;
+        }
 
         ui.add_space(5.0);
         self.presets.ui(ui);
