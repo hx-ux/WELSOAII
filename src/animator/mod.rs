@@ -185,7 +185,7 @@ impl Animator {
             // Only check cells in the relevant range
             for row in min_row..=max_row {
                 for col in min_col..=max_col {
-                    let idx = (row * self.grid.cols + col) as usize;
+                    let idx = self.grid.get_cell_index(row, col);
                     if idx >= self.grid.cells.len() {
                         continue;
                     }

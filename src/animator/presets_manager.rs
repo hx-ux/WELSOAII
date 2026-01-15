@@ -1,5 +1,5 @@
 use crate::{
-    animator::{animation_type::AnimationType, AnimatorSettings},
+    animator::{AnimatorSettings, animation_type::AnimationType},
     utils::GlobalSettings,
 };
 use anyhow::Result;

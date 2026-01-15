@@ -5,7 +5,6 @@ use ddp_rs::protocol;
 // Testing a longer LED strip with offset
 
 fn main() -> Result<()> {
-
     let mut conn = connection::DDPConnection::try_new(
         "192.168.178.102:4048",
         protocol::PixelConfig::default(),

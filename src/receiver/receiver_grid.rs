@@ -5,6 +5,12 @@ use nannou::prelude::*;
 use nannou_egui::egui;
 use std::cell::RefCell;
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum LayoutMode {
+    FollowRow,    //  0 1 2 3 / 4 5 6 7
+    FollowColum, //  0 4 / 1 5 / 2 6 / 3 7
+}
+
 #[derive(Clone)]
 /// the single cell, which interacts with the animator
 pub struct GridCell {
@@ -55,10 +61,17 @@ pub struct ReceiverGrid {
     device: ReceiverDevice,
     show_debug_info: bool,
     led_buffer: RefCell<Vec<u8>>, // Pre-allocated buffer for LED data
+    layout_mode: LayoutMode,
 }
 
 impl ReceiverGrid {
-    pub fn new(main_rect: Rect, cols: u32, rows: u32, debug: bool) -> Self {
+    pub fn new(
+        main_rect: Rect,
+        cols: u32,
+        rows: u32,
+        debug: bool,
+        layout_mode: LayoutMode,
+    ) -> Self {
         let cell_count = (rows * cols) as usize;
 
         // Pre-allocate LED buffer (3 bytes per cell: RGB)
@@ -66,12 +79,13 @@ impl ReceiverGrid {
 
         let mut grid = ReceiverGrid {
             main_rect,
-            cells: ReceiverGrid::create_grid(&main_rect, rows, cols),
+            cells: ReceiverGrid::create_grid(&main_rect, rows, cols, layout_mode),
             cols,
             rows,
             device: ReceiverDevice::new("192.168.178.102", "Leds 1", cell_count),
             show_debug_info: debug,
             led_buffer,
+            layout_mode,
         };
 
         grid.update_cells();
@@ -117,7 +131,27 @@ impl ReceiverGrid {
         )
     }
 
-    fn create_grid(dimension: &Rect, rows: u32, cols: u32) -> Vec<GridCell> {
+    /// Returns the index in the cells vector for a given row and column
+    /// This accounts for the current layout mode
+    pub fn get_cell_index(&self, row: u32, col: u32) -> usize {
+        match self.layout_mode {
+            LayoutMode::FollowRow => {
+                // Row-major: index = row * cols + col
+                (row * self.cols + col) as usize
+            }
+            LayoutMode::FollowColum => {
+                // Column-major: index = col * rows + row
+                (col * self.rows + row) as usize
+            }
+        }
+    }
+
+    fn create_grid(
+        dimension: &Rect,
+        rows: u32,
+        cols: u32,
+        layout_mode: LayoutMode,
+    ) -> Vec<GridCell> {
         let mut grid: Vec<GridCell> = Vec::new();
         if cols == 0 || rows == 0 {
             return grid;
@@ -128,14 +162,30 @@ impl ReceiverGrid {
         let start_x = dimension.left() + cell_w / 2.0;
         let start_y = dimension.top() - cell_h / 2.0;
 
-        let mut _pos = 0;
-        for r in 0..rows {
-            for c in 0..cols {
-                let x = start_x + c as f32 * cell_w;
-                let y = start_y - r as f32 * cell_h;
-                let cell_rect = Rect::from_x_y_w_h(x, y, cell_w, cell_h);
-                grid.push(GridCell::new_from_rect(cell_rect, _pos));
-                _pos += 1;
+        match layout_mode {
+            LayoutMode::FollowRow => {
+                let mut _pos = 0;
+                for r in 0..rows {
+                    for c in 0..cols {
+                        let x = start_x + c as f32 * cell_w;
+                        let y = start_y - r as f32 * cell_h;
+                        let cell_rect = Rect::from_x_y_w_h(x, y, cell_w, cell_h);
+                        grid.push(GridCell::new_from_rect(cell_rect, _pos));
+                        _pos += 1;
+                    }
+                }
+            }
+            LayoutMode::FollowColum => {
+                let mut _pos = 0;
+                for c in 0..cols {
+                    for r in 0..rows {
+                        let x = start_x + c as f32 * cell_w;
+                        let y = start_y - r as f32 * cell_h;
+                        let cell_rect = Rect::from_x_y_w_h(x, y, cell_w, cell_h);
+                        grid.push(GridCell::new_from_rect(cell_rect, _pos));
+                        _pos += 1;
+                    }
+                }
             }
         }
 
@@ -169,7 +219,6 @@ impl ReceiverGrid {
                 .stroke_color(SNOW)
                 .stroke_weight(1.0)
                 .color(cell.get_display_color());
-
 
             let mut size = 12;
             if self.cells.len() >= 100 {
