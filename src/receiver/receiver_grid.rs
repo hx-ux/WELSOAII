@@ -1,14 +1,17 @@
 extern crate nannou;
+use crate::animator::AnimatedObject;
+use crate::animator::presets_manager::{PresetManager, PresetMode};
 use crate::receiver::ReceiverDevice;
 use crate::utils::ColorHelpers;
 use nannou::prelude::*;
 use nannou_egui::egui;
+use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum LayoutMode {
-    FollowRow,    //  0 1 2 3 / 4 5 6 7
-    FollowColum, //  0 4 / 1 5 / 2 6 / 3 7
+    FollowRow = 0,   //  0 1 2 3 / 4 5 6 7
+    FollowColum = 1, //  0 4 / 1 5 / 2 6 / 3 7
 }
 
 #[derive(Clone)]
@@ -52,16 +55,24 @@ impl GridCell {
     }
 }
 
-#[derive(Clone)]
+// #[derive(Serialize, Deserialize, Default)]
+#[derive(Clone, Serialize)]
 pub struct ReceiverGrid {
+    #[serde(skip)]
     main_rect: Rect,
+    #[serde(skip)]
     pub cells: Vec<GridCell>,
     pub cols: u32,
     pub rows: u32,
+    // #[serde(skip)]
     device: ReceiverDevice,
     show_debug_info: bool,
+    #[serde(skip)]
     led_buffer: RefCell<Vec<u8>>, // Pre-allocated buffer for LED data
+    #[serde(skip)]
     layout_mode: LayoutMode,
+    #[serde(skip)]
+    persitence: PresetManager<ReceiverGrid>,
 }
 
 impl ReceiverGrid {
@@ -79,13 +90,14 @@ impl ReceiverGrid {
 
         let mut grid = ReceiverGrid {
             main_rect,
-            cells: ReceiverGrid::create_grid(&main_rect, rows, cols, layout_mode),
+            cells: ReceiverGrid::create_grid(&main_rect, rows, cols, layout_mode.clone()),
             cols,
             rows,
-            device: ReceiverDevice::new("192.168.178.102", "Leds 1", cell_count),
+            device: ReceiverDevice::default(),
             show_debug_info: debug,
             led_buffer,
             layout_mode,
+            persistence: PresetManager::new_grid(PresetMode::Grid, "Leds 1".to_string()),
         };
 
         grid.update_cells();
@@ -131,7 +143,6 @@ impl ReceiverGrid {
         )
     }
 
-    /// Returns the index in the cells vector for a given row and column
     /// This accounts for the current layout mode
     pub fn get_cell_index(&self, row: u32, col: u32) -> usize {
         match self.layout_mode {
@@ -273,6 +284,13 @@ impl ReceiverGrid {
 
         if ui.button("Connect").clicked() {
             let _ = &self.device.open_connection();
+            changed = true;
+        }
+
+        if ui.button("Save Settings").clicked() {
+            let _ = self
+                .persistence
+                .save_to_file(self, Some(self.device.name.clone()));
             changed = true;
         }
 

@@ -46,9 +46,10 @@ pub struct AnimationParam<T> {
     pub value: T,
     #[serde(skip_serializing)]
     pub default: T,
-    #[serde(skip_serializing)]
+    // #[serde(skip_serializing)]
     pub range: RangeHolder<T>,
-    pub desc: String,
+    #[serde(skip_serializing)]
+    pub display_text: String,
 }
 
 impl<T> AnimationParam<T> {
@@ -62,7 +63,7 @@ impl<T> AnimationParam<T> {
             value: default.clone(),
             default,
             range: RangeHolder::new(lower, upper),
-            desc: desc.to_string(),
+            display_text: desc.to_string(),
         }
     }
 
@@ -82,12 +83,8 @@ impl<T> AnimationParam<T> {
             value: default.clone(),
             default,
             range: RangeHolder::default(),
-            desc: desc.to_string(),
+            display_text: desc.to_string(),
         }
-    }
-
-    fn display_name(&self) -> String {
-        str::replace(&self.desc, "_", " ")
     }
 
     pub fn to_slider(&mut self, ui: &mut egui::Ui) -> bool
@@ -95,7 +92,7 @@ impl<T> AnimationParam<T> {
         T: egui::emath::Numeric + Clone,
     {
         ui.add_space(Self::SPACE);
-        ui.label(self.display_name());
+        ui.label(&self.display_text);
 
         let mut changed = false;
         ui.horizontal(|ui| {

@@ -3,6 +3,7 @@ use crate::animator::animation_type::AnimationType;
 use crate::animator::animation_type::ModeHelper;
 use crate::animator::animator_structs::AnimationParam;
 use crate::animator::presets_manager::PresetManager;
+use anyhow::Ok;
 use nannou::prelude::*;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
@@ -20,7 +21,7 @@ pub struct GravityFountainSettings {
     angle_max: AnimationParam<f32>, // In degrees
 
     #[serde(skip)]
-    presets: PresetManager,
+    presets: PresetManager<GravityFountainSettings>,
 }
 
 impl AnimatorSettings for GravityFountainSettings {
@@ -33,9 +34,9 @@ impl AnimatorSettings for GravityFountainSettings {
             speed: AnimationParam::new(-150.0, -500.0, 500.0, "speed"),
             radius: AnimationParam::new(5.0, 1.0, 20.0, "radius"),
             color: AnimationParam::new_without_range(Rgba::new(1.0, 0.0, 0.0, 1.0), "color"),
-            angle_min: AnimationParam::new(-60.0, -180.0, 180.0, "Min Angle"),
-            angle_max: AnimationParam::new(60.0, -180.0, 180.0, "Max Angle"),
-            presets: PresetManager::new(AnimationType::GravityFountain),
+            angle_min: AnimationParam::new(-60.0, -180.0, 180.0, "min_angle"),
+            angle_max: AnimationParam::new(60.0, -180.0, 180.0, "max_angle"),
+            presets: PresetManager::new_animator(AnimationType::GravityFountain),
         }
     }
 
@@ -43,9 +44,7 @@ impl AnimatorSettings for GravityFountainSettings {
         let mut change_type = UpdateBehaviour::None;
 
         ui.heading(self.animation_type().as_str());
-        ui.add_space(5.0);
 
-        ui.label("Ball Count");
         if self.ball_count.to_slider(ui) {
             change_type = UpdateBehaviour::NeedsReset;
         }
@@ -62,26 +61,16 @@ impl AnimatorSettings for GravityFountainSettings {
         {
             change_type = UpdateBehaviour::NeedsReset;
         }
-        ui.add_space(5.0);
 
-        ui.label("Speed");
         if self.speed.to_slider(ui) {
             change_type = UpdateBehaviour::HotUpdate;
         }
-        ui.add_space(5.0);
-
-        ui.label("Spread");
         if self.spread.to_slider(ui) {
             change_type = UpdateBehaviour::HotUpdate;
         }
-        ui.add_space(5.0);
-
-        ui.label("Radius:");
         if self.radius.to_slider(ui) {
             change_type = UpdateBehaviour::HotUpdate;
         }
-
-        ui.add_space(5.0);
         if self.color.to_color_picker(ui) {
             change_type = UpdateBehaviour::HotUpdate;
         }
@@ -106,6 +95,11 @@ impl AnimatorSettings for GravityFountainSettings {
             .inner
         {
             change_type = UpdateBehaviour::HotUpdate;
+        }
+
+        let (preset_changed, preset_behaviour) = self.presets.ui(ui);
+        if preset_changed {
+            change_type = preset_behaviour;
         }
 
         change_type
@@ -174,6 +168,15 @@ impl AnimatorSettings for GravityFountainSettings {
                 particle.spread = self.spread.value;
             }
         }
+    }
+
+    fn save_preset(&mut self) -> anyhow::Result<()> {
+        self.presets.save_to_file(*&self, None)?;
+        Ok(())
+    }
+
+    fn reset(&mut self) {
+        todo!()
     }
 }
 

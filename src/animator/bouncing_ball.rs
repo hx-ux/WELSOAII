@@ -1,9 +1,9 @@
 use crate::animator::animator_structs::AnimationParam;
 use crate::animator::presets_manager::PresetManager;
-// use crate::animator::presets_manager::PresetManager;
 use crate::animator::{animation_type::ModeHelper, animator_structs::RangeHolder};
 use crate::utils::ColorHelpers;
-use serde::Serialize;
+use anyhow::Ok;
+use serde::{Deserialize, Serialize};
 
 use super::{AnimatedObject, AnimatorSettings, ObjectShape, UpdateBehaviour};
 use crate::animator::animation_type::AnimationType;
@@ -14,7 +14,7 @@ fn default_rect() -> Rect {
     Rect::from_w_h(800.0, 600.0)
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct BouncingBallSettings {
     ball_count: AnimationParam<u32>,
     speed: AnimationParam<f32>,
@@ -26,27 +26,20 @@ pub struct BouncingBallSettings {
     dimension: Rect,
     color: AnimationParam<Rgba>,
     #[serde(skip)]
-    presets: PresetManager,
+    presets: PresetManager<BouncingBallSettings>,
 }
 
 impl AnimatorSettings for BouncingBallSettings {
     fn new(win_rect: &Rect) -> Self {
         Self {
-            ball_count: AnimationParam::new(20, 1, 400, "Ball_Count"),
-            speed: AnimationParam::new(1.0, 1.0, 5.0, "Speed"),
+            ball_count: AnimationParam::new(20, 1, 400, "ball_Count"),
+            speed: AnimationParam::new(1.0, 1.0, 5.0, "speed"),
             dimension: *win_rect,
-            radius: AnimationParam::new(10.0, 6.0, 30.0, "Radius"),
-
-            ball_vel_range_x: RangeHolder {
-                lower: -100.0,
-                upper: 100.0,
-            },
-            ball_vel_range_y: RangeHolder {
-                lower: -100.0,
-                upper: 100.0,
-            },
-            color: AnimationParam::new_without_range(Rgba::red(), "Color"),
-            presets: PresetManager::new(AnimationType::BouncingBalls),
+            radius: AnimationParam::new(10.0, 6.0, 30.0, "radius"),
+            ball_vel_range_x: RangeHolder::new(-100.0, 100.0),
+            ball_vel_range_y: RangeHolder::new(-100.0, 100.0),
+            color: AnimationParam::new_without_range(Rgba::red(), "color"),
+            presets: PresetManager::new_animator(AnimationType::BouncingBalls),
         }
     }
 
@@ -54,27 +47,16 @@ impl AnimatorSettings for BouncingBallSettings {
         let mut change_type = UpdateBehaviour::None;
 
         ui.heading(self.animation_type().as_str());
-        ui.add_space(5.0);
 
-        ui.label("Ball Count");
         if self.ball_count.to_slider(ui) {
             change_type = UpdateBehaviour::NeedsReset;
         }
-
-        ui.add_space(5.0);
-        ui.label("Speed");
         if self.speed.to_slider(ui) {
             change_type = UpdateBehaviour::HotUpdate;
         }
-
-        ui.add_space(5.0);
-        ui.label("Radius");
         if self.radius.to_slider(ui) {
             change_type = UpdateBehaviour::HotUpdate;
         }
-
-        ui.add_space(5.0);
-        ui.label("Velocity Range (X-axis)");
 
         if ui
             .horizontal(|ui| {
@@ -128,8 +110,6 @@ impl AnimatorSettings for BouncingBallSettings {
             change_type = UpdateBehaviour::HotUpdate;
         }
 
-        ui.add_space(5.0);
-        ui.label("Ball Color");
         if self.color.to_color_picker(ui) {
             change_type = UpdateBehaviour::HotUpdate;
         }
@@ -137,8 +117,11 @@ impl AnimatorSettings for BouncingBallSettings {
         // Preset Management UI
         ui.separator();
         ui.add_space(5.0);
-        self.presets.ui(ui);
 
+        let z = self.presets.ui(ui);
+        if z.0 {
+            change_type = z.1;
+        }
         change_type
     }
 
@@ -203,8 +186,22 @@ impl AnimatorSettings for BouncingBallSettings {
                 );
             }
         }
+        print!("update");
+    }
+
+    fn save_preset(&mut self) -> anyhow::Result<()> {
+        self.presets.save_to_file(*&self, None)?;
+        Ok(())
+    }
+
+    fn reset(&mut self) {
+        self.ball_count.reset();
+        self.speed.reset();
+        self.radius.reset();
     }
 }
+
+impl BouncingBallSettings {}
 
 pub struct BouncingBall {
     pub speed: f32,

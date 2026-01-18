@@ -1,167 +1,233 @@
 use crate::{
-    animator::{AnimatorSettings, animation_type::AnimationType},
-    utils::GlobalSettings,
+    animator::{AnimatorSettings, UpdateBehaviour, animation_type::AnimationType},
+    receiver::ReceiverGrid,
+    utils::{GlobalSettings, PathManager},
 };
-use anyhow::Result;
+use anyhow::Error;
 use chrono::prelude::*;
-use nannou_egui::egui::{self};
-use std::{fs, path::PathBuf};
-#[derive(Default)]
-pub struct Preset {
-    pub name: String,
-    pub path: PathBuf,
+use nannou_egui::egui::{self, Grid};
+use serde::{Serialize, de::DeserializeOwned};
+use std::{default, fs, marker::PhantomData, path::PathBuf, vec};
+
+#[derive(Clone)]
+pub enum PresetMode {
+    Grid,
+    Settings,
+    Animator,
 }
 
-impl Preset {
+#[derive(Clone)]
+pub struct Preset<T> {
+    pub name: String,
+    pub path: PathBuf,
+    _phantom: PhantomData<T>,
+}
+
+impl<T> Preset<T> {
     pub fn new(name: String, path: PathBuf) -> Self {
-        Self { name, path }
+        Self {
+            name,
+            path,
+            _phantom: PhantomData,
+        }
     }
 }
 
-#[derive(Default)]
-pub struct PresetManager {
-    pub animation_type: AnimationType,
-    pub available_preset_paths: Vec<Preset>,
+#[derive(Clone)]
+pub struct PresetManager<T> {
+    pub animation_type: Option<AnimationType>,
+    pub presets: Vec<Preset<T>>,
     selected_preset_idx: usize,
+    pub set_filename: Option<String>,
+    presetMode: PresetMode,
+    desc: String,
 }
-impl PresetManager {
-    pub fn new(animationType: AnimationType) -> Self {
-        let available_preset_paths = Self::list_preset_files(&animationType).unwrap_or_default();
-
+impl<T> PresetManager<T> {
+    pub fn new_animator(animation_type: AnimationType) -> Self {
         Self {
-            animation_type: animationType,
-            available_preset_paths,
+            animation_type: Some(animation_type),
+            presets: Vec::new(),
+            // presets: Self::load_all_presets(&animation_type.clone()).unwrap_or_default(),
             selected_preset_idx: 0,
+            set_filename: None,
+            presetMode: PresetMode::Animator,
+            desc: String::default(),
         }
     }
 
-    pub fn ui(&mut self, ui: &mut egui::Ui) -> bool {
-        let changed = false;
+    pub fn new_grid(preset_mode: PresetMode, desc: String) -> Self {
+        Self {
+            animation_type: None,
+            presets: Vec::new(),
+            selected_preset_idx: 0,
+            set_filename: None,
+            presetMode: preset_mode,
+            desc,
+        }
+    }
+
+    pub fn ui(&mut self, ui: &mut egui::Ui) -> (bool, UpdateBehaviour) {
+        let mut update_behaviour = (false, UpdateBehaviour::None);
         ui.collapsing("Preset Management", |ui| {
-            if self.available_preset_paths.is_empty() {}
+            if ui.button("Save As New Preset").clicked() {
+                update_behaviour = (true, UpdateBehaviour::SavePrest);
+            }
 
-            // Refresh button
-            // Disabled for now
-            // ui.horizontal(|ui| {
-            //     if ui.button("Refresh List").clicked() {}
-            //     ui.label(format!(
-            //         "{} presets available",
-            //         self.available_presets.len()
-            //     ));
-            // });
-
-            if ui.button("Save As New Preset").clicked() {}
             ui.add_space(10.0);
             ui.separator();
 
-            if !self.available_preset_paths.is_empty() {
+            if !self.presets.is_empty() {
                 ui.label("Manage Presets:");
 
-                // egui::ComboBox::from_label("Select Preset")
-                //     .selected_text(
-                //         self.available_preset_paths.name
-                //             .get(self.selected_preset_idx)
-                //             .unwrap_or(&"None".to_string()),
-                //     )
-                //     .show_ui(ui, |ui| {
-                //         for (idx, preset) in self.available_preset_paths.iter().enumerate() {
-                //             ui.selectable_value(&mut self.selected_preset_idx, idx, preset);
-                //         }
-                //     });
+                egui::ComboBox::from_label("Select Preset")
+                    .selected_text(
+                        self.presets
+                            .get(self.selected_preset_idx)
+                            .map(|p| &p.name)
+                            .unwrap_or(&"None".to_string()),
+                    )
+                    .show_ui(ui, |ui| {
+                        for (idx, preset) in self.presets.iter().enumerate() {
+                            ui.selectable_value(&mut self.selected_preset_idx, idx, &preset.name);
+                        }
+                    });
+            } else {
+                ui.label("No presets:");
             }
-            // egui::ComboBox::from_label("Select Preset")
-            //     .selected_text(
-            //         self.available_preset_paths
-            //             .get(self.selected_preset_idx)
-            //             .unwrap_or(&"None".to_string()),
-            //     )
-            //     .show_ui(ui, |ui| {
-            //         for (idx, preset) in self.available_preset_paths.iter().enumerate() {
-            //             ui.selectable_value(&mut self.selected_preset_idx, idx, preset);
-            //         }
-            //     });
 
-            ui.horizontal(|ui| {
-                if ui.button("Apply ").clicked() {
-                    if let Some(filename) =
-                        self.available_preset_paths.get(self.selected_preset_idx)
-                    {
-                        // let path =
-                        //     crate::utils::GlobalSettings::get_preset_folder(&self.animationType)
-                        //         .join(filename);
-                        // if let Ok(content) = std::fs::read_to_string(&path) {
-
-                        //      if let Ok(mut loaded) = serde_json::from_str::<Self>(&content) {
-                        //          // Preserve UI state and recalculate dimensions
-                        //          loaded.available_presets = self.available_presets.clone();
-                        //          loaded.selected_preset_idx = self.selected_preset_idx;
-                        //          loaded.dimension = self.dimension;
-                        //          *self = loaded;
-                        //   changed = true;
-                    }
-                }
-                // }
-            });
-
-            // DISABLED FOR NOW
-
-            //  if ui.button("Delete Selected").clicked() {
-            //      if let Some(filename) = self.available_presets.get(self.selected_preset_idx)
-            //      {
-            //          let _ =
-            //              crate::animator::delete_preset(&self.animationType, filename);
-            //          if let Ok(presets) =
-            //              crate::animator::list_preset_files(&self.animationType)
-            //          {
-            //              self.available_presets = presets;
-            //              self.selected_preset_idx = 0;
-            //          }
-            //      }
-            //  }
+            ui.horizontal(|ui| if ui.button("Apply ").clicked() {});
         });
 
-        true
+        update_behaviour
     }
 
-    fn generate_filename_timestamp() -> String {
-        let now: DateTime<Local> = Local::now();
-        format!("preset_{}.json", now.format("%Y%m%d_%H%M%S"))
+    fn generate_filename(&self, custom_file_name: Option<String>) -> String {
+        if let Some(name) = custom_file_name {
+            return format!("{}.json", name);
+        }
+        match self.presetMode {
+            PresetMode::Grid => format!("grid_{}.json", self.desc),
+            PresetMode::Settings => "settings.json".to_string(),
+            PresetMode::Animator => {
+                let now: DateTime<Local> = Local::now();
+                format!("preset_{}.json", now.format("%Y%m%d_%H%M%S"))
+            }
+        }
     }
 
     pub fn save_to_file(
-        filename: &str,
-        animation_type: &AnimationType,
-        content: String,
-    ) -> Result<bool> {
-        // let json = serde_json::to_string_pretty(self)?;
+        &self,
+        data: &T,
+        custom_file_name: Option<String>,
+    ) -> Result<bool, anyhow::Error>
+    where
+        T: Serialize,
+    {
+        match self.presetMode {
+            PresetMode::Grid => {
+                let path = PathManager::get_devices_folder()
+                    .join(format!("{}", self.generate_filename(custom_file_name)));
 
-        let path = GlobalSettings::get_preset_folder(&animation_type).join(filename);
-
-        std::fs::write(path, content)?;
-        Ok(true)
-    }
-
-    fn list_preset_files(animation_type: &AnimationType) -> Result<Vec<Preset>> {
-        let path = GlobalSettings::get_preset_folder(&animation_type);
-        let mut entries: Vec<Preset> = Vec::new();
-        if path.exists() {
-            for entry in fs::read_dir(path)? {
-                let entry = entry?;
-                if entry.path().extension().and_then(|s| s.to_str()) == Some("json") {
-                    if let Some(name) = entry.file_name().to_str() {
-                        entries.push(Preset::new(name.to_string(), entry.path()));
-                    }
-                }
+                nannou::io::save_to_json(path, data)?;
             }
+            PresetMode::Settings => return Err(anyhow::anyhow!("Missing attribute:")),
+            PresetMode::Animator => match self.animation_type {
+                Some(atype) => {
+                    let path = PathManager::get_preset_folder(&atype)
+                        .join(format!("{}", self.generate_filename(custom_file_name)));
+                    nannou::io::save_to_json(path, data)?;
+                }
+                None => return Err(anyhow::anyhow!("Missing attribute:")),
+            },
         }
 
-        entries.reverse(); // Most recent first
-        Ok(entries)
+        print!("saved");
+        Ok(true)
     }
 
-    fn delete_preset(animation_type: &AnimationType, filename: &str) -> Result<bool> {
-        let path = GlobalSettings::get_preset_folder(animation_type).join(filename);
-        fs::remove_file(path).unwrap_or_default();
-        Ok(true)
+    pub fn get_preset_path(&self) -> Option<PathBuf> {
+        let z = self.set_presets();
+        match z {
+            Ok(j) => Some(j),
+            Err(_) => None,
+        }
+    }
+
+    pub fn set_presets(&self) -> Result<PathBuf, anyhow::Error> {
+        if self.presets.is_empty() {
+            return Err(anyhow::anyhow!("No presets available"));
+        }
+
+        if let Some(preset) = self.presets.get(self.selected_preset_idx) {
+            Ok(preset.path.clone())
+        } else {
+            Err(anyhow::anyhow!("Selected preset index is out of bounds"))
+        }
+    }
+
+    fn update_presets(&mut self) {
+        match self.load_all_presets() {
+            Ok(p) => self.presets = p,
+            Err(_) => {}
+        }
+    }
+
+    fn load_all_presets(&self) -> Result<Vec<Preset<T>>, anyhow::Error> {
+        match self.presetMode {
+            PresetMode::Animator => match self.animation_type {
+                Some(atype) => {
+                    let path = PathManager::get_preset_folder(&atype);
+                    let mut entries: Vec<Preset<T>> = Vec::new();
+
+                    if path.exists() {
+                        for entry in fs::read_dir(path)? {
+                            let entry = entry?;
+                            if entry.path().extension().and_then(|s| s.to_str()) == Some("json") {
+                                if let Some(name) = entry.file_name().to_str() {
+                                    entries.push(Preset::new(name.to_string(), entry.path()));
+                                }
+                            }
+                        }
+                    }
+                    entries.reverse(); // Most recent first
+                    Ok(entries)
+                }
+                None => {
+                    return Err(anyhow::anyhow!("Cant find type"));
+                }
+            },
+            PresetMode::Settings | PresetMode::Grid => {
+                return Err(anyhow::anyhow!("Nothing"));
+            }
+        }
+    }
+    pub fn ui_simple(&mut self, ui: &mut egui::Ui) -> bool {
+        if ui.button("Save").clicked() {
+            return true;
+        }
+        false
+    }
+}
+
+impl<T> Default for Preset<T> {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            path: PathBuf::new(),
+            _phantom: PhantomData,
+        }
+    }
+}
+
+impl<T> Default for PresetManager<T> {
+    fn default() -> Self {
+        Self {
+            animation_type: Some(AnimationType::default()),
+            presets: Vec::new(),
+            selected_preset_idx: 0,
+            set_filename: None,
+            presetMode: PresetMode::Animator,
+            desc: String::default(),
+        }
     }
 }
