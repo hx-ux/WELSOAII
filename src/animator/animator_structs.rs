@@ -87,6 +87,10 @@ impl<T> AnimationParam<T> {
         }
     }
 
+    fn display_name(&self) -> String {
+        str::replace(&self.desc, "_", " ")
+    }
+
     pub fn to_slider(&mut self, ui: &mut egui::Ui) -> bool
     where
         T: egui::emath::Numeric + Clone,
