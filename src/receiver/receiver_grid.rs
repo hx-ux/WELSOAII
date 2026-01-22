@@ -8,6 +8,8 @@ use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 
+use crate::ui::controls::styled_text_edit;
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum LayoutMode {
     FollowRow = 0,   //  0 1 2 3 / 4 5 6 7
@@ -72,7 +74,7 @@ pub struct ReceiverGrid {
     #[serde(skip)]
     layout_mode: LayoutMode,
     #[serde(skip)]
-    persitence: PresetManager<ReceiverGrid>,
+    persistence: PresetManager<ReceiverGrid>,
 }
 
 impl ReceiverGrid {
@@ -266,11 +268,23 @@ impl ReceiverGrid {
     pub fn ui(&mut self, ui: &mut egui::Ui) -> bool {
         let mut changed = false;
 
-        ui.heading(&self.device.name);
+        let mut name = self.device.name.clone();
+        if ui.add(styled_text_edit(&mut name, "Device Name")).changed() {
+            self.device.name = name;
+            changed = true;
+        }
+
         ui.add_space(5.0);
-        ui.label(format!("IP: {}", &self.device.ip));
-        ui.add_space(5.0);
-        ui.label(format!("Max Len: {}", &self.device.max_len));
+
+        let mut ip = self.device.ip.clone();
+        if ui.add(styled_text_edit(&mut ip, "IP Address")).changed() {
+            // todo validate IP
+            self.device.ip = ip;
+            changed = true;
+        }
+        // ui.add_space(5.0);
+        // ui.label(format!("Max Len: {}", &self.device.max_len));
+        
         ui.add_space(5.0);
 
         let status = if self.device.establish_conn {

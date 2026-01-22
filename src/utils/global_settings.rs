@@ -5,6 +5,7 @@ use std::fs::{self};
 use std::path::PathBuf;
 
 use crate::animator::animation_type::{AnimationType, ModeHelper};
+use crate::animator::animator_structs::AnimationParam;
 use crate::utils::PathManager;
 
 #[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize)]
@@ -20,6 +21,7 @@ pub struct GlobalSettings {
     pub view_window_size: (u32, u32),
     pub app_mode: AppMode,
     pub show_grid: bool,
+    pub window_opacity: AnimationParam<u8>, 
 }
 
 impl GlobalSettings {
@@ -33,6 +35,7 @@ impl GlobalSettings {
             view_window_size: (1000, 1000),
             app_mode: AppMode::Edit,
             show_grid: false,
+            window_opacity: AnimationParam::new(200, 1, 255, "opacity"),
         }
     }
 
@@ -56,7 +59,7 @@ impl GlobalSettings {
         }
     }
 
-   // todo refactor
+    // todo refactor
     pub fn load(path: PathBuf) -> Result<Self> {
         let file = fs::File::open(path)?;
         let t = serde_json::from_reader(file)?;
@@ -80,6 +83,7 @@ impl GlobalSettings {
                 .changed();
         });
         ui.checkbox(&mut self.show_grid, "show grid");
+        self.window_opacity.to_slider(ui);
 
         if ui.button("Save Settings").clicked() {
             if let Err(e) = self.save() {
