@@ -131,9 +131,8 @@ fn view(_app: &App, _model: &Model, frame: Frame) {
     draw.background().color(BLACK);
 
     _model.animators.draw_animator(&draw);
-    if _model.global_settings.show_grid {
-        _model.animators.draw_grid(&draw);
-    }
+    _model.animators.draw_grid(&draw);
+   
     draw.to_frame(_app, &frame).unwrap();
 
     match _model.global_settings.app_mode {
