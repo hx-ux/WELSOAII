@@ -1,6 +1,7 @@
 extern crate nannou;
 use nannou::prelude::*;
 use nannou_egui::{self, Egui, egui};
+pub mod ui;
 
 // mod utils;
 mod animator;
@@ -55,7 +56,7 @@ fn model(app: &App) -> Model {
         20,
         20,
         true,
-        LayoutMode::FollowColum, 
+        LayoutMode::FollowColum,
     );
 
     let mut animator = Animator::new(&win_rect, receiver_grid);
@@ -70,6 +71,7 @@ fn model(app: &App) -> Model {
     }
 }
 
+
 fn update(_app: &App, _model: &mut Model, _update: Update) {
     let win_rect = _app.window_rect();
 
@@ -77,6 +79,8 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
     egui.set_elapsed_time(_update.since_start);
 
     let ctx = egui.begin_frame();
+
+    crate::ui::style::apply_custom_style(&ctx,_model.global_settings.window_opacity.value);
 
     egui::Window::new("Global Settings").show(&ctx, |ui| {
         _model.global_settings.ui(ui);
@@ -86,17 +90,11 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
         _model.animators.grid.ui(ui);
     });
 
-    egui::Window::new("Device").show(&ctx, |ui| {
-        _model.animators.grid.ui(ui);
-    });
-
     egui::Window::new("Animator Controls").show(&ctx, |ui| match _model.animators.ui(ui) {
-        UpdateBehaviour::NeedsReset => {
-            _model.animators.reset(&win_rect);
-        }
-        UpdateBehaviour::HotUpdate => {
-            _model.animators.set_behaviour();
-        }
+        UpdateBehaviour::NeedsReset => _model.animators.reset(&win_rect),
+        UpdateBehaviour::HotUpdate => _model.animators.hot_update(),
+        UpdateBehaviour::LoadPreset => {}
+        UpdateBehaviour::SavePrest => _model.animators.save_preset(),
         UpdateBehaviour::None => {}
     });
 
@@ -130,10 +128,11 @@ fn event(_app: &App, _model: &mut Model, event: WindowEvent) {
 
 fn view(_app: &App, _model: &Model, frame: Frame) {
     let draw = _app.draw();
-
     draw.background().color(BLACK);
-    _model.animators.draw_grid(&draw);
+
     _model.animators.draw_animator(&draw);
+    _model.animators.draw_grid(&draw);
+   
     draw.to_frame(_app, &frame).unwrap();
 
     match _model.global_settings.app_mode {

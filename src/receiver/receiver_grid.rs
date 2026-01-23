@@ -1,14 +1,19 @@
 extern crate nannou;
+use crate::animator::AnimatedObject;
+use crate::animator::presets_manager::{PresetManager, PresetMode};
 use crate::receiver::ReceiverDevice;
 use crate::utils::ColorHelpers;
 use nannou::prelude::*;
 use nannou_egui::egui;
+use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+use crate::ui::controls::styled_text_edit;
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum LayoutMode {
-    FollowRow,    //  0 1 2 3 / 4 5 6 7
-    FollowColum, //  0 4 / 1 5 / 2 6 / 3 7
+    FollowRow = 0,   //  0 1 2 3 / 4 5 6 7
+    FollowColum = 1, //  0 4 / 1 5 / 2 6 / 3 7
 }
 
 #[derive(Clone)]
@@ -52,16 +57,25 @@ impl GridCell {
     }
 }
 
-#[derive(Clone)]
+// #[derive(Serialize, Deserialize, Default)]
+#[derive(Clone, Serialize)]
 pub struct ReceiverGrid {
+    #[serde(skip)]
     main_rect: Rect,
+    #[serde(skip)]
     pub cells: Vec<GridCell>,
     pub cols: u32,
     pub rows: u32,
+    // #[serde(skip)]
     device: ReceiverDevice,
     show_debug_info: bool,
+    show_grid: bool,
+    #[serde(skip)]
     led_buffer: RefCell<Vec<u8>>, // Pre-allocated buffer for LED data
+    #[serde(skip)]
     layout_mode: LayoutMode,
+    #[serde(skip)]
+    persistence: PresetManager<ReceiverGrid>,
 }
 
 impl ReceiverGrid {
@@ -79,13 +93,15 @@ impl ReceiverGrid {
 
         let mut grid = ReceiverGrid {
             main_rect,
-            cells: ReceiverGrid::create_grid(&main_rect, rows, cols, layout_mode),
+            cells: ReceiverGrid::create_grid(&main_rect, rows, cols, layout_mode.clone()),
             cols,
             rows,
-            device: ReceiverDevice::new("192.168.178.102", "Leds 1", cell_count),
+            device: ReceiverDevice::default(),
             show_debug_info: debug,
             led_buffer,
             layout_mode,
+            persistence: PresetManager::new_grid(PresetMode::Grid, "Leds 1".to_string()),
+            show_grid: false,
         };
 
         grid.update_cells();
@@ -131,7 +147,6 @@ impl ReceiverGrid {
         )
     }
 
-    /// Returns the index in the cells vector for a given row and column
     /// This accounts for the current layout mode
     pub fn get_cell_index(&self, row: u32, col: u32) -> usize {
         match self.layout_mode {
@@ -212,24 +227,28 @@ impl ReceiverGrid {
             led_buffer[base_idx + 1] = (cell_send_col.green * 255.0) as u8;
             led_buffer[base_idx + 2] = (cell_send_col.blue * 255.0) as u8;
 
-            // Draw filled cell
-            draw.rect()
-                .xy(cell.rect.xy())
-                .wh(cell.rect.wh())
-                .stroke_color(SNOW)
-                .stroke_weight(1.0)
-                .color(cell.get_display_color());
-
-            let mut size = 12;
-            if self.cells.len() >= 100 {
-                size = 10;
-            }
-            // Draw the position number on each cell
-            if self.show_debug_info {
-                draw.text(&cell.pos_string)
+            if self.show_grid {
+                draw.rect()
                     .xy(cell.rect.xy())
-                    .color(WHITE)
-                    .font_size(size);
+                    .wh(cell.rect.wh())
+                    .stroke_color(SNOW)
+                    .stroke_weight(1.0)
+                    .color(cell.get_display_color());
+            }
+            // Draw filled cell
+
+            if self.show_grid  && self.show_debug_info {
+                let mut size = 12;
+                if self.cells.len() >= 100 {
+                    size = 10;
+                }
+                // Draw the position number on each cell
+                if self.show_debug_info {
+                    draw.text(&cell.pos_string)
+                        .xy(cell.rect.xy())
+                        .color(WHITE)
+                        .font_size(size);
+                }
             }
         }
 
@@ -255,11 +274,23 @@ impl ReceiverGrid {
     pub fn ui(&mut self, ui: &mut egui::Ui) -> bool {
         let mut changed = false;
 
-        ui.heading(&self.device.name);
+        let mut name = self.device.name.clone();
+        if ui.add(styled_text_edit(&mut name, "Device Name")).changed() {
+            self.device.name = name;
+            changed = true;
+        }
+
         ui.add_space(5.0);
-        ui.label(format!("IP: {}", &self.device.ip));
-        ui.add_space(5.0);
-        ui.label(format!("Max Len: {}", &self.device.max_len));
+
+        let mut ip = self.device.ip.clone();
+        if ui.add(styled_text_edit(&mut ip, "IP Address")).changed() {
+            // todo validate IP
+            self.device.ip = ip;
+            changed = true;
+        }
+        // ui.add_space(5.0);
+        // ui.label(format!("Max Len: {}", &self.device.max_len));
+
         ui.add_space(5.0);
 
         let status = if self.device.establish_conn {
@@ -273,6 +304,17 @@ impl ReceiverGrid {
 
         if ui.button("Connect").clicked() {
             let _ = &self.device.open_connection();
+            changed = true;
+        }
+
+        ui.checkbox(&mut self.show_debug_info, "Show debug info");
+        ui.checkbox(&mut self.show_grid, "Show grid");
+
+
+        if ui.button("Save Settings").clicked() {
+            let _ = self
+                .persistence
+                .save_to_file(self, Some(self.device.name.clone()));
             changed = true;
         }
 

@@ -1,10 +1,12 @@
 use anyhow::Result;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
-use std::fs;
+use std::fs::{self};
 use std::path::PathBuf;
 
 use crate::animator::animation_type::{AnimationType, ModeHelper};
+use crate::animator::animator_structs::AnimationParam;
+use crate::utils::PathManager;
 
 #[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize)]
 pub enum AppMode {
@@ -18,39 +20,26 @@ pub struct GlobalSettings {
     pub framerate: f64,
     pub view_window_size: (u32, u32),
     pub app_mode: AppMode,
+    pub window_opacity: AnimationParam<u8>, 
 }
 
 impl GlobalSettings {
     pub const APP_NAME: &str = "Welosa2";
-    const EFFECTS_FOLDER: &str = "Effects";
-
-    pub fn get_root_path() -> PathBuf {
-        let mut doc_dir = dirs::document_dir().unwrap();
-        doc_dir.push(Self::APP_NAME);
-        fs::create_dir_all(&doc_dir).unwrap();
-        doc_dir
-    }
-
-    pub fn get_preset_path() -> PathBuf {
-        let mut doc_dir = dirs::document_dir().unwrap();
-        doc_dir.push(Self::APP_NAME);
-        doc_dir.push(Self::EFFECTS_FOLDER);
-
-        fs::create_dir_all(&doc_dir).unwrap();
-        doc_dir
-    }
+    pub const EFFECTS_FOLDER: &str = "Effects";
+    pub const DEVICES_FOLDER: &str = "Devices";
 
     pub fn new() -> Self {
         Self {
             framerate: 60.0,
             view_window_size: (1000, 1000),
             app_mode: AppMode::Edit,
+            window_opacity: AnimationParam::new(200, 1, 255, "opacity"),
         }
     }
 
     pub fn create_settings_folder() -> Result<bool> {
         // todo use result
-        let z: PathBuf = Self::get_preset_path();
+        let z: PathBuf = PathManager::get_preset_path();
         fs::create_dir_all(&z).unwrap();
 
         for animation in AnimationType::iterator() {
@@ -61,26 +50,24 @@ impl GlobalSettings {
         Ok(true)
     }
 
-    pub fn get_preset_folder(animation_type: &AnimationType) -> PathBuf {
-        let path = Self::get_preset_path().join(animation_type.as_str());
-        path
-    }
-
-    pub fn settings_path() -> PathBuf {
-        let mut path = Self::get_root_path();
-        path.push("settings.json");
-        path
-    }
-
     pub fn load_or_default() -> Self {
-        match Self::create_settings_folder() {
-            Ok(_) => GlobalSettings::new(),
-            Err(_) => GlobalSettings::new(),
+        match Self::load(PathManager::settings_path()) {
+            Ok(c) => c,
+            Err(_) => Self::new(),
         }
     }
 
-    pub fn save(&self) -> Result<(), Box<dyn std::error::Error>> {
-        Ok(())
+    // todo refactor
+    pub fn load(path: PathBuf) -> Result<Self> {
+        let file = fs::File::open(path)?;
+        let t = serde_json::from_reader(file)?;
+        Ok(t)
+    }
+
+    // todo refactor
+    pub fn save(&self) -> Result<bool> {
+        nannou::io::save_to_json(PathManager::settings_path(), self)?;
+        Ok(true)
     }
     pub fn ui(&mut self, ui: &mut egui::Ui) -> bool {
         let mut changed = false;
@@ -93,9 +80,15 @@ impl GlobalSettings {
                 .radio_value(&mut self.app_mode, AppMode::Edit, "Edit")
                 .changed();
         });
+        
+        self.window_opacity.to_slider(ui);
 
-        if changed {
-            let _ = self.save();
+        if ui.button("Save Settings").clicked() {
+            if let Err(e) = self.save() {
+                eprintln!("Failed to save settings: {}", e);
+            } else {
+                println!("Settings saved successfully!");
+            }
         }
 
         changed

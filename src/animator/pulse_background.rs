@@ -15,17 +15,17 @@ pub struct PulseBackgroundSettings {
     pub limit: AnimationParam<f32>,
 
     #[serde(skip)]
-    pub presets: PresetManager,
+    pub presets: PresetManager<PulseBackgroundSettings>,
 }
 
 impl AnimatorSettings for PulseBackgroundSettings {
     fn new(win_rect: &Rect) -> Self {
         Self {
             mode: PulseModes::default(),
-            speed: AnimationParam::new(100.0, 1.0, 200.0, "Speed"),
-            color: AnimationParam::new_without_range(Rgba::red(), "Color"),
-            limit: AnimationParam::new(0.8, 0.1, 1.0, "Limit"),
-            presets: PresetManager::new(AnimationType::PulseBackground),
+            speed: AnimationParam::new(100.0, 1.0, 200.0, "speed"),
+            color: AnimationParam::new_without_range(Rgba::red(), "solor"),
+            limit: AnimationParam::new(0.8, 0.1, 1.0, "limit"),
+            presets: PresetManager::new_animator(AnimationType::PulseBackground),
         }
     }
 
@@ -33,8 +33,8 @@ impl AnimatorSettings for PulseBackgroundSettings {
         let mut change_type = UpdateBehaviour::None;
 
         ui.heading(self.animation_type().as_str());
-        ui.add_space(5.0);
 
+        ui.add_space(5.0);
         ui.label("Mode:");
 
         ui.horizontal(|ui| {
@@ -48,25 +48,21 @@ impl AnimatorSettings for PulseBackgroundSettings {
             }
         });
 
-        ui.label("Speed");
         if self.speed.to_slider(ui) {
             change_type = UpdateBehaviour::HotUpdate;
         }
-
-        ui.add_space(5.0);
-        ui.label("Limit");
         if self.limit.to_slider(ui) {
             change_type = UpdateBehaviour::HotUpdate;
         }
-
-        ui.add_space(5.0);
-
         if self.color.to_color_picker(ui) {
             change_type = UpdateBehaviour::HotUpdate;
         }
 
-        ui.add_space(5.0);
-        self.presets.ui(ui);
+        let (preset_changed, preset_behaviour) = self.presets.ui(ui);
+        if preset_changed {
+            change_type = preset_behaviour;
+        }
+
         change_type
     }
 
@@ -98,6 +94,15 @@ impl AnimatorSettings for PulseBackgroundSettings {
                 pulse_bg.limit = self.limit.value;
             }
         }
+    }
+
+    fn save_preset(&mut self) -> anyhow::Result<()> {
+        self.presets.save_to_file(*&self, None)?;
+        Ok(())
+    }
+
+    fn reset(&mut self) {
+        todo!()
     }
 }
 

@@ -33,6 +33,10 @@ pub enum UpdateBehaviour {
     // Hot updates, which affect the animator in the next frame(s)
     // Does not call Animator::new()
     HotUpdate,
+    //
+    LoadPreset,
+    //
+    SavePrest,
 }
 
 // An animated object, which every animator does emit
@@ -62,16 +66,14 @@ pub trait AnimatorSettings {
     fn animation_type(&self) -> AnimationType;
     fn create(&self) -> Vec<Box<dyn AnimatedObject>>;
     fn set_dimension(&mut self, window_rect: &Rect) {}
+    // Custom Logic for Hot reloading the animator without resetting
     fn update_behaviour(&self, objects: &mut Vec<Box<dyn AnimatedObject>>);
-
-    fn save(&self, filename: &str, animation_type: AnimationType) -> Result<bool>
-    where
-        Self: serde::Serialize,
-    {
-        let json = serde_json::to_string_pretty(self)?;
-        PresetManager::save_to_file(filename, &animation_type, json)?;
-        Ok(true)
+    // Rest all parameter values to its definded standards
+    fn reset(&mut self);
+    fn force_update(&self) -> UpdateBehaviour {
+        UpdateBehaviour::NeedsReset
     }
+    fn save_preset(&mut self) -> Result<()>;
 }
 
 pub struct Animator {
@@ -102,6 +104,16 @@ impl Animator {
             pulse_bg_settings: pulse_settings,
         }
     }
+
+    pub fn load_preset(&mut self) {
+        self.objects = match self.curr_an_type {
+            AnimationType::BouncingBalls => self.bouncing_ball_settings.create(),
+            AnimationType::GravityFountain => self.gravity_fountain_settings.create(),
+            AnimationType::ScanLine => self.scanline_settings.create(),
+            AnimationType::PulseBackground => self.pulse_bg_settings.create(),
+        };
+    }
+
     /// Clears and repopulates the animations objects based on current settings.
     pub fn reset(&mut self, win_rect: &Rect) {
         self.objects.clear();
@@ -121,7 +133,7 @@ impl Animator {
     }
 
     /// Apply hot updates to existing objects without recreating them
-    pub fn set_behaviour(&mut self) {
+    pub fn hot_update(&mut self) {
         match self.curr_an_type {
             AnimationType::BouncingBalls => {
                 self.bouncing_ball_settings
@@ -136,6 +148,24 @@ impl Animator {
             }
             AnimationType::PulseBackground => {
                 self.pulse_bg_settings.update_behaviour(&mut self.objects);
+            }
+        }
+    }
+
+    pub fn save_preset(&mut self) {
+        print!("save");
+        match self.curr_an_type {
+            AnimationType::BouncingBalls => {
+                let _ = self.bouncing_ball_settings.save_preset();
+            }
+            AnimationType::GravityFountain => {
+                let _ = self.gravity_fountain_settings.save_preset();
+            }
+            AnimationType::ScanLine => {
+                let _ = self.scanline_settings.save_preset();
+            }
+            AnimationType::PulseBackground => {
+                let _ = self.pulse_bg_settings.save_preset();
             }
         }
     }

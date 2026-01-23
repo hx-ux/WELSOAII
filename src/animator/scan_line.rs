@@ -19,19 +19,25 @@ pub struct ScanLineSettings {
     #[serde(skip)]
     begin_pos: f32,
     #[serde(skip)]
-    presets: PresetManager,
+    presets: PresetManager<ScanLineSettings>,
+}
+
+impl ScanLineSettings {
+    fn force_update(&self) -> UpdateBehaviour {
+        UpdateBehaviour::NeedsReset
+    }
 }
 
 impl AnimatorSettings for ScanLineSettings {
     fn new(win_rect: &Rect) -> Self {
         Self {
             mode: ScanLineModes::default(),
-            speed: AnimationParam::new(300.0, 0.0, 1000.0, "Speed"),
-            width: AnimationParam::new(20.0, 5.0, 20.0, "Width"),
-            color: AnimationParam::new_without_range(Rgba::new(1.0, 0.0, 0.0, 1.0), "Color"),
+            speed: AnimationParam::new(300.0, 0.0, 1000.0, "speed"),
+            width: AnimationParam::new(20.0, 5.0, 20.0, "width"),
+            color: AnimationParam::new_without_range(Rgba::new(1.0, 0.0, 0.0, 1.0), "color"),
             height: win_rect.h(),
             begin_pos: win_rect.left(),
-            presets: PresetManager::new(AnimationType::ScanLine),
+            presets: PresetManager::new_animator(AnimationType::ScanLine),
         }
     }
 
@@ -70,9 +76,11 @@ impl AnimatorSettings for ScanLineSettings {
             change_type = UpdateBehaviour::HotUpdate;
         }
 
-        ui.separator();
-        ui.add_space(5.0);
-        self.presets.ui(ui);
+        let (preset_changed, preset_behaviour) = self.presets.ui(ui);
+        if preset_changed {
+            change_type = preset_behaviour;
+        }
+
         change_type
     }
 
@@ -114,6 +122,13 @@ impl AnimatorSettings for ScanLineSettings {
             }
         }
     }
+
+    fn save_preset(&mut self) -> anyhow::Result<()> {
+        self.presets.save_to_file(*&self, None)?;
+        Ok(())
+    }
+
+    fn reset(&mut self) {}
 }
 
 pub struct ScanLine {
