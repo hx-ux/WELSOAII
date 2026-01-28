@@ -112,20 +112,3 @@ impl<T> AnimationParam<T> {
         changed
     }
 }
-
-impl AnimationParam<Rgba> {
-    pub fn to_color_picker(&mut self, ui: &mut egui::Ui) -> bool {
-        let (r, g, b, a): (f32, f32, f32, f32) = self.value.into();
-        let mut col = egui::Rgba::from_rgba_unmultiplied(r, g, b, a);
-        let changed = egui::color_picker::color_edit_button_rgba(
-            ui,
-            &mut col,
-            egui::color_picker::Alpha::BlendOrAdditive,
-        )
-        .changed();
-        if changed {
-            self.value = Rgba::new(col.r(), col.g(), col.b(), col.a());
-        }
-        changed
-    }
-}

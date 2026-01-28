@@ -1,9 +1,9 @@
 use super::{AnimatedObject, AnimatorSettings, ObjectShape, UpdateBehaviour};
-use crate::animator::{
+use crate::{animator::{
     animation_type::{AnimationType, ModeHelper, ScanLineModes},
     animator_structs::AnimationParam,
     presets_manager::PresetManager,
-};
+}, utils::ColorParam};
 use nannou::prelude::*;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
@@ -13,7 +13,7 @@ pub struct ScanLineSettings {
     mode: ScanLineModes,
     speed: AnimationParam<f32>,
     width: AnimationParam<f32>,
-    color: AnimationParam<Rgba>,
+    color: ColorParam,
     #[serde(skip)]
     height: f32,
     #[serde(skip)]
@@ -22,19 +22,13 @@ pub struct ScanLineSettings {
     presets: PresetManager<ScanLineSettings>,
 }
 
-impl ScanLineSettings {
-    fn force_update(&self) -> UpdateBehaviour {
-        UpdateBehaviour::NeedsReset
-    }
-}
-
 impl AnimatorSettings for ScanLineSettings {
     fn new(win_rect: &Rect) -> Self {
         Self {
             mode: ScanLineModes::default(),
             speed: AnimationParam::new(300.0, 0.0, 1000.0, "speed"),
             width: AnimationParam::new(20.0, 5.0, 20.0, "width"),
-            color: AnimationParam::new_without_range(Rgba::new(1.0, 0.0, 0.0, 1.0), "color"),
+            color: ColorParam::default(),
             height: win_rect.h(),
             begin_pos: win_rect.left(),
             presets: PresetManager::new_animator(AnimationType::ScanLine),
@@ -72,7 +66,7 @@ impl AnimatorSettings for ScanLineSettings {
             }
         });
 
-        if self.color.to_color_picker(ui) {
+        if self.color.ui(ui) {
             change_type = UpdateBehaviour::HotUpdate;
         }
 
@@ -94,10 +88,11 @@ impl AnimatorSettings for ScanLineSettings {
         animated_objects.push(Box::new(ScanLine::new(
             self.mode,
             self.speed.value,
-            self.color.value,
+            self.color.clone().value_mapped(0),
             self.width.value,
             self.height,
             self.begin_pos,
+            0
         )));
 
         animated_objects
@@ -111,7 +106,7 @@ impl AnimatorSettings for ScanLineSettings {
     fn update_behaviour(&self, objects: &mut Vec<Box<dyn AnimatedObject>>) {
         for obj in objects.iter_mut() {
             if let Some(scan_line) = obj.as_any_mut().downcast_mut::<ScanLine>() {
-                scan_line.color = self.color.value;
+                scan_line.color = self.color.clone().value_mapped(scan_line.index);
                 scan_line.width = self.width.value;
                 scan_line.mode = self.mode;
                 scan_line.height = self.height;
@@ -134,20 +129,22 @@ impl AnimatorSettings for ScanLineSettings {
 pub struct ScanLine {
     mode: ScanLineModes,
     speed: f32,
-    color: Rgba,
+    color: Rgba8,
     position: Vec2,
     height: f32,
     width: f32,
+    index:usize
 }
 
 impl ScanLine {
     pub fn new(
         mode: ScanLineModes,
         speed: f32,
-        color: Rgba,
+        color: Rgba8,
         width: f32,
         height: f32,
         begin_pos: f32,
+        index: usize
     ) -> Self {
         let half_width = width / 2.0;
         let position = vec2(begin_pos + half_width, 0.0);
@@ -159,6 +156,7 @@ impl ScanLine {
             position,
             height,
             width,
+            index
         }
     }
 }
@@ -208,7 +206,7 @@ impl AnimatedObject for ScanLine {
         ))
     }
 
-    fn color(&self) -> Rgba {
+    fn color(&self) -> Rgba8 {
         self.color
     }
 

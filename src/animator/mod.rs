@@ -18,7 +18,6 @@ pub mod scan_line;
 
 use bouncing_ball::BouncingBallSettings;
 use gravity_fountain::GravityFountainSettings;
-use presets_manager::PresetManager;
 use pulse_background::PulseBackgroundSettings;
 use scan_line::ScanLineSettings;
 
@@ -48,14 +47,12 @@ pub enum ObjectShape {
 pub trait AnimatedObject {
     fn update(&mut self, win_rect: &Rect, delta_time: f32);
     fn draw(&self, draw: &Draw);
-
     // partial obsolete
     fn is_dead(&self) -> bool {
         false
     }
     fn shape(&self) -> ObjectShape;
-    fn color(&self) -> Rgba;
-
+    fn color(&self) -> Rgba8;
     // For downcasting to concrete types
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any;
 }
@@ -282,7 +279,6 @@ impl Animator {
         });
 
         ui.add_space(5.0);
-
         ui.separator();
 
         // --- Show controls for each animator settings

@@ -67,6 +67,9 @@ impl<T> PresetManager<T> {
     }
 
     pub fn ui(&mut self, ui: &mut egui::Ui) -> (bool, UpdateBehaviour) {
+        ui.separator();
+        ui.add_space(5.0);
+        
         let mut update_behaviour = (false, UpdateBehaviour::None);
         ui.collapsing("Preset Management", |ui| {
             if ui.button("Save As New Preset").clicked() {
