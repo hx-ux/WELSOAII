@@ -12,12 +12,14 @@ use nannou_egui::egui;
 pub mod animation_type;
 pub mod animator_structs;
 pub mod bouncing_ball;
+pub mod timecode;
 pub mod gravity_fountain;
 pub mod presets_manager;
 pub mod pulse_background;
 pub mod scan_line;
 
 use bouncing_ball::BouncingBallSettings;
+use timecode::TimeCode;
 use gravity_fountain::GravityFountainSettings;
 use pulse_background::PulseBackgroundSettings;
 use scan_line::ScanLineSettings;
@@ -78,7 +80,7 @@ pub struct Animator {
     pub objects: Vec<Box<dyn AnimatedObject>>,
     pub grid: ReceiverGrid,
     pub curr_an_type: AnimationType,
-
+    pub clock: TimeCode,
     bouncing_ball_settings: BouncingBallSettings,
     gravity_fountain_settings: GravityFountainSettings,
     scanline_settings: ScanLineSettings,
@@ -95,6 +97,7 @@ impl Animator {
         Animator {
             objects: Vec::new(),
             curr_an_type: AnimationType::BouncingBalls,
+            clock: TimeCode::new(),
             grid,
             bouncing_ball_settings,
             gravity_fountain_settings: gravity_settings,
@@ -159,6 +162,9 @@ impl Animator {
     }
 
     pub fn update(&mut self, win_rect: &Rect, delta_time: f32) {
+        // Update the master clock
+        self.clock.update(delta_time);
+
         // Update all objects
         for obj in self.objects.iter_mut() {
             obj.update(win_rect, delta_time);
@@ -252,6 +258,11 @@ impl Animator {
 
     pub fn ui(&mut self, ui: &mut egui::Ui) -> UpdateBehaviour {
         let mut change_type = UpdateBehaviour::None;
+
+        // to refactor to own window
+        self.clock.ui(ui);
+        // self.signal.ui(ui);
+        ui.separator();
 
         ui.separator();
         // --- General Settings ---
