@@ -1,14 +1,17 @@
-use nannou::color::{Rgba, Rgba8};
-use std::slice::Iter;
+use std::iter;
 
+use nannou::color::Rgba8;
 use nannou::math::clamp;
-use nannou::rand::random_range;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
-
-#[derive(Serialize, Deserialize, Clone, Copy, PartialEq)]
+use strum::IntoEnumIterator;
+// use std::slice::Iter;
+use strum_macros::{Display, EnumIter};
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, EnumIter, Display)]
 pub enum ColorPalette {
+    #[strum(to_string = "Breeze")]
     Breeze,
+    #[strum(to_string = "Dolphin")]
     Dolphin,
 }
 
@@ -38,17 +41,6 @@ impl ColorPalette {
             ColorPalette::Dolphin => Self::dolphin_palette(),
         }
     }
-
-    fn iterator() -> Iter<'static, ColorPalette> {
-        static PALETTE: [ColorPalette; 2] = [ColorPalette::Breeze, ColorPalette::Dolphin];
-        PALETTE.iter()
-    }
-    fn as_str(&self) -> &'static str {
-        match self {
-            ColorPalette::Breeze => "Breeze",
-            ColorPalette::Dolphin => "Warm",
-        }
-    }
 }
 
 impl Default for ColorPalette {
@@ -61,27 +53,16 @@ impl Default for ColorPalette {
 pub enum ColorMode {
     Solid,
     Palette,
-    Random,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct ColorParam {
     pub single_color: Rgba8,
     pub mode: ColorMode,
-    #[serde(skip)]
-    pub random: Vec<Rgba8>,
     pub palette: ColorPalette,
 }
 
 impl ColorParam {
-    pub fn new(mode: ColorMode) -> Self {
-        Self {
-            single_color: Rgba8::new(255, 0, 0, 255),
-            mode,
-            random: Self::random(),
-            palette: ColorPalette::default(),
-        }
-    }
     pub fn ui(&mut self, ui: &mut egui::Ui) -> bool {
         let mut changed = false;
 
@@ -127,31 +108,24 @@ impl ColorParam {
                 self.mode = ColorMode::Solid;
             }
             ColorMode::Palette => {
-                ui.horizontal(|ui| {
-                    for options in ColorPalette::iterator() {
-                        if ui
-                            .radio_value(&mut self.palette, *options, options.as_str())
-                            .changed()
-                        {};
-                    }
-                });
+                let _ = egui::ComboBox::from_label("Palette")
+                    .selected_text(format!("{}", format!("{}",self.palette.clone())))
+                    .show_ui(ui, |ui| {
+                        for option in ColorPalette::iter() {
+                            if ui
+                                .selectable_value(&mut self.palette, option, format!(""))
+                                .clicked()
+                            {}
+                        }
+                    });
 
                 ui.label("Palette mode (not implemented)");
                 self.mode = ColorMode::Palette;
             }
-            ColorMode::Random => {}
         }
 
         changed
     }
-
-    // pub fn value(self) -> Vec<Rgba8> {
-    //     match self.mode {
-    //         ColorMode::Solid => ColorData::Single(self.single_color).as_vec(),
-    //         ColorMode::Palette => self.random.as_vec(),
-    //         ColorMode::Random => self.random.as_vec(),
-    //     }
-    // }
 
     pub fn value_mapped(self, index: usize) -> Rgba8 {
         if self.mode == ColorMode::Solid {
@@ -160,26 +134,11 @@ impl ColorParam {
 
         let other = match self.mode {
             ColorMode::Solid => todo!(),
-            ColorMode::Palette => self.random,
-            ColorMode::Random => self.palette.as_vec(),
+            ColorMode::Palette => self.palette.as_vec(),
         };
 
         let mapped_index = clamp(index % other.len(), 0, other.len());
         other[mapped_index]
-    }
-
-    fn random() -> Vec<Rgba8> {
-        let mut temp: Vec<Rgba8> = Vec::new();
-        for _ in 0..8 {
-            temp.push(Rgba::new(
-                random_range(0, 255),
-                random_range(0, 255),
-                random_range(0, 255),
-                random_range(0, 255),
-            ));
-        }
-        temp
-        // ColorData::Array(remp)
     }
 }
 
@@ -188,7 +147,6 @@ impl Default for ColorParam {
         Self {
             single_color: Rgba8::new(255, 0, 0, 255),
             mode: ColorMode::Solid,
-            random: Self::random(),
             palette: ColorPalette::default(),
         }
     }

@@ -1,8 +1,9 @@
 extern crate nannou;
 use anyhow::Result;
+use strum::IntoEnumIterator;
 
 use crate::{
-    animator::animation_type::{AnimationType, ModeHelper},
+    animator::animation_type::{AnimationType},
     receiver::ReceiverGrid,
 };
 use nannou::prelude::*;
@@ -100,15 +101,6 @@ impl Animator {
             scanline_settings,
             pulse_bg_settings: pulse_settings,
         }
-    }
-
-    pub fn load_preset(&mut self) {
-        self.objects = match self.curr_an_type {
-            AnimationType::BouncingBalls => self.bouncing_ball_settings.create(),
-            AnimationType::GravityFountain => self.gravity_fountain_settings.create(),
-            AnimationType::ScanLine => self.scanline_settings.create(),
-            AnimationType::PulseBackground => self.pulse_bg_settings.create(),
-        };
     }
 
     /// Clears and repopulates the animations objects based on current settings.
@@ -259,27 +251,23 @@ impl Animator {
         self.grid.draw(draw);
     }
 
-    /// Draws the main UI panel
     pub fn ui(&mut self, ui: &mut egui::Ui) -> UpdateBehaviour {
         let mut change_type = UpdateBehaviour::None;
-        ui.separator();
 
+        ui.separator();
         // --- General Settings ---
-        ui.label("Animation Type");
-        // Select the current animation Type
-        ui.horizontal(|ui| {
-            for options in AnimationType::iterator() {
-                if ui
-                    .radio_value(&mut self.curr_an_type, *options, options.as_str())
-                    .changed()
-                {
-                    change_type = UpdateBehaviour::NeedsReset;
-                };
-            }
-        });
-
-        ui.add_space(5.0);
-        ui.separator();
+        egui::ComboBox::from_label("")
+            .selected_text(format!("{:?}", self.curr_an_type))
+            .show_ui(ui, |ui| {
+                for option in AnimationType::iter() {
+                    if ui
+                        .selectable_value(&mut self.curr_an_type, option, format!("{}", option))
+                        .clicked()
+                    {
+                        change_type = UpdateBehaviour::NeedsReset;
+                    }
+                }
+            });
 
         // --- Show controls for each animator settings
         let settings_change = match self.curr_an_type {

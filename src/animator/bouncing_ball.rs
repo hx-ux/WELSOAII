@@ -1,6 +1,6 @@
 use crate::animator::animator_structs::AnimationParam;
 use crate::animator::presets_manager::PresetManager;
-use crate::animator::{animation_type::ModeHelper, animator_structs::RangeHolder};
+use crate::animator::{ animator_structs::RangeHolder};
 use crate::utils::ColorParam;
 use anyhow::Ok;
 use serde::{Deserialize, Serialize};
@@ -46,7 +46,7 @@ impl AnimatorSettings for BouncingBallSettings {
     fn ui(&mut self, ui: &mut egui::Ui) -> UpdateBehaviour {
         let mut change_type = UpdateBehaviour::None;
 
-        ui.heading(self.animation_type().as_str());
+        ui.heading(format!("{}",self.animation_type()));
 
         if self.ball_count.to_slider(ui) {
             change_type = UpdateBehaviour::NeedsReset;

@@ -1,12 +1,13 @@
 use super::{AnimatedObject, AnimatorSettings, ObjectShape, UpdateBehaviour};
 use crate::{animator::{
-    animation_type::{AnimationType, ModeHelper, ScanLineModes},
+    animation_type::{AnimationType,  ScanLineModes},
     animator_structs::AnimationParam,
     presets_manager::PresetManager,
 }, utils::ColorParam};
 use nannou::prelude::*;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
+use strum::IntoEnumIterator;
 
 #[derive(Serialize, Deserialize)]
 pub struct ScanLineSettings {
@@ -38,7 +39,7 @@ impl AnimatorSettings for ScanLineSettings {
     fn ui(&mut self, ui: &mut egui::Ui) -> UpdateBehaviour {
         let mut change_type = UpdateBehaviour::None;
 
-        ui.heading(self.animation_type().as_str());
+        ui.heading(format!("{}",self.animation_type()));
         ui.add_space(5.0);
 
         ui.label("Speed");
@@ -56,9 +57,9 @@ impl AnimatorSettings for ScanLineSettings {
         ui.label("Mode:");
 
         ui.horizontal(|ui| {
-            for options in ScanLineModes::iterator() {
+            for options in ScanLineModes::iter() {
                 if ui
-                    .radio_value(&mut self.mode, *options, options.as_str())
+                    .radio_value(&mut self.mode, options, format!("{}",options))
                     .changed()
                 {
                     change_type = UpdateBehaviour::NeedsReset;

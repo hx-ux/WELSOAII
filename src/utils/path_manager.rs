@@ -1,13 +1,11 @@
 use std::{
-    fs::{self, File},
-    io::Write,
+    fs::{self},
     path::PathBuf,
 };
 
-use anyhow::Result;
 
 use crate::{
-    animator::animation_type::{AnimationType, ModeHelper},
+    animator::animation_type::{AnimationType},
     utils::GlobalSettings,
 };
 pub struct PathManager {}
@@ -35,7 +33,7 @@ impl PathManager {
         doc_dir
     }
     pub fn get_preset_folder(animation_type: &AnimationType) -> PathBuf {
-        let path = Self::get_preset_path().join(animation_type.as_str());
+        let path = Self::get_preset_path().join(format!("{}", animation_type));
         path
     }
 
@@ -47,6 +45,4 @@ impl PathManager {
         fs::create_dir_all(&doc_dir).unwrap();
         doc_dir
     }
-
-    pub fn createFileStructure() {}
 }

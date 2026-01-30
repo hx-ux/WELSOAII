@@ -1,10 +1,11 @@
 use anyhow::Result;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
+use strum::IntoEnumIterator;
 use std::fs::{self};
 use std::path::PathBuf;
 
-use crate::animator::animation_type::{AnimationType, ModeHelper};
+use crate::animator::animation_type::{AnimationType};
 use crate::animator::animator_structs::AnimationParam;
 use crate::utils::PathManager;
 
@@ -42,8 +43,8 @@ impl GlobalSettings {
         let z: PathBuf = PathManager::get_preset_path();
         fs::create_dir_all(&z).unwrap();
 
-        for animation in AnimationType::iterator() {
-            let e_path = z.join(animation.as_str());
+        for animation in AnimationType::iter() {
+            let e_path = z.join(format!("{}", animation) );
             fs::create_dir_all(&e_path).unwrap();
         }
 

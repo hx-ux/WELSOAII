@@ -1,6 +1,5 @@
 use super::{AnimatedObject, AnimatorSettings, ObjectShape, UpdateBehaviour};
 use crate::animator::animation_type::AnimationType;
-use crate::animator::animation_type::ModeHelper;
 use crate::animator::animator_structs::AnimationParam;
 use crate::animator::presets_manager::PresetManager;
 use crate::utils::ColorParam;
@@ -44,7 +43,7 @@ impl AnimatorSettings for GravityFountainSettings {
     fn ui(&mut self, ui: &mut egui::Ui) -> UpdateBehaviour {
         let mut change_type = UpdateBehaviour::None;
 
-        ui.heading(self.animation_type().as_str());
+        ui.heading(format!("{}",self.animation_type()));
 
         if self.ball_count.to_slider(ui) {
             change_type = UpdateBehaviour::NeedsReset;
