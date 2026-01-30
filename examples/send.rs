@@ -42,10 +42,9 @@ fn testfill_all(len: u64) -> Result<Vec<u8>> {
 
 fn test_section(curr_Sec: u64, len: u64) -> Result<Vec<u8>> {
     let mut vec = Vec::new();
-    let end = curr_Sec + 1;
 
     for i in 0..len {
-        if (i == curr_Sec || i == curr_Sec + 3) {
+        if i == curr_Sec || i == curr_Sec + 3 {
             vec.push(255 as u8);
             vec.push(0 as u8);
             vec.push(0 as u8);

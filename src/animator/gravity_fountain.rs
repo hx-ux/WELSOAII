@@ -1,8 +1,8 @@
 use super::{AnimatedObject, AnimatorSettings, ObjectShape, UpdateBehaviour};
 use crate::animator::animation_type::AnimationType;
-use crate::animator::animation_type::ModeHelper;
 use crate::animator::animator_structs::AnimationParam;
 use crate::animator::presets_manager::PresetManager;
+use crate::color::ColorParam;
 use anyhow::Ok;
 use nannou::prelude::*;
 use nannou_egui::egui;
@@ -16,7 +16,7 @@ pub struct GravityFountainSettings {
     speed: AnimationParam<f32>,
     spread: AnimationParam<f32>,
     radius: AnimationParam<f32>,
-    color: AnimationParam<Rgba>,
+    color: ColorParam,
     angle_min: AnimationParam<f32>, // In degrees
     angle_max: AnimationParam<f32>, // In degrees
 
@@ -33,7 +33,7 @@ impl AnimatorSettings for GravityFountainSettings {
             spread: AnimationParam::new(20.0, 1.0, 200.0, "spread"),
             speed: AnimationParam::new(-150.0, -500.0, 500.0, "speed"),
             radius: AnimationParam::new(5.0, 1.0, 20.0, "radius"),
-            color: AnimationParam::new_without_range(Rgba::new(1.0, 0.0, 0.0, 1.0), "color"),
+            color: ColorParam::default(),
             angle_min: AnimationParam::new(-60.0, -180.0, 180.0, "min_angle"),
             angle_max: AnimationParam::new(60.0, -180.0, 180.0, "max_angle"),
             presets: PresetManager::new_animator(AnimationType::GravityFountain),
@@ -43,7 +43,7 @@ impl AnimatorSettings for GravityFountainSettings {
     fn ui(&mut self, ui: &mut egui::Ui) -> UpdateBehaviour {
         let mut change_type = UpdateBehaviour::None;
 
-        ui.heading(self.animation_type().as_str());
+        ui.heading(format!("{}",self.animation_type()));
 
         if self.ball_count.to_slider(ui) {
             change_type = UpdateBehaviour::NeedsReset;
@@ -71,7 +71,7 @@ impl AnimatorSettings for GravityFountainSettings {
         if self.radius.to_slider(ui) {
             change_type = UpdateBehaviour::HotUpdate;
         }
-        if self.color.to_color_picker(ui) {
+        if self.color.ui(ui) {
             change_type = UpdateBehaviour::HotUpdate;
         }
 
@@ -97,9 +97,8 @@ impl AnimatorSettings for GravityFountainSettings {
             change_type = UpdateBehaviour::HotUpdate;
         }
 
-        let (preset_changed, preset_behaviour) = self.presets.ui(ui);
-        if preset_changed {
-            change_type = preset_behaviour;
+        if self.presets.ui(ui) {
+            change_type = UpdateBehaviour::LoadPreset;
         }
 
         change_type
@@ -111,15 +110,17 @@ impl AnimatorSettings for GravityFountainSettings {
 
     fn create(&self) -> Vec<Box<dyn AnimatedObject>> {
         let mut animated_objects: Vec<Box<dyn AnimatedObject>> = Vec::new();
-        for _ in 0..self.ball_count.value {
+
+        for index in 0..self.ball_count.value as usize {
             let gravity_particle = Box::new(GravityParticle::new(
                 Vec2::new(self.origin_x.value, self.origin_y.value),
                 self.speed.value,
                 self.radius.value,
-                self.color.value,
+                self.color.clone().value_mapped(index),
                 self.spread.value,
                 self.angle_min.value.to_radians(),
                 self.angle_max.value.to_radians(),
+                index
             ));
 
             animated_objects.push(gravity_particle);
@@ -132,21 +133,22 @@ impl AnimatorSettings for GravityFountainSettings {
         // self.dimension = Some(*window_rect);
     }
 
-    fn update_behaviour(&self, objects: &mut Vec<Box<dyn AnimatedObject>>) {
+    fn hot_update(&self, objects: &mut Vec<Box<dyn AnimatedObject>>) {
         let current_count = objects.len();
         let target_count = self.ball_count.value as usize;
 
         // Add seamless new particles
         if target_count > current_count {
-            for _ in current_count..target_count {
+            for index in current_count..target_count {
                 let gravity_particle = Box::new(GravityParticle::new(
                     Vec2::new(self.origin_x.value, self.origin_y.value),
                     self.speed.value,
                     self.radius.value,
-                    self.color.value,
+                    self.color.clone().value_mapped(index),
                     self.spread.value,
                     self.angle_min.value.to_radians(),
                     self.angle_max.value.to_radians(),
+                    index
                 ));
                 objects.push(gravity_particle);
             }
@@ -162,7 +164,8 @@ impl AnimatorSettings for GravityFountainSettings {
         // Update existing particles with new parameters
         for obj in objects.iter_mut().take(target_count) {
             if let Some(particle) = obj.as_any_mut().downcast_mut::<GravityParticle>() {
-                particle.color = self.color.value;
+                // particle.color = self.color.value;
+                particle.color = self.color.clone().value_mapped(particle.index);
                 particle.speed = self.speed.value;
                 particle.radius = self.radius.value;
                 particle.spread = self.spread.value;
@@ -184,10 +187,11 @@ pub struct GravityParticle {
     position: Vec2,
     velocity: Vec2,
     radius: f32,
-    color: Rgba,
+    color: Rgba8,
     speed: f32,
     is_dead: bool,
     spread: f32,
+    index:usize,
 }
 
 impl GravityParticle {
@@ -195,10 +199,11 @@ impl GravityParticle {
         origin: Vec2,
         speed: f32,
         radius: f32,
-        color: Rgba,
+        color: Rgba8,
         spread: f32,
         angle_min: f32, // in radians
         angle_max: f32, // in radians
+        index:usize,
     ) -> Self {
         let angle = random_range(angle_min, angle_max) + PI / 2.0;
 
@@ -212,6 +217,7 @@ impl GravityParticle {
             is_dead: false,
             speed,
             spread,
+            index
         }
     }
 }
@@ -242,11 +248,11 @@ impl AnimatedObject for GravityParticle {
         ObjectShape::Circle(self.position, self.radius)
     }
 
-    fn color(&self) -> Rgba {
-        self.color
-    }
-
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
         self
+    }
+    
+    fn color(&self) -> Rgba8 {
+        self.color
     }
 }

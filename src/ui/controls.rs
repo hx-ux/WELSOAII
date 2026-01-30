@@ -1,7 +1,6 @@
 //! Common styled controls for egui UI
 use std::ops::RangeInclusive;
 
-use nannou::{event::WindowEvent::Touch, prelude::Num};
 use nannou_egui::egui;
 
 /// Styled single-line text edit with monospace font and code editor look

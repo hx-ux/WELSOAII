@@ -1,19 +1,19 @@
 use super::{AnimatedObject, AnimatorSettings, ObjectShape, UpdateBehaviour};
-use crate::animator::animation_type::{AnimationType, ModeHelper, PulseModes};
+use crate::animator::animation_type::{AnimationType, PulseModes};
 use crate::animator::animator_structs::AnimationParam;
 use crate::animator::presets_manager::PresetManager;
-use crate::utils::ColorHelpers;
+use crate::color::ColorParam;
 use nannou::prelude::*;
 use nannou_egui::egui::{self};
 use serde::{Deserialize, Serialize};
+use strum::IntoEnumIterator;
 
 #[derive(Serialize, Deserialize)]
 pub struct PulseBackgroundSettings {
     pub mode: PulseModes,
     pub speed: AnimationParam<f32>,
-    pub color: AnimationParam<Rgba>,
+    pub color: ColorParam,
     pub limit: AnimationParam<f32>,
-
     #[serde(skip)]
     pub presets: PresetManager<PulseBackgroundSettings>,
 }
@@ -23,7 +23,7 @@ impl AnimatorSettings for PulseBackgroundSettings {
         Self {
             mode: PulseModes::default(),
             speed: AnimationParam::new(100.0, 1.0, 200.0, "speed"),
-            color: AnimationParam::new_without_range(Rgba::red(), "solor"),
+            color: ColorParam::default(),
             limit: AnimationParam::new(0.8, 0.1, 1.0, "limit"),
             presets: PresetManager::new_animator(AnimationType::PulseBackground),
         }
@@ -32,15 +32,15 @@ impl AnimatorSettings for PulseBackgroundSettings {
     fn ui(&mut self, ui: &mut egui::Ui) -> UpdateBehaviour {
         let mut change_type = UpdateBehaviour::None;
 
-        ui.heading(self.animation_type().as_str());
+        ui.heading(format!("{}", self.animation_type()));
 
         ui.add_space(5.0);
         ui.label("Mode:");
 
         ui.horizontal(|ui| {
-            for options in PulseModes::iterator() {
+            for options in PulseModes::iter() {
                 if ui
-                    .radio_value(&mut self.mode, *options, options.as_str())
+                    .radio_value(&mut self.mode, options, format!("{}", options))
                     .changed()
                 {
                     change_type = UpdateBehaviour::NeedsReset;
@@ -54,13 +54,12 @@ impl AnimatorSettings for PulseBackgroundSettings {
         if self.limit.to_slider(ui) {
             change_type = UpdateBehaviour::HotUpdate;
         }
-        if self.color.to_color_picker(ui) {
+        if self.color.ui(ui) {
             change_type = UpdateBehaviour::HotUpdate;
         }
 
-        let (preset_changed, preset_behaviour) = self.presets.ui(ui);
-        if preset_changed {
-            change_type = preset_behaviour;
+        if self.presets.ui(ui) {
+            change_type = UpdateBehaviour::LoadPreset
         }
 
         change_type
@@ -75,9 +74,10 @@ impl AnimatorSettings for PulseBackgroundSettings {
 
         animated_objects.push(Box::new(PulseBackground::new(
             self.mode,
-            self.color.value,
+            self.color.clone().value_mapped(0),
             self.speed.value,
             self.limit.value,
+            0,
         )));
 
         animated_objects
@@ -85,10 +85,10 @@ impl AnimatorSettings for PulseBackgroundSettings {
 
     fn set_dimension(&mut self, window_rect: &Rect) {}
 
-    fn update_behaviour(&self, objects: &mut Vec<Box<dyn AnimatedObject>>) {
+    fn hot_update(&self, objects: &mut Vec<Box<dyn AnimatedObject>>) {
         for obj in objects.iter_mut() {
             if let Some(pulse_bg) = obj.as_any_mut().downcast_mut::<PulseBackground>() {
-                pulse_bg.color = self.color.value;
+                pulse_bg.color = self.color.clone().value_mapped(pulse_bg.index);
                 pulse_bg.speed = self.speed.value;
                 pulse_bg.mode = self.mode;
                 pulse_bg.limit = self.limit.value;
@@ -97,7 +97,7 @@ impl AnimatorSettings for PulseBackgroundSettings {
     }
 
     fn save_preset(&mut self) -> anyhow::Result<()> {
-        self.presets.save_to_file(*&self, None)?;
+        self.presets.save_to_file(self, None)?;
         Ok(())
     }
 
@@ -108,16 +108,17 @@ impl AnimatorSettings for PulseBackgroundSettings {
 
 pub struct PulseBackground {
     mode: PulseModes,
-    color: Rgba,
+    color: Rgba8,
     speed: f32,
     current_size_w: f32,
     current_size_h: f32,
     time: f32,
     limit: f32,
+    index: usize,
 }
 
 impl PulseBackground {
-    fn new(mode: PulseModes, color: Rgba, speed: f32, limit: f32) -> Self {
+    fn new(mode: PulseModes, color: Rgba8, speed: f32, limit: f32, index: usize) -> Self {
         Self {
             mode,
             speed,
@@ -126,6 +127,7 @@ impl PulseBackground {
             current_size_h: 20.0,
             time: 0.0,
             limit,
+            index,
         }
     }
 }
@@ -183,11 +185,11 @@ impl AnimatedObject for PulseBackground {
         ))
     }
 
-    fn color(&self) -> Rgba {
-        self.color
-    }
-
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
         self
+    }
+
+    fn color(&self) -> Rgba8 {
+        self.color
     }
 }

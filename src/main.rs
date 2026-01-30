@@ -1,13 +1,11 @@
 extern crate nannou;
 use nannou::prelude::*;
 use nannou_egui::{self, Egui, egui};
-pub mod ui;
-
-// mod utils;
+mod ui;
 mod animator;
 mod receiver;
 mod utils;
-
+mod color;
 use animator::Animator;
 use animator::UpdateBehaviour;
 use receiver::{LayoutMode, ReceiverGrid};
@@ -92,7 +90,7 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
 
     egui::Window::new("Animator Controls").show(&ctx, |ui| match _model.animators.ui(ui) {
         UpdateBehaviour::NeedsReset => _model.animators.reset(&win_rect),
-        UpdateBehaviour::HotUpdate => _model.animators.hot_update(),
+        UpdateBehaviour::HotUpdate => _model.animators.behaviour_hot_update(),
         UpdateBehaviour::LoadPreset => {}
         UpdateBehaviour::SavePrest => _model.animators.save_preset(),
         UpdateBehaviour::None => {}

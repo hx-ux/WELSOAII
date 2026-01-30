@@ -1,8 +1,6 @@
 extern crate nannou;
-use crate::animator::AnimatedObject;
 use crate::animator::presets_manager::{PresetManager, PresetMode};
 use crate::receiver::ReceiverDevice;
-use crate::utils::ColorHelpers;
 use nannou::prelude::*;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
@@ -21,7 +19,7 @@ pub enum LayoutMode {
 pub struct GridCell {
     pub pos: u32,
     pub rect: Rect,
-    pub display_color: Rgba,
+    pub display_color: Rgba8,
     pub is_active: bool,
     pos_string: String, // Cached string representation
 }
@@ -31,7 +29,7 @@ impl GridCell {
         GridCell {
             rect,
             is_active: false,
-            display_color: Rgba::almost_transparent(),
+            display_color: Rgba8::new(10, 10, 10, 10),
             pos,
             pos_string: pos.to_string(), // Cache the string
         }
@@ -39,21 +37,21 @@ impl GridCell {
 
     pub fn reset(&mut self) {
         self.is_active = false;
-        self.display_color = Rgba::almost_transparent();
+        self.display_color = Rgba8::new(10, 10, 10, 10);
     }
 
-    pub fn get_send_color(&self) -> Rgba {
+    pub fn get_send_color(&self) -> Rgba8 {
         if self.is_active {
             return self.display_color;
         }
-        Rgba::new(0.0, 0.0, 0.0, 0.0)
+        Rgba8::new(0, 0, 0, 0)
     }
 
-    pub fn get_display_color(&self) -> Rgba {
+    pub fn get_display_color(&self) -> Rgba8 {
         if self.is_active {
             return self.display_color;
         }
-        Rgba::almost_transparent()
+        Rgba8::new(10, 10, 10, 10)
     }
 }
 
@@ -223,9 +221,9 @@ impl ReceiverGrid {
             let cell_send_col = cell.get_send_color();
 
             let base_idx = idx * 3;
-            led_buffer[base_idx] = (cell_send_col.red * 255.0) as u8;
-            led_buffer[base_idx + 1] = (cell_send_col.green * 255.0) as u8;
-            led_buffer[base_idx + 2] = (cell_send_col.blue * 255.0) as u8;
+            led_buffer[base_idx] = cell_send_col.red;
+            led_buffer[base_idx + 1] = cell_send_col.green;
+            led_buffer[base_idx + 2] = cell_send_col.blue;
 
             if self.show_grid {
                 draw.rect()
@@ -237,7 +235,7 @@ impl ReceiverGrid {
             }
             // Draw filled cell
 
-            if self.show_grid  && self.show_debug_info {
+            if self.show_grid && self.show_debug_info {
                 let mut size = 12;
                 if self.cells.len() >= 100 {
                     size = 10;
@@ -257,7 +255,6 @@ impl ReceiverGrid {
     }
 
     pub fn move_by(&mut self, offset: Vec2) {
-        //   self.main_rect.set_xy(self.main_rect.xy() + offset);
         self.update_cells();
     }
 
@@ -309,7 +306,6 @@ impl ReceiverGrid {
 
         ui.checkbox(&mut self.show_debug_info, "Show debug info");
         ui.checkbox(&mut self.show_grid, "Show grid");
-
 
         if ui.button("Save Settings").clicked() {
             let _ = self

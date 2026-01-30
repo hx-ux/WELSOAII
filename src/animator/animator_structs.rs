@@ -1,4 +1,3 @@
-use nannou::color::Rgba;
 use nannou_egui::egui::{self};
 use serde::{Deserialize, Serialize};
 use std::ops::RangeInclusive;
@@ -74,18 +73,6 @@ impl<T> AnimationParam<T> {
         self.value = self.default.clone();
     }
 
-    pub fn new_without_range(default: T, desc: &str) -> Self
-    where
-        T: Clone,
-        T: Default,
-    {
-        Self {
-            value: default.clone(),
-            default,
-            range: RangeHolder::default(),
-            display_text: desc.to_string(),
-        }
-    }
 
     pub fn to_slider(&mut self, ui: &mut egui::Ui) -> bool
     where
@@ -109,23 +96,6 @@ impl<T> AnimationParam<T> {
         })
         .inner;
 
-        changed
-    }
-}
-
-impl AnimationParam<Rgba> {
-    pub fn to_color_picker(&mut self, ui: &mut egui::Ui) -> bool {
-        let (r, g, b, a): (f32, f32, f32, f32) = self.value.into();
-        let mut col = egui::Rgba::from_rgba_unmultiplied(r, g, b, a);
-        let changed = egui::color_picker::color_edit_button_rgba(
-            ui,
-            &mut col,
-            egui::color_picker::Alpha::BlendOrAdditive,
-        )
-        .changed();
-        if changed {
-            self.value = Rgba::new(col.r(), col.g(), col.b(), col.a());
-        }
         changed
     }
 }

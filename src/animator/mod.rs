@@ -1,8 +1,9 @@
 extern crate nannou;
 use anyhow::Result;
+use strum::IntoEnumIterator;
 
 use crate::{
-    animator::animation_type::{AnimationType, ModeHelper},
+    animator::animation_type::{AnimationType},
     receiver::ReceiverGrid,
 };
 use nannou::prelude::*;
@@ -18,7 +19,6 @@ pub mod scan_line;
 
 use bouncing_ball::BouncingBallSettings;
 use gravity_fountain::GravityFountainSettings;
-use presets_manager::PresetManager;
 use pulse_background::PulseBackgroundSettings;
 use scan_line::ScanLineSettings;
 
@@ -48,14 +48,12 @@ pub enum ObjectShape {
 pub trait AnimatedObject {
     fn update(&mut self, win_rect: &Rect, delta_time: f32);
     fn draw(&self, draw: &Draw);
-
     // partial obsolete
     fn is_dead(&self) -> bool {
         false
     }
     fn shape(&self) -> ObjectShape;
-    fn color(&self) -> Rgba;
-
+    fn color(&self) -> Rgba8;
     // For downcasting to concrete types
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any;
 }
@@ -67,7 +65,7 @@ pub trait AnimatorSettings {
     fn create(&self) -> Vec<Box<dyn AnimatedObject>>;
     fn set_dimension(&mut self, window_rect: &Rect) {}
     // Custom Logic for Hot reloading the animator without resetting
-    fn update_behaviour(&self, objects: &mut Vec<Box<dyn AnimatedObject>>);
+    fn hot_update(&self, objects: &mut Vec<Box<dyn AnimatedObject>>);
     // Rest all parameter values to its definded standards
     fn reset(&mut self);
     fn force_update(&self) -> UpdateBehaviour {
@@ -105,15 +103,6 @@ impl Animator {
         }
     }
 
-    pub fn load_preset(&mut self) {
-        self.objects = match self.curr_an_type {
-            AnimationType::BouncingBalls => self.bouncing_ball_settings.create(),
-            AnimationType::GravityFountain => self.gravity_fountain_settings.create(),
-            AnimationType::ScanLine => self.scanline_settings.create(),
-            AnimationType::PulseBackground => self.pulse_bg_settings.create(),
-        };
-    }
-
     /// Clears and repopulates the animations objects based on current settings.
     pub fn reset(&mut self, win_rect: &Rect) {
         self.objects.clear();
@@ -131,23 +120,22 @@ impl Animator {
             AnimationType::PulseBackground => self.pulse_bg_settings.create(),
         };
     }
-
     /// Apply hot updates to existing objects without recreating them
-    pub fn hot_update(&mut self) {
+    pub fn behaviour_hot_update(&mut self) {
         match self.curr_an_type {
             AnimationType::BouncingBalls => {
                 self.bouncing_ball_settings
-                    .update_behaviour(&mut self.objects);
+                    .hot_update(&mut self.objects);
             }
             AnimationType::GravityFountain => {
                 self.gravity_fountain_settings
-                    .update_behaviour(&mut self.objects);
+                    .hot_update(&mut self.objects);
             }
             AnimationType::ScanLine => {
-                self.scanline_settings.update_behaviour(&mut self.objects);
+                self.scanline_settings.hot_update(&mut self.objects);
             }
             AnimationType::PulseBackground => {
-                self.pulse_bg_settings.update_behaviour(&mut self.objects);
+                self.pulse_bg_settings.hot_update(&mut self.objects);
             }
         }
     }
@@ -262,28 +250,23 @@ impl Animator {
         self.grid.draw(draw);
     }
 
-    /// Draws the main UI panel
     pub fn ui(&mut self, ui: &mut egui::Ui) -> UpdateBehaviour {
         let mut change_type = UpdateBehaviour::None;
-        ui.separator();
 
+        ui.separator();
         // --- General Settings ---
-        ui.label("Animation Type");
-        // Select the current animation Type
-        ui.horizontal(|ui| {
-            for options in AnimationType::iterator() {
-                if ui
-                    .radio_value(&mut self.curr_an_type, *options, options.as_str())
-                    .changed()
-                {
-                    change_type = UpdateBehaviour::NeedsReset;
-                };
-            }
-        });
-
-        ui.add_space(5.0);
-
-        ui.separator();
+        egui::ComboBox::from_label("")
+            .selected_text(format!("{:?}", self.curr_an_type))
+            .show_ui(ui, |ui| {
+                for option in AnimationType::iter() {
+                    if ui
+                        .selectable_value(&mut self.curr_an_type, option, format!("{}", option))
+                        .clicked()
+                    {
+                        change_type = UpdateBehaviour::NeedsReset;
+                    }
+                }
+            });
 
         // --- Show controls for each animator settings
         let settings_change = match self.curr_an_type {
