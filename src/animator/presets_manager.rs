@@ -1,13 +1,11 @@
 use crate::{
     animator::{AnimatorSettings, UpdateBehaviour, animation_type::AnimationType},
-    receiver::ReceiverGrid,
-    utils::{GlobalSettings, PathManager},
+    utils::PathManager,
 };
-use anyhow::Error;
 use chrono::prelude::*;
-use nannou_egui::egui::{self, Grid};
-use serde::{Serialize, de::DeserializeOwned};
-use std::{default, fs, marker::PhantomData, path::PathBuf, vec};
+use nannou_egui::egui::{self};
+use serde::Serialize;
+use std::{fs, marker::PhantomData, path::PathBuf};
 
 #[derive(Clone)]
 pub enum PresetMode {
@@ -66,14 +64,16 @@ impl<T> PresetManager<T> {
         }
     }
 
-    pub fn ui(&mut self, ui: &mut egui::Ui) -> (bool, UpdateBehaviour) {
+    pub fn ui(&mut self, ui: &mut egui::Ui) -> bool {
+        
+        let mut changed = false;
         ui.separator();
         ui.add_space(5.0);
         
         let mut update_behaviour = (false, UpdateBehaviour::None);
         ui.collapsing("Preset Management", |ui| {
             if ui.button("Save As New Preset").clicked() {
-                update_behaviour = (true, UpdateBehaviour::SavePrest);
+                changed = true;
             }
 
             ui.add_space(10.0);
@@ -101,7 +101,7 @@ impl<T> PresetManager<T> {
             ui.horizontal(|ui| if ui.button("Apply ").clicked() {});
         });
 
-        update_behaviour
+        changed
     }
 
     fn generate_filename(&self, custom_file_name: Option<String>) -> String {

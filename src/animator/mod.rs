@@ -65,7 +65,7 @@ pub trait AnimatorSettings {
     fn create(&self) -> Vec<Box<dyn AnimatedObject>>;
     fn set_dimension(&mut self, window_rect: &Rect) {}
     // Custom Logic for Hot reloading the animator without resetting
-    fn update_behaviour(&self, objects: &mut Vec<Box<dyn AnimatedObject>>);
+    fn hot_update(&self, objects: &mut Vec<Box<dyn AnimatedObject>>);
     // Rest all parameter values to its definded standards
     fn reset(&mut self);
     fn force_update(&self) -> UpdateBehaviour {
@@ -120,23 +120,22 @@ impl Animator {
             AnimationType::PulseBackground => self.pulse_bg_settings.create(),
         };
     }
-
     /// Apply hot updates to existing objects without recreating them
-    pub fn hot_update(&mut self) {
+    pub fn behaviour_hot_update(&mut self) {
         match self.curr_an_type {
             AnimationType::BouncingBalls => {
                 self.bouncing_ball_settings
-                    .update_behaviour(&mut self.objects);
+                    .hot_update(&mut self.objects);
             }
             AnimationType::GravityFountain => {
                 self.gravity_fountain_settings
-                    .update_behaviour(&mut self.objects);
+                    .hot_update(&mut self.objects);
             }
             AnimationType::ScanLine => {
-                self.scanline_settings.update_behaviour(&mut self.objects);
+                self.scanline_settings.hot_update(&mut self.objects);
             }
             AnimationType::PulseBackground => {
-                self.pulse_bg_settings.update_behaviour(&mut self.objects);
+                self.pulse_bg_settings.hot_update(&mut self.objects);
             }
         }
     }

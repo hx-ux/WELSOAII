@@ -2,7 +2,7 @@ use super::{AnimatedObject, AnimatorSettings, ObjectShape, UpdateBehaviour};
 use crate::animator::animation_type::AnimationType;
 use crate::animator::animator_structs::AnimationParam;
 use crate::animator::presets_manager::PresetManager;
-use crate::utils::ColorParam;
+use crate::color::ColorParam;
 use anyhow::Ok;
 use nannou::prelude::*;
 use nannou_egui::egui;
@@ -97,9 +97,8 @@ impl AnimatorSettings for GravityFountainSettings {
             change_type = UpdateBehaviour::HotUpdate;
         }
 
-        let (preset_changed, preset_behaviour) = self.presets.ui(ui);
-        if preset_changed {
-            change_type = preset_behaviour;
+        if self.presets.ui(ui) {
+            change_type = UpdateBehaviour::LoadPreset;
         }
 
         change_type
@@ -134,7 +133,7 @@ impl AnimatorSettings for GravityFountainSettings {
         // self.dimension = Some(*window_rect);
     }
 
-    fn update_behaviour(&self, objects: &mut Vec<Box<dyn AnimatedObject>>) {
+    fn hot_update(&self, objects: &mut Vec<Box<dyn AnimatedObject>>) {
         let current_count = objects.len();
         let target_count = self.ball_count.value as usize;
 

@@ -1,7 +1,7 @@
 use crate::animator::animator_structs::AnimationParam;
+use crate::animator::animator_structs::RangeHolder;
 use crate::animator::presets_manager::PresetManager;
-use crate::animator::{ animator_structs::RangeHolder};
-use crate::utils::ColorParam;
+use crate::color::ColorParam;
 use anyhow::Ok;
 use serde::{Deserialize, Serialize};
 
@@ -46,7 +46,7 @@ impl AnimatorSettings for BouncingBallSettings {
     fn ui(&mut self, ui: &mut egui::Ui) -> UpdateBehaviour {
         let mut change_type = UpdateBehaviour::None;
 
-        ui.heading(format!("{}",self.animation_type()));
+        ui.heading(format!("{}", self.animation_type()));
 
         if self.ball_count.to_slider(ui) {
             change_type = UpdateBehaviour::NeedsReset;
@@ -113,9 +113,8 @@ impl AnimatorSettings for BouncingBallSettings {
             change_type = UpdateBehaviour::HotUpdate;
         }
 
-        let z = self.presets.ui(ui);
-        if z.0 {
-            change_type = z.1;
+        if self.presets.ui(ui) {
+            change_type = UpdateBehaviour::LoadPreset
         }
 
         change_type
@@ -136,7 +135,7 @@ impl AnimatorSettings for BouncingBallSettings {
                 &self.ball_vel_range_x,
                 &self.ball_vel_range_y,
                 self.speed.value,
-                index ,
+                index,
             ));
             animated_objects.push(new_obj);
         }
@@ -147,7 +146,7 @@ impl AnimatorSettings for BouncingBallSettings {
         self.dimension = *window_rect;
     }
 
-    fn update_behaviour(&self, objects: &mut Vec<Box<dyn AnimatedObject>>) {
+    fn hot_update(&self, objects: &mut Vec<Box<dyn AnimatedObject>>) {
         let current_count = objects.len();
         let target_count = self.ball_count.value as usize;
 
@@ -189,7 +188,7 @@ impl AnimatorSettings for BouncingBallSettings {
     }
 
     fn save_preset(&mut self) -> anyhow::Result<()> {
-        self.presets.save_to_file(*&self, None)?;
+        self.presets.save_to_file(self, None)?;
         Ok(())
     }
 

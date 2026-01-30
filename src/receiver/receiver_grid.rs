@@ -1,5 +1,4 @@
 extern crate nannou;
-use crate::animator::AnimatedObject;
 use crate::animator::presets_manager::{PresetManager, PresetMode};
 use crate::receiver::ReceiverDevice;
 use nannou::prelude::*;
@@ -256,7 +255,6 @@ impl ReceiverGrid {
     }
 
     pub fn move_by(&mut self, offset: Vec2) {
-        //   self.main_rect.set_xy(self.main_rect.xy() + offset);
         self.update_cells();
     }
 

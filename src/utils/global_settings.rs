@@ -4,7 +4,6 @@ use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 use std::fs::{self};
 use std::path::PathBuf;
-
 use crate::animator::animation_type::{AnimationType};
 use crate::animator::animator_structs::AnimationParam;
 use crate::utils::PathManager;

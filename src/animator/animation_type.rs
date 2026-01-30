@@ -1,8 +1,6 @@
-use std::str::FromStr;
 use strum_macros::{Display, EnumString};
 use strum_macros::EnumIter;
 use serde::{Deserialize, Serialize};
-use std::slice::Iter;
 
 
 #[derive(Debug, PartialEq, Clone, Copy, Default, EnumString, Display,EnumIter)]
@@ -18,8 +16,6 @@ pub enum AnimationType {
     PulseBackground,
 }
 
-
-
 #[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize, Default, Display,EnumIter)]
 pub enum ScanLineModes {
     #[default]
@@ -28,8 +24,6 @@ pub enum ScanLineModes {
     #[strum(to_string = "Wrap Around")]
     WrapAround,
 }
-
-
 
 #[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize, Default, Display,EnumIter)]
 pub enum PulseModes {

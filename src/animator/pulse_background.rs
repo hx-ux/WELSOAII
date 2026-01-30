@@ -2,7 +2,7 @@ use super::{AnimatedObject, AnimatorSettings, ObjectShape, UpdateBehaviour};
 use crate::animator::animation_type::{AnimationType, PulseModes};
 use crate::animator::animator_structs::AnimationParam;
 use crate::animator::presets_manager::PresetManager;
-use crate::utils::ColorParam;
+use crate::color::ColorParam;
 use nannou::prelude::*;
 use nannou_egui::egui::{self};
 use serde::{Deserialize, Serialize};
@@ -58,9 +58,8 @@ impl AnimatorSettings for PulseBackgroundSettings {
             change_type = UpdateBehaviour::HotUpdate;
         }
 
-        let (preset_changed, preset_behaviour) = self.presets.ui(ui);
-        if preset_changed {
-            change_type = preset_behaviour;
+        if self.presets.ui(ui) {
+            change_type = UpdateBehaviour::LoadPreset
         }
 
         change_type
@@ -86,7 +85,7 @@ impl AnimatorSettings for PulseBackgroundSettings {
 
     fn set_dimension(&mut self, window_rect: &Rect) {}
 
-    fn update_behaviour(&self, objects: &mut Vec<Box<dyn AnimatedObject>>) {
+    fn hot_update(&self, objects: &mut Vec<Box<dyn AnimatedObject>>) {
         for obj in objects.iter_mut() {
             if let Some(pulse_bg) = obj.as_any_mut().downcast_mut::<PulseBackground>() {
                 pulse_bg.color = self.color.clone().value_mapped(pulse_bg.index);
@@ -98,7 +97,7 @@ impl AnimatorSettings for PulseBackgroundSettings {
     }
 
     fn save_preset(&mut self) -> anyhow::Result<()> {
-        self.presets.save_to_file(*&self, None)?;
+        self.presets.save_to_file(self, None)?;
         Ok(())
     }
 
