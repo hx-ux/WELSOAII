@@ -1,5 +1,5 @@
 use crate::{
-    animator::{AnimatorSettings, UpdateBehaviour, animation_type::AnimationType},
+    animator::{animation_type::AnimationType, AnimatorSettings, UpdateBehaviour},
     utils::PathManager,
 };
 use chrono::prelude::*;
@@ -65,11 +65,10 @@ impl<T> PresetManager<T> {
     }
 
     pub fn ui(&mut self, ui: &mut egui::Ui) -> bool {
-        
         let mut changed = false;
         ui.separator();
         ui.add_space(5.0);
-        
+
         let mut update_behaviour = (false, UpdateBehaviour::None);
         ui.collapsing("Preset Management", |ui| {
             if ui.button("Save As New Preset").clicked() {

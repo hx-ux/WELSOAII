@@ -27,15 +27,15 @@ pub struct GravityFountainSettings {
 impl AnimatorSettings for GravityFountainSettings {
     fn new(win_rect: &Rect) -> Self {
         Self {
-            origin_x: AnimationParam::new(0.0, 0.0, win_rect.w(), "origin_X"),
-            origin_y: AnimationParam::new(win_rect.h() * 0.2, 0.0, win_rect.h(), "origin_Y"),
-            ball_count: AnimationParam::new(20, 1, 400, "ball_Count"),
-            spread: AnimationParam::new(20.0, 1.0, 200.0, "spread"),
-            speed: AnimationParam::new(-150.0, -500.0, 500.0, "speed"),
-            radius: AnimationParam::new(5.0, 1.0, 20.0, "radius"),
+            origin_x: AnimationParam::new(0.0, 0.0, win_rect.w(), "Origin X"),
+            origin_y: AnimationParam::new(win_rect.h() * 0.2, 0.0, win_rect.h(), "Origin Y"),
+            ball_count: AnimationParam::new(20, 1, 400, "Ball Count"),
+            spread: AnimationParam::new(20.0, 1.0, 200.0, "Spread"),
+            speed: AnimationParam::new(-150.0, -500.0, 500.0, "Speed"),
+            radius: AnimationParam::new(5.0, 1.0, 20.0, "Radius"),
             color: ColorParam::default(),
-            angle_min: AnimationParam::new(-60.0, -180.0, 180.0, "min_angle"),
-            angle_max: AnimationParam::new(60.0, -180.0, 180.0, "max_angle"),
+            angle_min: AnimationParam::new(-60.0, -180.0, 180.0, "Min angle"),
+            angle_max: AnimationParam::new(60.0, -180.0, 180.0, "Max angle"),
             presets: PresetManager::new_animator(AnimationType::GravityFountain),
         }
     }
@@ -43,7 +43,7 @@ impl AnimatorSettings for GravityFountainSettings {
     fn ui(&mut self, ui: &mut egui::Ui) -> UpdateBehaviour {
         let mut change_type = UpdateBehaviour::None;
 
-        ui.heading(format!("{}",self.animation_type()));
+        ui.heading(format!("{}", self.animation_type()));
 
         if self.ball_count.to_slider(ui) {
             change_type = UpdateBehaviour::NeedsReset;
@@ -120,7 +120,7 @@ impl AnimatorSettings for GravityFountainSettings {
                 self.spread.value,
                 self.angle_min.value.to_radians(),
                 self.angle_max.value.to_radians(),
-                index
+                index,
             ));
 
             animated_objects.push(gravity_particle);
@@ -148,7 +148,7 @@ impl AnimatorSettings for GravityFountainSettings {
                     self.spread.value,
                     self.angle_min.value.to_radians(),
                     self.angle_max.value.to_radians(),
-                    index
+                    index,
                 ));
                 objects.push(gravity_particle);
             }
@@ -191,7 +191,7 @@ pub struct GravityParticle {
     speed: f32,
     is_dead: bool,
     spread: f32,
-    index:usize,
+    index: usize,
 }
 
 impl GravityParticle {
@@ -203,7 +203,7 @@ impl GravityParticle {
         spread: f32,
         angle_min: f32, // in radians
         angle_max: f32, // in radians
-        index:usize,
+        index: usize,
     ) -> Self {
         let angle = random_range(angle_min, angle_max) + PI / 2.0;
 
@@ -217,13 +217,18 @@ impl GravityParticle {
             is_dead: false,
             speed,
             spread,
-            index
+            index,
         }
     }
 }
 
 impl AnimatedObject for GravityParticle {
-    fn update(&mut self, win_rect: &Rect, delta_time: f32) {
+    fn update(
+        &mut self,
+        win_rect: &Rect,
+        delta_time: f32,
+        clock: &crate::animator::timecode::TimeCode,
+    ) {
         self.velocity.y += self.speed * delta_time;
         self.position += self.velocity * delta_time * self.spread;
 
@@ -251,7 +256,7 @@ impl AnimatedObject for GravityParticle {
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
         self
     }
-    
+
     fn color(&self) -> Rgba8 {
         self.color
     }

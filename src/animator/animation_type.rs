@@ -1,9 +1,8 @@
-use strum_macros::{Display, EnumString};
-use strum_macros::EnumIter;
 use serde::{Deserialize, Serialize};
+use strum_macros::EnumIter;
+use strum_macros::{Display, EnumString};
 
-
-#[derive(Debug, PartialEq, Clone, Copy, Default, EnumString, Display,EnumIter)]
+#[derive(Debug, PartialEq, Clone, Copy, Default, EnumString, Display, EnumIter)]
 pub enum AnimationType {
     #[default]
     #[strum(to_string = "Bouncing Balls")]
@@ -16,7 +15,7 @@ pub enum AnimationType {
     PulseBackground,
 }
 
-#[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize, Default, Display,EnumIter)]
+#[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize, Default, Display, EnumIter)]
 pub enum ScanLineModes {
     #[default]
     #[strum(to_string = "Ping Pong")]
@@ -25,7 +24,7 @@ pub enum ScanLineModes {
     WrapAround,
 }
 
-#[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize, Default, Display,EnumIter)]
+#[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize, Default, Display, EnumIter)]
 pub enum PulseModes {
     #[default]
     #[strum(to_string = "Wrap Around")]

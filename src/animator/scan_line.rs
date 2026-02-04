@@ -1,10 +1,8 @@
 use super::{AnimatedObject, AnimatorSettings, ObjectShape, UpdateBehaviour};
-use crate::{
-    animator::{
-        animation_type::{AnimationType, ScanLineModes},
-        animator_structs::AnimationParam,
-        presets_manager::PresetManager,
-    },
+use crate::animator::{
+    animation_type::{AnimationType, ScanLineModes},
+    animator_structs::AnimationParam,
+    presets_manager::PresetManager,
 };
 use crate::color::ColorParam;
 
@@ -19,6 +17,8 @@ pub struct ScanLineSettings {
     speed: AnimationParam<f32>,
     width: AnimationParam<f32>,
     color: ColorParam,
+    beat_snap: AnimationParam<f32>,
+    multi_line_count: AnimationParam<u32>,
     #[serde(skip)]
     height: f32,
     #[serde(skip)]
@@ -32,8 +32,10 @@ impl AnimatorSettings for ScanLineSettings {
         Self {
             mode: ScanLineModes::default(),
             speed: AnimationParam::new(300.0, 0.0, 1000.0, "speed"),
-            width: AnimationParam::new(20.0, 5.0, 20.0, "width"),
+            width: AnimationParam::new(20.0, 5.0, 100.0, "width"),
             color: ColorParam::default(),
+            beat_snap: AnimationParam::new(0.0, 0.0, 2.0, "beat_snap"),
+            multi_line_count: AnimationParam::new(1, 1, 10, "line_count"),
             height: win_rect.h(),
             begin_pos: win_rect.left(),
             presets: PresetManager::new_animator(AnimationType::ScanLine),
@@ -75,6 +77,17 @@ impl AnimatorSettings for ScanLineSettings {
             change_type = UpdateBehaviour::HotUpdate;
         }
 
+        ui.separator();
+        ui.label("Beat Sync Controls:");
+
+        if self.beat_snap.to_slider(ui) {
+            change_type = UpdateBehaviour::HotUpdate;
+        }
+
+        if self.multi_line_count.to_slider(ui) {
+            change_type = UpdateBehaviour::NeedsReset;
+        }
+
         if self.presets.ui(ui) {
             change_type = UpdateBehaviour::LoadPreset;
         }
@@ -88,15 +101,18 @@ impl AnimatorSettings for ScanLineSettings {
     fn create(&self) -> Vec<Box<dyn AnimatedObject>> {
         let mut animated_objects: Vec<Box<dyn AnimatedObject>> = Vec::new();
 
-        animated_objects.push(Box::new(ScanLine::new(
-            self.mode,
-            self.speed.value,
-            self.color.clone().value_mapped(0),
-            self.width.value,
-            self.height,
-            self.begin_pos,
-            0,
-        )));
+        for index in 0..self.multi_line_count.value {
+            animated_objects.push(Box::new(ScanLine::new(
+                self.mode,
+                self.speed.value,
+                self.color.clone().value_mapped(index as usize),
+                self.width.value,
+                self.height,
+                self.begin_pos,
+                self.beat_snap.value,
+                index as usize,
+            )));
+        }
 
         animated_objects
     }
@@ -113,6 +129,7 @@ impl AnimatorSettings for ScanLineSettings {
                 scan_line.width = self.width.value;
                 scan_line.mode = self.mode;
                 scan_line.height = self.height;
+                scan_line.beat_snap = self.beat_snap.value;
 
                 // Update speed, preserving direction
                 let direction = scan_line.speed.signum();
@@ -137,6 +154,8 @@ pub struct ScanLine {
     height: f32,
     width: f32,
     index: usize,
+    beat_snap: f32,
+    phase_offset: f32,
 }
 
 impl ScanLine {
@@ -147,10 +166,13 @@ impl ScanLine {
         width: f32,
         height: f32,
         begin_pos: f32,
+        beat_snap: f32,
         index: usize,
     ) -> Self {
         let half_width = width / 2.0;
-        let position = vec2(begin_pos + half_width, 0.0);
+        // Offset each line's starting position for multi-line effect
+        let phase_offset = (index as f32 * std::f32::consts::PI * 2.0) / 10.0;
+        let position = vec2(begin_pos + half_width + (index as f32 * 50.0), 0.0);
 
         ScanLine {
             mode,
@@ -160,13 +182,25 @@ impl ScanLine {
             height,
             width,
             index,
+            beat_snap,
+            phase_offset,
         }
     }
 }
 
 impl AnimatedObject for ScanLine {
-    fn update(&mut self, win_rect: &Rect, delta_time: f32) {
-        self.position.x += self.speed * delta_time;
+    fn update(
+        &mut self,
+        win_rect: &Rect,
+        delta_time: f32,
+        clock: &crate::animator::timecode::TimeCode,
+    ) {
+        // Beat-synced speed modulation with snap
+        let beat_progress = clock.get_beat_progress();
+        let beat_pulse = ((beat_progress + self.phase_offset) * std::f32::consts::PI * 2.0).sin();
+        let speed_multiplier = 1.0 + (beat_pulse * self.beat_snap);
+
+        self.position.x += self.speed * delta_time * speed_multiplier;
 
         let half_width = self.width / 2.0;
         let left_bound = win_rect.left() + half_width;

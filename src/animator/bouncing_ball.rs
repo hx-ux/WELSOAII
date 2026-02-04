@@ -1,6 +1,7 @@
 use crate::animator::animator_structs::AnimationParam;
 use crate::animator::animator_structs::RangeHolder;
 use crate::animator::presets_manager::PresetManager;
+use crate::animator::timecode::TimeCode;
 use crate::color::ColorParam;
 use anyhow::Ok;
 use serde::{Deserialize, Serialize};
@@ -32,8 +33,8 @@ pub struct BouncingBallSettings {
 impl AnimatorSettings for BouncingBallSettings {
     fn new(win_rect: &Rect) -> Self {
         Self {
-            ball_count: AnimationParam::new(20, 1, 400, "ball_Count"),
-            speed: AnimationParam::new(1.0, 1.0, 5.0, "speed"),
+            ball_count: AnimationParam::new(20, 1, 400, "Ball Count"),
+            speed: AnimationParam::new(1.0, 1.0, 5.0, "Speed"),
             dimension: *win_rect,
             radius: AnimationParam::new(10.0, 6.0, 30.0, "radius"),
             ball_vel_range_x: RangeHolder::new(-100.0, 100.0),
@@ -238,7 +239,7 @@ impl BouncingBall {
 }
 
 impl AnimatedObject for BouncingBall {
-    fn update(&mut self, win_rect: &Rect, delta_time: f32) {
+    fn update(&mut self, win_rect: &Rect, delta_time: f32,clock:&TimeCode) {
         self.position += self.velocity * delta_time * self.speed;
 
         // Bounce off window edges and clamp position within bounds
@@ -274,12 +275,15 @@ impl AnimatedObject for BouncingBall {
     fn shape(&self) -> ObjectShape {
         ObjectShape::Circle(self.position, self.radius)
     }
-
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
         self
     }
 
     fn color(&self) -> Rgba8 {
         self.color
+    }
+    
+    fn is_dead(&self) -> bool {
+        false
     }
 }
