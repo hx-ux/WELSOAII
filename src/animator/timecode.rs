@@ -53,6 +53,10 @@ pub struct TimeCode {
     #[serde(skip)]
     ablLsync: AblLinkState,
     does_sync_to_abl_link: bool,
+    #[serde(skip)]
+    prev_time: f32,
+    #[serde(skip)]
+    delta_time: f32,
 }
 
 impl TimeCode {
@@ -65,6 +69,8 @@ impl TimeCode {
             is_linked: false,
             ablLsync: AblLinkState::new(),
             does_sync_to_abl_link: false,
+            prev_time: 0.0,
+            delta_time: 0.0,
         }
     }
 
@@ -89,9 +95,11 @@ impl TimeCode {
     pub fn reset(&mut self) {
         self.current_time = 0.0;
         self.total_beats = 0.0;
+        self.prev_time = 0.0;
+        self.delta_time = 0.0;
     }
 
-    pub fn update(&mut self, delta_time: f32) {
+    pub fn update(&mut self, delta_time: f32) -> f32 {
         if self.is_running {
             if self.does_sync_to_abl_link {
                 self.update_from_link();
@@ -99,7 +107,12 @@ impl TimeCode {
                 self.current_time += delta_time;
                 self.total_beats += (self.tempo / 60.0) * delta_time;
             }
+            self.delta_time = (self.current_time - self.prev_time).max(0.0);
+            self.prev_time = self.current_time;
+        } else {
+            self.delta_time = 0.0;
         }
+        self.delta_time
     }
 
     fn update_from_link(&mut self) {
@@ -126,6 +139,10 @@ impl TimeCode {
 
     pub fn get_time(&self) -> f32 {
         self.current_time
+    }
+
+    pub fn get_delta_time(&self) -> f32 {
+        self.delta_time
     }
 
     pub fn get_beats(&self) -> f32 {

@@ -158,11 +158,11 @@ impl Animator {
 
     pub fn update(&mut self, win_rect: &Rect, delta_time: f32) {
         // Update the master clock
-        self.clock.update(delta_time);
+        let synced_delta = self.clock.update(delta_time);
 
         // Update all objects with clock reference
         for obj in self.objects.iter_mut() {
-            obj.update(win_rect, delta_time, &self.clock);
+            obj.update(win_rect, synced_delta, &self.clock);
         }
 
         // Remove dead objects ()
