@@ -4,7 +4,6 @@ use crate::receiver::ReceiverDevice;
 use nannou::prelude::*;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
-use std::cell::RefCell;
 
 use crate::ui::controls::styled_text_edit;
 
@@ -69,7 +68,11 @@ pub struct ReceiverGrid {
     show_debug_info: bool,
     show_grid: bool,
     #[serde(skip)]
-    led_buffer: RefCell<Vec<u8>>, // Pre-allocated buffer for LED data
+    led_buffer: Vec<u8>, // Pre-allocated buffer for LED data
+    #[serde(skip)]
+    cell_w: f32,
+    #[serde(skip)]
+    cell_h: f32,
     #[serde(skip)]
     layout_mode: LayoutMode,
     #[serde(skip)]
@@ -87,16 +90,18 @@ impl ReceiverGrid {
         let cell_count = (rows * cols) as usize;
 
         // Pre-allocate LED buffer (3 bytes per cell: RGB)
-        let led_buffer = RefCell::new(vec![0u8; cell_count * 3]);
+        let led_buffer = vec![0u8; cell_count * 3];
 
         let mut grid = ReceiverGrid {
             main_rect,
-            cells: ReceiverGrid::create_grid(&main_rect, rows, cols, layout_mode.clone()),
+            cells: Vec::new(),
             cols,
             rows,
             device: ReceiverDevice::default(),
             show_debug_info: debug,
             led_buffer,
+            cell_w: 0.0,
+            cell_h: 0.0,
             layout_mode,
             persistence: PresetManager::new_grid(PresetMode::Grid, "Leds 1".to_string()),
             show_grid: false,
@@ -107,8 +112,25 @@ impl ReceiverGrid {
     }
 
     pub fn update_cells(&mut self) {
-        // self.cells.clear();
-        // self.create_grid();
+        self.cells = ReceiverGrid::create_grid(
+            &self.main_rect,
+            self.rows,
+            self.cols,
+            self.layout_mode.clone(),
+        );
+
+        if self.cols == 0 || self.rows == 0 {
+            self.cell_w = 0.0;
+            self.cell_h = 0.0;
+        } else {
+            self.cell_w = self.main_rect.w() / self.cols as f32;
+            self.cell_h = self.main_rect.h() / self.rows as f32;
+        }
+
+        let buffer_len = self.cells.len() * 3;
+        if self.led_buffer.len() != buffer_len {
+            self.led_buffer.resize(buffer_len, 0);
+        }
     }
 
     /// Returns the range of cells (col_min, col_max, row_min, row_max) that could intersect
@@ -124,8 +146,11 @@ impl ReceiverGrid {
             return (0, 0, 0, 0);
         }
 
-        let cell_w = self.main_rect.w() / self.cols as f32;
-        let cell_h = self.main_rect.h() / self.rows as f32;
+        let cell_w = self.cell_w;
+        let cell_h = self.cell_h;
+        if cell_w == 0.0 || cell_h == 0.0 {
+            return (0, 0, 0, 0);
+        }
 
         // Convert world coordinates to grid indices
         let min_col = ((left - self.main_rect.left()) / cell_w).floor().max(0.0) as u32;
@@ -206,55 +231,56 @@ impl ReceiverGrid {
     }
 
     pub fn draw(&self, draw: &Draw) {
-        // Reuse pre-allocated buffer
-        let mut led_buffer = self.led_buffer.borrow_mut();
-
-        // check if buffer has changed
-        let buffer_len = self.cells.len() * 3;
-
-        if led_buffer.len() != buffer_len {
-            led_buffer.resize(buffer_len, 0);
+        if !self.show_grid {
+            return;
         }
 
-        // Fill LED buffer and draw cells
-        for (idx, cell) in self.cells.iter().enumerate() {
-            let cell_send_col = cell.get_send_color();
+        for cell in &self.cells {
+            draw.rect()
+                .xy(cell.rect.xy())
+                .wh(cell.rect.wh())
+                .stroke_color(SNOW)
+                .stroke_weight(1.0)
+                .color(cell.get_display_color());
 
-            let base_idx = idx * 3;
-            led_buffer[base_idx] = cell_send_col.red;
-            led_buffer[base_idx + 1] = cell_send_col.green;
-            led_buffer[base_idx + 2] = cell_send_col.blue;
-
-            if self.show_grid {
-                draw.rect()
-                    .xy(cell.rect.xy())
-                    .wh(cell.rect.wh())
-                    .stroke_color(SNOW)
-                    .stroke_weight(1.0)
-                    .color(cell.get_display_color());
-            }
-            // Draw filled cell
-
-            if self.show_grid && self.show_debug_info {
+            if self.show_debug_info {
                 let mut size = 12;
                 if self.cells.len() >= 100 {
                     size = 10;
                 }
-                // Draw the position number on each cell
-                if self.show_debug_info {
-                    draw.text(&cell.pos_string)
-                        .xy(cell.rect.xy())
-                        .color(WHITE)
-                        .font_size(size);
-                }
+                draw.text(&cell.pos_string)
+                    .xy(cell.rect.xy())
+                    .color(WHITE)
+                    .font_size(size);
             }
         }
+    }
 
-        // TODO check, if led device is ready
-        let _ = self.device.send_data(&led_buffer);
+    pub fn update_led_buffer_and_send(&mut self) {
+        let buffer_len = self.cells.len() * 3;
+        if self.led_buffer.len() != buffer_len {
+            self.led_buffer.resize(buffer_len, 0);
+        }
+
+        for (idx, cell) in self.cells.iter().enumerate() {
+            let cell_send_col = cell.get_send_color();
+            let base_idx = idx * 3;
+            self.led_buffer[base_idx] = cell_send_col.red;
+            self.led_buffer[base_idx + 1] = cell_send_col.green;
+            self.led_buffer[base_idx + 2] = cell_send_col.blue;
+        }
+
+        let _ = self.device.send_data(&self.led_buffer);
     }
 
     pub fn move_by(&mut self, offset: Vec2) {
+        let new_center = self.main_rect.xy() + offset;
+        self.main_rect = Rect::from_x_y_w_h(
+            new_center.x,
+            new_center.y,
+            self.main_rect.w(),
+            self.main_rect.h(),
+        );
         self.update_cells();
     }
 
@@ -285,8 +311,6 @@ impl ReceiverGrid {
             self.device.ip = ip;
             changed = true;
         }
-        // ui.add_space(5.0);
-        // ui.label(format!("Max Len: {}", &self.device.max_len));
 
         ui.add_space(5.0);
 

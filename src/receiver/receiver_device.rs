@@ -59,11 +59,13 @@ impl ReceiverDevice {
                     }
                     Err(err) => {
                         println!("Error creating DDP connection: {}", err);
+                        self.establish_conn = false;
                     }
                 };
             }
-            Err(_) => {
-                println!("error opensing socket");
+            Err(err) => {
+                println!("error opening socket: {}", err);
+                self.establish_conn = false;
             }
         }
 

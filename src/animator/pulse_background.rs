@@ -14,6 +14,9 @@ pub struct PulseBackgroundSettings {
     pub speed: AnimationParam<f32>,
     pub color: ColorParam,
     pub limit: AnimationParam<f32>,
+    pub beat_multiplier: AnimationParam<f32>,
+    pub ring_count: AnimationParam<u32>,
+    pub rotation_speed: AnimationParam<f32>,
     #[serde(skip)]
     pub presets: PresetManager<PulseBackgroundSettings>,
 }
@@ -25,6 +28,9 @@ impl AnimatorSettings for PulseBackgroundSettings {
             speed: AnimationParam::new(100.0, 1.0, 200.0, "speed"),
             color: ColorParam::default(),
             limit: AnimationParam::new(0.8, 0.1, 1.0, "limit"),
+            beat_multiplier: AnimationParam::new(1.0, 0.0, 4.0, "beat_mult"),
+            ring_count: AnimationParam::new(3, 1, 10, "ring_count"),
+            rotation_speed: AnimationParam::new(0.5, 0.0, 3.0, "rotation"),
             presets: PresetManager::new_animator(AnimationType::PulseBackground),
         }
     }
@@ -58,6 +64,21 @@ impl AnimatorSettings for PulseBackgroundSettings {
             change_type = UpdateBehaviour::HotUpdate;
         }
 
+        ui.separator();
+        ui.label("Beat Sync Controls:");
+
+        if self.beat_multiplier.to_slider(ui) {
+            change_type = UpdateBehaviour::HotUpdate;
+        }
+
+        if self.ring_count.to_slider(ui) {
+            change_type = UpdateBehaviour::HotUpdate;
+        }
+
+        if self.rotation_speed.to_slider(ui) {
+            change_type = UpdateBehaviour::HotUpdate;
+        }
+
         if self.presets.ui(ui) {
             change_type = UpdateBehaviour::LoadPreset
         }
@@ -77,6 +98,9 @@ impl AnimatorSettings for PulseBackgroundSettings {
             self.color.clone().value_mapped(0),
             self.speed.value,
             self.limit.value,
+            self.beat_multiplier.value,
+            self.ring_count.value,
+            self.rotation_speed.value,
             0,
         )));
 
@@ -92,6 +116,9 @@ impl AnimatorSettings for PulseBackgroundSettings {
                 pulse_bg.speed = self.speed.value;
                 pulse_bg.mode = self.mode;
                 pulse_bg.limit = self.limit.value;
+                pulse_bg.beat_multiplier = self.beat_multiplier.value;
+                pulse_bg.ring_count = self.ring_count.value as usize;
+                pulse_bg.rotation_speed = self.rotation_speed.value;
             }
         }
     }
@@ -115,10 +142,23 @@ pub struct PulseBackground {
     time: f32,
     limit: f32,
     index: usize,
+    beat_multiplier: f32,
+    ring_count: usize,
+    rotation_speed: f32,
+    rotation: f32,
 }
 
 impl PulseBackground {
-    fn new(mode: PulseModes, color: Rgba8, speed: f32, limit: f32, index: usize) -> Self {
+    fn new(
+        mode: PulseModes,
+        color: Rgba8,
+        speed: f32,
+        limit: f32,
+        beat_multiplier: f32,
+        ring_count: u32,
+        rotation_speed: f32,
+        index: usize,
+    ) -> Self {
         Self {
             mode,
             speed,
@@ -128,12 +168,21 @@ impl PulseBackground {
             time: 0.0,
             limit,
             index,
+            beat_multiplier,
+            ring_count: ring_count as usize,
+            rotation_speed,
+            rotation: 0.0,
         }
     }
 }
 
 impl AnimatedObject for PulseBackground {
-    fn update(&mut self, win_rect: &Rect, delta_time: f32) {
+    fn update(
+        &mut self,
+        win_rect: &Rect,
+        delta_time: f32,
+        clock: &crate::animator::timecode::TimeCode,
+    ) {
         let min_w = 20.0;
         let min_h = 20.0;
 
@@ -145,35 +194,89 @@ impl AnimatedObject for PulseBackground {
 
         self.time += delta_time;
 
+        // Update rotation based on beat
+        let beat_progress = clock.get_beat_progress();
+        self.rotation += delta_time * self.rotation_speed;
+
+        // Beat-synced pulsing
+        let beat_scale = 1.0 + (beat_progress * self.beat_multiplier * 0.2);
+
         match self.mode {
             PulseModes::Smooth => {
-                self.current_size_w = self.time * self.speed;
-                self.current_size_h = self.time * self.speed;
+                // Direct beat synchronization - pulse exactly on beat
+                let beats = clock.get_beats();
+                let beat_cycle = beats.fract();
 
-                if self.current_size_w >= max_w_allowed || self.current_size_h >= max_h_allowed {
-                    self.time = 0.0;
-                    self.current_size_w = min_w;
-                    self.current_size_h = min_h;
-                }
+                self.current_size_w = (beat_cycle * max_w_allowed * beat_scale).max(min_w);
+                self.current_size_h = (beat_cycle * max_h_allowed * beat_scale).max(min_h);
             }
             PulseModes::Elastic => {
-                // Use sine wave for rhythmic pulsing (same speed param as Smooth)
-                let normalized = ((self.time * self.speed / 100.0).sin() + 1.0) * 0.5; // 0.0..1.0
-                let eased = normalized * normalized; // Quadratic easing for smoother effect
+                // Beat-synced elastic pulsing with enhanced effect
+                let beat_phase = beat_progress * std::f32::consts::PI * 2.0;
+                let normalized = (beat_phase.sin() + 1.0) * 0.5; // 0.0..1.0
 
-                self.current_size_w = min_w + eased * (max_w_allowed - min_w);
-                self.current_size_h = min_h + eased * (max_h_allowed - min_h);
+                // Apply easing curve for smooth, powerful pulsing
+                let eased = normalized * normalized * (3.0 - 2.0 * normalized); // Smoothstep
+
+                self.current_size_w = min_w + eased * (max_w_allowed - min_w) * beat_scale;
+                self.current_size_h = min_h + eased * (max_h_allowed - min_h) * beat_scale;
             }
         }
     }
 
     fn draw(&self, draw: &Draw) {
+        // Draw multiple concentric rings for awesome pulse effect
+        for i in 0..self.ring_count {
+            let ring_progress = (i as f32 + 1.0) / self.ring_count as f32;
+            let ring_size_w = self.current_size_w * ring_progress;
+            let ring_size_h = self.current_size_h * ring_progress;
+
+            // Vary opacity for depth effect
+            let alpha = (self.color.alpha as f32 * (1.0 - ring_progress * 0.5)) as u8;
+            let mut ring_color = self.color;
+            ring_color.alpha = alpha;
+
+            // Add rotation to rings for extra visual interest
+            let ring_rotation = self.rotation * (i as f32 + 1.0) * 0.1;
+
+            draw.rect()
+                .x(0.0)
+                .y(0.0)
+                .width(ring_size_w)
+                .height(ring_size_h)
+                .rotate(ring_rotation)
+                .color(ring_color);
+        }
+
+        // Draw main pulse
         draw.rect()
             .x(0.0)
             .y(0.0)
             .width(self.current_size_w)
             .height(self.current_size_h)
+            .rotate(self.rotation)
             .color(self.color);
+
+        // Add corner highlights for extra visual pop
+        if self.current_size_w > 100.0 {
+            let highlight_color = rgba8(255, 255, 255, 80);
+            let offset = self.current_size_w * 0.4;
+
+            // Four corner highlights
+            let corners = [
+                vec2(offset, offset),
+                vec2(-offset, offset),
+                vec2(offset, -offset),
+                vec2(-offset, -offset),
+            ];
+
+            for corner in corners.iter() {
+                draw.ellipse()
+                    .xy(*corner)
+                    .radius(20.0)
+                    .color(highlight_color);
+            }
+        }
     }
 
     fn shape(&self) -> ObjectShape {

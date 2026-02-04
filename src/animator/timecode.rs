@@ -4,7 +4,7 @@ use rusty_link::{AblLink, SessionState};
 use serde::{Deserialize, Serialize};
 // https://github.com/anzbert/rusty_link/blob/master/examples/link_hut_silent/main.rs
 
-// Currently read only 
+// Currently read only
 pub struct AblLinkState {
     pub link: AblLink,
     pub session_state: SessionState,
@@ -26,7 +26,6 @@ impl AblLinkState {
     pub fn commit_app_state(&mut self) {
         self.link.commit_app_session_state(&self.session_state);
     }
-
 }
 
 impl Default for AblLinkState {
@@ -121,7 +120,6 @@ impl TimeCode {
         self.tempo = self.ablLsync.session_state.tempo() as f32;
         self.current_time = (self.total_beats * 60.0) / self.tempo;
 
-
         // let phase = self.ablLsync.session_state.session_state.phase_at_time(time, state.quantum);
         self.ablLsync.commit_app_state();
     }
@@ -138,9 +136,9 @@ impl TimeCode {
         self.total_beats.fract()
     }
 
-    pub fn get_bar_progress(&self) -> u8 {
-        (self.total_beats / 4.0).fract() as u8
-    }
+    // pub fn get_bar_progress(&self) -> u8 {
+    //     (self.total_beats / 4.0).fract() as u8
+    // }
 
     pub fn get_formatted_time(&self) -> String {
         let minutes = (self.current_time / 60.0).floor() as i32;

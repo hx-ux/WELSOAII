@@ -1,5 +1,3 @@
-use std::iter;
-
 use nannou::color::Rgba8;
 use nannou::math::clamp;
 use nannou_egui::egui;
@@ -15,14 +13,16 @@ pub enum ColorPalette {
     Dolphin,
 }
 
+
+
 impl ColorPalette {
     fn breeze_palette() -> Vec<Rgba8> {
         vec![
-            Rgba8::new(15, 194, 192, 255),
-            Rgba8::new(12, 171, 168, 255),
-            Rgba8::new(0, 143, 140, 255),
-            Rgba8::new(1, 89, 88, 255),
-            Rgba8::new(2, 53, 53, 255),
+            Rgba8::new(2, 82, 89, 255),
+            Rgba8::new(0, 112, 114, 255),
+            Rgba8::new(242, 147, 36, 255),
+            Rgba8::new(216, 79, 4, 255),
+            Rgba8::new(244, 226, 221, 255),
         ]
     }
     fn dolphin_palette() -> Vec<Rgba8> {

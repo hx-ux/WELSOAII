@@ -2,27 +2,24 @@ extern crate nannou;
 use anyhow::Result;
 use strum::IntoEnumIterator;
 
-use crate::{
-    animator::animation_type::{AnimationType},
-    receiver::ReceiverGrid,
-};
+use crate::{animator::animation_type::AnimationType, receiver::ReceiverGrid};
 use nannou::prelude::*;
 use nannou_egui::egui;
 
 pub mod animation_type;
 pub mod animator_structs;
 pub mod bouncing_ball;
-pub mod timecode;
 pub mod gravity_fountain;
 pub mod presets_manager;
 pub mod pulse_background;
 pub mod scan_line;
+pub mod timecode;
 
 use bouncing_ball::BouncingBallSettings;
-use timecode::TimeCode;
 use gravity_fountain::GravityFountainSettings;
 use pulse_background::PulseBackgroundSettings;
 use scan_line::ScanLineSettings;
+use timecode::TimeCode;
 
 #[derive(Debug, PartialEq)]
 // Defines, how the animators behave, if an Param is changed
@@ -48,7 +45,7 @@ pub enum ObjectShape {
 }
 
 pub trait AnimatedObject {
-    fn update(&mut self, win_rect: &Rect, delta_time: f32);
+    fn update(&mut self, win_rect: &Rect, delta_time: f32, clock: &TimeCode);
     fn draw(&self, draw: &Draw);
     // partial obsolete
     fn is_dead(&self) -> bool {
@@ -127,12 +124,10 @@ impl Animator {
     pub fn behaviour_hot_update(&mut self) {
         match self.curr_an_type {
             AnimationType::BouncingBalls => {
-                self.bouncing_ball_settings
-                    .hot_update(&mut self.objects);
+                self.bouncing_ball_settings.hot_update(&mut self.objects);
             }
             AnimationType::GravityFountain => {
-                self.gravity_fountain_settings
-                    .hot_update(&mut self.objects);
+                self.gravity_fountain_settings.hot_update(&mut self.objects);
             }
             AnimationType::ScanLine => {
                 self.scanline_settings.hot_update(&mut self.objects);
@@ -165,9 +160,9 @@ impl Animator {
         // Update the master clock
         self.clock.update(delta_time);
 
-        // Update all objects
+        // Update all objects with clock reference
         for obj in self.objects.iter_mut() {
-            obj.update(win_rect, delta_time);
+            obj.update(win_rect, delta_time, &self.clock);
         }
 
         // Remove dead objects ()
@@ -243,6 +238,9 @@ impl Animator {
                 }
             }
         }
+
+        // Build the LED buffer and send once per update.
+        self.grid.update_led_buffer_and_send();
     }
 
     // draws the created shapes from the animators
