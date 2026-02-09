@@ -13,8 +13,6 @@ pub enum ColorPalette {
     Dolphin,
 }
 
-
-
 impl ColorPalette {
     fn breeze_palette() -> Vec<Rgba8> {
         vec![
@@ -109,7 +107,7 @@ impl ColorParam {
             }
             ColorMode::Palette => {
                 let _ = egui::ComboBox::from_label("Palette")
-                    .selected_text(format!("{}", format!("{}",self.palette.clone())))
+                    .selected_text(format!("{}", format!("{}", self.palette.clone())))
                     .show_ui(ui, |ui| {
                         for option in ColorPalette::iter() {
                             if ui

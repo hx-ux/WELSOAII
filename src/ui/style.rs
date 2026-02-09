@@ -7,7 +7,7 @@ pub fn apply_custom_style(ctx: &egui::Context, opacity: u8) {
     // widget bg color
     style.visuals.window_fill = egui::Color32::from_rgba_premultiplied(9, 10, 12, opacity);
     // border outline
-    style.visuals.window_stroke.color = egui::Color32::from_rgba_premultiplied(29, 32, 38,opacity);
+    style.visuals.window_stroke.color = egui::Color32::from_rgba_premultiplied(29, 32, 38, opacity);
     style.visuals.widgets.inactive.bg_fill = egui::Color32::from_rgb(30, 40, 60);
     style.visuals.widgets.hovered.bg_fill = egui::Color32::from_rgb(60, 80, 120);
     style.visuals.widgets.noninteractive.bg_fill = egui::Color32::from_rgb(20, 25, 35);

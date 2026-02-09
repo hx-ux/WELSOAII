@@ -13,7 +13,11 @@ pub fn styled_text_edit<'a>(text: &'a mut String, hint: &'a str) -> egui::TextEd
 }
 
 /// Styled slider with consistent look for egui UI
-pub fn styled_slider<'a, T>(value: &'a mut T, range: RangeInclusive<T>, text: &'a str) -> egui::Slider<'a>
+pub fn styled_slider<'a, T>(
+    value: &'a mut T,
+    range: RangeInclusive<T>,
+    text: &'a str,
+) -> egui::Slider<'a>
 where
     T: egui::emath::Numeric + Copy,
 {
@@ -25,5 +29,3 @@ where
         .smallest_positive(0.01)
         .trailing_fill(true)
 }
-
-

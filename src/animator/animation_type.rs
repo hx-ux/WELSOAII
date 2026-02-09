@@ -13,6 +13,8 @@ pub enum AnimationType {
     ScanLine,
     #[strum(to_string = "Pulse Background")]
     PulseBackground,
+    #[strum(to_string = "Wave Lines")]
+    WaveLines,
 }
 
 #[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize, Default, Display, EnumIter)]

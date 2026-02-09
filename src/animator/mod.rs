@@ -14,11 +14,13 @@ pub mod presets_manager;
 pub mod pulse_background;
 pub mod scan_line;
 pub mod timecode;
+pub mod wave_lines;
 
 use bouncing_ball::BouncingBallSettings;
 use gravity_fountain::GravityFountainSettings;
 use pulse_background::PulseBackgroundSettings;
 use scan_line::ScanLineSettings;
+use wave_lines::WaveLinesSettings;
 use timecode::TimeCode;
 
 #[derive(Debug, PartialEq)]
@@ -82,6 +84,7 @@ pub struct Animator {
     gravity_fountain_settings: GravityFountainSettings,
     scanline_settings: ScanLineSettings,
     pulse_bg_settings: PulseBackgroundSettings,
+    wave_lines_settings: WaveLinesSettings,
 }
 
 impl Animator {
@@ -90,6 +93,7 @@ impl Animator {
         let scanline_settings = ScanLineSettings::new(win_rect);
         let gravity_settings = GravityFountainSettings::new(win_rect);
         let pulse_settings = PulseBackgroundSettings::new(win_rect);
+        let wave_lines_settings = WaveLinesSettings::new(win_rect);
 
         Animator {
             objects: Vec::new(),
@@ -100,6 +104,7 @@ impl Animator {
             gravity_fountain_settings: gravity_settings,
             scanline_settings,
             pulse_bg_settings: pulse_settings,
+            wave_lines_settings,
         }
     }
 
@@ -112,12 +117,14 @@ impl Animator {
         self.gravity_fountain_settings.set_dimension(win_rect);
         self.bouncing_ball_settings.set_dimension(win_rect);
         self.pulse_bg_settings.set_dimension(win_rect);
+        self.wave_lines_settings.set_dimension(win_rect);
 
         self.objects = match self.curr_an_type {
             AnimationType::BouncingBalls => self.bouncing_ball_settings.create(),
             AnimationType::GravityFountain => self.gravity_fountain_settings.create(),
             AnimationType::ScanLine => self.scanline_settings.create(),
             AnimationType::PulseBackground => self.pulse_bg_settings.create(),
+            AnimationType::WaveLines => self.wave_lines_settings.create(),
         };
     }
     /// Apply hot updates to existing objects without recreating them
@@ -134,6 +141,9 @@ impl Animator {
             }
             AnimationType::PulseBackground => {
                 self.pulse_bg_settings.hot_update(&mut self.objects);
+            }
+            AnimationType::WaveLines => {
+                self.wave_lines_settings.hot_update(&mut self.objects);
             }
         }
     }
@@ -152,6 +162,9 @@ impl Animator {
             }
             AnimationType::PulseBackground => {
                 let _ = self.pulse_bg_settings.save_preset();
+            }
+            AnimationType::WaveLines => {
+                let _ = self.wave_lines_settings.save_preset();
             }
         }
     }
@@ -283,6 +296,7 @@ impl Animator {
             AnimationType::GravityFountain => self.gravity_fountain_settings.ui(ui),
             AnimationType::ScanLine => self.scanline_settings.ui(ui),
             AnimationType::PulseBackground => self.pulse_bg_settings.ui(ui),
+            AnimationType::WaveLines => self.wave_lines_settings.ui(ui),
         };
 
         // Prioritize NeedsReset over CanHotUpdate

@@ -1,12 +1,12 @@
+use crate::animator::animation_type::AnimationType;
+use crate::animator::animator_structs::AnimationParam;
+use crate::utils::PathManager;
 use anyhow::Result;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
-use strum::IntoEnumIterator;
 use std::fs::{self};
 use std::path::PathBuf;
-use crate::animator::animation_type::{AnimationType};
-use crate::animator::animator_structs::AnimationParam;
-use crate::utils::PathManager;
+use strum::IntoEnumIterator;
 
 #[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize)]
 pub enum AppMode {
@@ -20,7 +20,7 @@ pub struct GlobalSettings {
     pub framerate: f64,
     pub view_window_size: (u32, u32),
     pub app_mode: AppMode,
-    pub window_opacity: AnimationParam<u8>, 
+    pub window_opacity: AnimationParam<u8>,
 }
 
 impl GlobalSettings {
@@ -43,7 +43,7 @@ impl GlobalSettings {
         fs::create_dir_all(&z).unwrap();
 
         for animation in AnimationType::iter() {
-            let e_path = z.join(format!("{}", animation) );
+            let e_path = z.join(format!("{}", animation));
             fs::create_dir_all(&e_path).unwrap();
         }
 
@@ -80,7 +80,7 @@ impl GlobalSettings {
                 .radio_value(&mut self.app_mode, AppMode::Edit, "Edit")
                 .changed();
         });
-        
+
         self.window_opacity.to_slider(ui);
 
         if ui.button("Save Settings").clicked() {
