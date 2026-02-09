@@ -1,51 +1,9 @@
+use crate::color::ColorPalette;
 use nannou::color::Rgba8;
 use nannou::math::clamp;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
-// use std::slice::Iter;
-use strum_macros::{Display, EnumIter};
-#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, EnumIter, Display)]
-pub enum ColorPalette {
-    #[strum(to_string = "Breeze")]
-    Breeze,
-    #[strum(to_string = "Dolphin")]
-    Dolphin,
-}
-
-impl ColorPalette {
-    fn breeze_palette() -> Vec<Rgba8> {
-        vec![
-            Rgba8::new(2, 82, 89, 255),
-            Rgba8::new(0, 112, 114, 255),
-            Rgba8::new(242, 147, 36, 255),
-            Rgba8::new(216, 79, 4, 255),
-            Rgba8::new(244, 226, 221, 255),
-        ]
-    }
-    fn dolphin_palette() -> Vec<Rgba8> {
-        vec![
-            Rgba8::new(242, 121, 222, 255),
-            Rgba8::new(191, 132, 216, 255),
-            Rgba8::new(132, 119, 216, 255),
-            Rgba8::new(181, 179, 242, 255),
-            Rgba8::new(186, 194, 242, 255),
-        ]
-    }
-
-    pub fn as_vec(&self) -> Vec<Rgba8> {
-        match self {
-            ColorPalette::Breeze => Self::breeze_palette(),
-            ColorPalette::Dolphin => Self::dolphin_palette(),
-        }
-    }
-}
-
-impl Default for ColorPalette {
-    fn default() -> Self {
-        ColorPalette::Breeze
-    }
-}
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Copy)]
 pub enum ColorMode {
@@ -105,19 +63,26 @@ impl ColorParam {
                 });
                 self.mode = ColorMode::Solid;
             }
+
             ColorMode::Palette => {
+                let displayText = self.palette.clone();
+
                 let _ = egui::ComboBox::from_label("Palette")
-                    .selected_text(format!("{}", format!("{}", self.palette.clone())))
+                    .selected_text(format!("{}", format!("{}", displayText)))
                     .show_ui(ui, |ui| {
                         for option in ColorPalette::iter() {
                             if ui
-                                .selectable_value(&mut self.palette, option, format!(""))
+                                .selectable_value(
+                                    &mut self.palette,
+                                    option,
+                                    format!("{}", displayText),
+                                )
                                 .clicked()
                             {}
                         }
                     });
 
-                ui.label("Palette mode (not implemented)");
+                ui.label("Palette mode");
                 self.mode = ColorMode::Palette;
             }
         }
