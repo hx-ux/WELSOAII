@@ -8,8 +8,6 @@ pub enum AnimationType {
     #[strum(to_string = "Bouncing Balls")]
     BouncingBalls,
     #[strum(to_string = "Gravity Fountain")]
-    GravityFountain,
-    #[strum(to_string = "Scan Line ")]
     ScanLine,
     #[strum(to_string = "Pulse Background")]
     PulseBackground,
