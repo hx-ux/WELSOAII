@@ -73,7 +73,6 @@ impl<T> AnimationParam<T> {
         self.value = self.default.clone();
     }
 
-
     pub fn to_slider(&mut self, ui: &mut egui::Ui) -> bool
     where
         T: egui::emath::Numeric + Clone,

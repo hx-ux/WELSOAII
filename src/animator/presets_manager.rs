@@ -1,5 +1,5 @@
 use crate::{
-    animator::{animation_type::AnimationType, AnimatorSettings, UpdateBehaviour},
+    animator::{AnimatorSettings, UpdateBehaviour, animation_type::AnimationType},
     utils::PathManager,
 };
 use chrono::prelude::*;

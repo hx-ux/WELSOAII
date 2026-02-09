@@ -239,7 +239,7 @@ impl BouncingBall {
 }
 
 impl AnimatedObject for BouncingBall {
-    fn update(&mut self, win_rect: &Rect, delta_time: f32,clock:&TimeCode) {
+    fn update(&mut self, win_rect: &Rect, delta_time: f32, clock: &TimeCode) {
         self.position += self.velocity * delta_time * self.speed;
 
         // Bounce off window edges and clamp position within bounds
@@ -282,7 +282,7 @@ impl AnimatedObject for BouncingBall {
     fn color(&self) -> Rgba8 {
         self.color
     }
-    
+
     fn is_dead(&self) -> bool {
         false
     }

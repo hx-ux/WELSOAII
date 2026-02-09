@@ -9,17 +9,17 @@ use nannou_egui::egui;
 pub mod animation_type;
 pub mod animator_structs;
 pub mod bouncing_ball;
-pub mod gravity_fountain;
 pub mod presets_manager;
 pub mod pulse_background;
 pub mod scan_line;
 pub mod timecode;
+pub mod wave_lines;
 
 use bouncing_ball::BouncingBallSettings;
-use gravity_fountain::GravityFountainSettings;
 use pulse_background::PulseBackgroundSettings;
 use scan_line::ScanLineSettings;
 use timecode::TimeCode;
+use wave_lines::WaveLinesSettings;
 
 #[derive(Debug, PartialEq)]
 // Defines, how the animators behave, if an Param is changed
@@ -79,17 +79,17 @@ pub struct Animator {
     pub curr_an_type: AnimationType,
     pub clock: TimeCode,
     bouncing_ball_settings: BouncingBallSettings,
-    gravity_fountain_settings: GravityFountainSettings,
     scanline_settings: ScanLineSettings,
     pulse_bg_settings: PulseBackgroundSettings,
+    wave_lines_settings: WaveLinesSettings,
 }
 
 impl Animator {
     pub fn new(win_rect: &Rect, grid: ReceiverGrid) -> Self {
         let bouncing_ball_settings = BouncingBallSettings::new(win_rect);
         let scanline_settings = ScanLineSettings::new(win_rect);
-        let gravity_settings = GravityFountainSettings::new(win_rect);
         let pulse_settings = PulseBackgroundSettings::new(win_rect);
+        let wave_lines_settings = WaveLinesSettings::new(win_rect);
 
         Animator {
             objects: Vec::new(),
@@ -97,9 +97,9 @@ impl Animator {
             clock: TimeCode::new(),
             grid,
             bouncing_ball_settings,
-            gravity_fountain_settings: gravity_settings,
             scanline_settings,
             pulse_bg_settings: pulse_settings,
+            wave_lines_settings,
         }
     }
 
@@ -109,15 +109,15 @@ impl Animator {
         // keep settings in sync with the current window
         // if reset in bind to on_window_resize
         self.scanline_settings.set_dimension(win_rect);
-        self.gravity_fountain_settings.set_dimension(win_rect);
         self.bouncing_ball_settings.set_dimension(win_rect);
         self.pulse_bg_settings.set_dimension(win_rect);
+        self.wave_lines_settings.set_dimension(win_rect);
 
         self.objects = match self.curr_an_type {
             AnimationType::BouncingBalls => self.bouncing_ball_settings.create(),
-            AnimationType::GravityFountain => self.gravity_fountain_settings.create(),
             AnimationType::ScanLine => self.scanline_settings.create(),
             AnimationType::PulseBackground => self.pulse_bg_settings.create(),
+            AnimationType::WaveLines => self.wave_lines_settings.create(),
         };
     }
     /// Apply hot updates to existing objects without recreating them
@@ -126,14 +126,15 @@ impl Animator {
             AnimationType::BouncingBalls => {
                 self.bouncing_ball_settings.hot_update(&mut self.objects);
             }
-            AnimationType::GravityFountain => {
-                self.gravity_fountain_settings.hot_update(&mut self.objects);
-            }
+        
             AnimationType::ScanLine => {
                 self.scanline_settings.hot_update(&mut self.objects);
             }
             AnimationType::PulseBackground => {
                 self.pulse_bg_settings.hot_update(&mut self.objects);
+            }
+            AnimationType::WaveLines => {
+                self.wave_lines_settings.hot_update(&mut self.objects);
             }
         }
     }
@@ -144,14 +145,14 @@ impl Animator {
             AnimationType::BouncingBalls => {
                 let _ = self.bouncing_ball_settings.save_preset();
             }
-            AnimationType::GravityFountain => {
-                let _ = self.gravity_fountain_settings.save_preset();
-            }
             AnimationType::ScanLine => {
                 let _ = self.scanline_settings.save_preset();
             }
             AnimationType::PulseBackground => {
                 let _ = self.pulse_bg_settings.save_preset();
+            }
+            AnimationType::WaveLines => {
+                let _ = self.wave_lines_settings.save_preset();
             }
         }
     }
@@ -167,12 +168,6 @@ impl Animator {
 
         // Remove dead objects ()
         self.objects.retain(|obj| !obj.is_dead());
-
-        // TODO Refactor
-        // Restart animation loop if all particles are gone (for GravityFountain)
-        if self.objects.is_empty() && self.curr_an_type == AnimationType::GravityFountain {
-            self.objects = self.gravity_fountain_settings.create();
-        }
 
         // Reset grid cells
         for cell in self.grid.cells.iter_mut() {
@@ -280,9 +275,9 @@ impl Animator {
         // --- Show controls for each animator settings
         let settings_change = match self.curr_an_type {
             AnimationType::BouncingBalls => self.bouncing_ball_settings.ui(ui),
-            AnimationType::GravityFountain => self.gravity_fountain_settings.ui(ui),
             AnimationType::ScanLine => self.scanline_settings.ui(ui),
             AnimationType::PulseBackground => self.pulse_bg_settings.ui(ui),
+            AnimationType::WaveLines => self.wave_lines_settings.ui(ui),
         };
 
         // Prioritize NeedsReset over CanHotUpdate

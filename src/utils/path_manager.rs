@@ -3,11 +3,7 @@ use std::{
     path::PathBuf,
 };
 
-
-use crate::{
-    animator::animation_type::{AnimationType},
-    utils::GlobalSettings,
-};
+use crate::{animator::animation_type::AnimationType, utils::GlobalSettings};
 pub struct PathManager {}
 
 impl PathManager {
