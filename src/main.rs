@@ -87,6 +87,10 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
         _model.animators.grid.ui(ui);
     });
 
+    egui::Window::new("Mod Matrix").show(&ctx, |ui| {
+        _model.animators.mod_matrix.ui(ui);
+    });
+
     egui::Window::new("Animator Controls").show(&ctx, |ui| match _model.animators.ui(ui) {
         UpdateBehaviour::NeedsReset => _model.animators.reset(&win_rect),
         UpdateBehaviour::HotUpdate => _model.animators.behaviour_hot_update(),

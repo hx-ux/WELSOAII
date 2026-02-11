@@ -7,10 +7,10 @@ pub enum AnimationType {
     #[default]
     #[strum(to_string = "Bouncing Balls")]
     BouncingBalls,
-    #[strum(to_string = "Gravity Fountain")]
-    ScanLine,
     #[strum(to_string = "Pulse Background")]
     PulseBackground,
+    #[strum(to_string = "Scan Line ")]
+    ScanLine,
     #[strum(to_string = "Wave Lines")]
     WaveLines,
 }
@@ -29,6 +29,6 @@ pub enum PulseModes {
     #[default]
     #[strum(to_string = "Wrap Around")]
     Smooth,
-    #[strum(to_string = "Wrap Around")]
+    #[strum(to_string = "Elastic")]
     Elastic,
 }
