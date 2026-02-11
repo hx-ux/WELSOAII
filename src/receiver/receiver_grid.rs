@@ -257,20 +257,22 @@ impl ReceiverGrid {
     }
 
     pub fn update_led_buffer_and_send(&mut self) {
-        let buffer_len = self.cells.len() * 3;
-        if self.led_buffer.len() != buffer_len {
-            self.led_buffer.resize(buffer_len, 0);
-        }
+        if self.device.establish_conn {
+            let buffer_len = self.cells.len() * 3;
+            if self.led_buffer.len() != buffer_len {
+                self.led_buffer.resize(buffer_len, 0);
+            }
 
-        for (idx, cell) in self.cells.iter().enumerate() {
-            let cell_send_col = cell.get_send_color();
-            let base_idx = idx * 3;
-            self.led_buffer[base_idx] = cell_send_col.red;
-            self.led_buffer[base_idx + 1] = cell_send_col.green;
-            self.led_buffer[base_idx + 2] = cell_send_col.blue;
-        }
+            for (idx, cell) in self.cells.iter().enumerate() {
+                let cell_send_col = cell.get_send_color();
+                let base_idx = idx * 3;
+                self.led_buffer[base_idx] = cell_send_col.red;
+                self.led_buffer[base_idx + 1] = cell_send_col.green;
+                self.led_buffer[base_idx + 2] = cell_send_col.blue;
+            }
 
-        let _ = self.device.send_data(&self.led_buffer);
+            let _ = self.device.send_data(&self.led_buffer);
+        }
     }
 
     pub fn move_by(&mut self, offset: Vec2) {

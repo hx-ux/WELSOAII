@@ -46,7 +46,6 @@ fn model(app: &App) -> Model {
 
     let window = app.window(view_window_id).unwrap();
     let settings_egui = Egui::from_window(&window);
-
     let win_rect: Rect = app.window_rect();
 
     let receiver_grid = ReceiverGrid::new(

@@ -1,5 +1,7 @@
 use crate::animator::animator_structs::AnimationParam;
 use crate::animator::animator_structs::RangeHolder;
+use crate::animator::modulation;
+use crate::animator::modulation::ModMatrix;
 use crate::animator::presets_manager::PresetManager;
 use crate::animator::timecode::TimeCode;
 use crate::color::ColorParam;
@@ -17,9 +19,9 @@ fn default_rect() -> Rect {
 
 #[derive(Serialize, Deserialize)]
 pub struct BouncingBallSettings {
-    ball_count: AnimationParam<u32>,
-    speed: AnimationParam<f32>,
-    radius: AnimationParam<f32>,
+    pub ball_count: AnimationParam<u32>,
+    pub speed: AnimationParam<f32>,
+    pub radius: AnimationParam<f32>,
     ball_vel_range_x: RangeHolder<f32>,
     ball_vel_range_y: RangeHolder<f32>,
     #[serde(skip)]
@@ -34,9 +36,21 @@ impl AnimatorSettings for BouncingBallSettings {
     fn new(win_rect: &Rect) -> Self {
         Self {
             ball_count: AnimationParam::new(20, 1, 400, "Ball Count"),
-            speed: AnimationParam::new(1.0, 1.0, 5.0, "Speed"),
+            speed: AnimationParam::new_modulate(
+                1.0,
+                1.0,
+                5.0,
+                "Speed",
+                modulation::ModTarget::BouncingSpeed,
+            ),
             dimension: *win_rect,
-            radius: AnimationParam::new(10.0, 6.0, 30.0, "radius"),
+            radius: AnimationParam::new_modulate(
+                10.0,
+                6.0,
+                30.0,
+                "radius",
+                modulation::ModTarget::BouncingRadius,
+            ),
             ball_vel_range_x: RangeHolder::new(-100.0, 100.0),
             ball_vel_range_y: RangeHolder::new(-100.0, 100.0),
             color: ColorParam::default(),
@@ -44,18 +58,20 @@ impl AnimatorSettings for BouncingBallSettings {
         }
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui) -> UpdateBehaviour {
+    fn ui(&mut self, ui: &mut egui::Ui, mods: &mut ModMatrix) -> UpdateBehaviour {
         let mut change_type = UpdateBehaviour::None;
 
         ui.heading(format!("{}", self.animation_type()));
 
-        if self.ball_count.to_slider(ui) {
-            change_type = UpdateBehaviour::NeedsReset;
-        }
-        if self.speed.to_slider(ui) {
+        if self.ball_count.to_slider_modulate(ui, mods) {
             change_type = UpdateBehaviour::HotUpdate;
         }
-        if self.radius.to_slider(ui) {
+
+        if self.radius.to_slider_modulate(ui, mods) {
+            change_type = UpdateBehaviour::HotUpdate;
+        }
+
+        if self.speed.to_slider_modulate(ui, mods) {
             change_type = UpdateBehaviour::HotUpdate;
         }
 

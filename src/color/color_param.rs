@@ -65,19 +65,13 @@ impl ColorParam {
             }
 
             ColorMode::Palette => {
-                let displayText = self.palette.clone();
-
                 let _ = egui::ComboBox::from_label("Palette")
-                    .selected_text(format!("{}", format!("{}", displayText)))
+                    .selected_text(format!("{}", format!("{}", self.palette)))
                     .show_ui(ui, |ui| {
                         for option in ColorPalette::iter() {
                             if ui
-                                .selectable_value(
-                                    &mut self.palette,
-                                    option,
-                                    format!("{}", displayText),
-                                )
-                                .clicked()
+                                .selectable_value(&mut self.palette, option, format!("{}", option))
+                                .changed()
                             {}
                         }
                     });

@@ -1,23 +1,26 @@
 use super::{AnimatedObject, AnimatorSettings, ObjectShape, UpdateBehaviour};
 use crate::{
     animator::{
-        animation_type::AnimationType, animator_structs::AnimationParam,
+        animation_type::AnimationType,
+        animator_structs::AnimationParam,
+        modulation::{ModMatrix, ModTarget},
         presets_manager::PresetManager,
     },
     color::ColorParam,
 };
+
 use nannou::prelude::*;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct WaveLinesSettings {
-    line_count: AnimationParam<u32>,
-    amplitude: AnimationParam<f32>,
-    frequency: AnimationParam<f32>,
-    speed: AnimationParam<f32>,
-    thickness: AnimationParam<f32>,
-    phase_spread: AnimationParam<f32>,
+    pub line_count: AnimationParam<u32>,
+    pub amplitude: AnimationParam<f32>,
+    pub frequency: AnimationParam<f32>,
+    pub speed: AnimationParam<f32>,
+    pub thickness: AnimationParam<f32>,
+    pub phase_spread: AnimationParam<f32>,
     color: ColorParam,
     #[serde(skip)]
     width: f32,
@@ -31,11 +34,35 @@ impl AnimatorSettings for WaveLinesSettings {
     fn new(win_rect: &Rect) -> Self {
         Self {
             line_count: AnimationParam::new(14, 2, 60, "lines"),
-            amplitude: AnimationParam::new(90.0, 5.0, 260.0, "amplitude"),
-            frequency: AnimationParam::new(0.018, 0.003, 0.08, "frequency"),
-            speed: AnimationParam::new(1.5, 0.1, 6.0, "speed"),
-            thickness: AnimationParam::new(4.0, 1.0, 14.0, "thickness"),
-            phase_spread: AnimationParam::new(0.35, 0.0, 2.0, "phase spread"),
+            amplitude: AnimationParam::new_modulate(
+                90.0,
+                5.0,
+                260.0,
+                "amplitude",
+                ModTarget::WaveAmplitude,
+            ),
+            frequency: AnimationParam::new_modulate(
+                0.018,
+                0.003,
+                0.08,
+                "frequency",
+                ModTarget::WaveFrequency,
+            ),
+            speed: AnimationParam::new_modulate(1.5, 0.1, 6.0, "speed", ModTarget::WaveSpeed),
+            thickness: AnimationParam::new_modulate(
+                4.0,
+                1.0,
+                14.0,
+                "thickness",
+                ModTarget::WaveThickness,
+            ),
+            phase_spread: AnimationParam::new_modulate(
+                0.0,
+                -2.0,
+                2.0,
+                "phase spread",
+                ModTarget::WavePhaseSpread,
+            ),
             color: ColorParam::default(),
             width: win_rect.w(),
             height: win_rect.h(),
@@ -43,28 +70,33 @@ impl AnimatorSettings for WaveLinesSettings {
         }
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui) -> UpdateBehaviour {
+    fn ui(&mut self, ui: &mut egui::Ui, mods: &mut ModMatrix) -> UpdateBehaviour {
         let mut change = UpdateBehaviour::None;
         ui.heading(format!("{}", self.animation_type()));
 
         if self.line_count.to_slider(ui) {
             change = UpdateBehaviour::NeedsReset;
         }
-        if self.amplitude.to_slider(ui) {
+        if self.amplitude.to_slider_modulate(ui, mods) {
             change = UpdateBehaviour::HotUpdate;
         }
-        if self.frequency.to_slider(ui) {
+
+        if self.frequency.to_slider_modulate(ui, mods) {
             change = UpdateBehaviour::HotUpdate;
         }
-        if self.speed.to_slider(ui) {
+
+        if self.speed.to_slider_modulate(ui, mods) {
             change = UpdateBehaviour::HotUpdate;
         }
-        if self.thickness.to_slider(ui) {
+
+        if self.thickness.to_slider_modulate(ui, mods) {
             change = UpdateBehaviour::HotUpdate;
         }
-        if self.phase_spread.to_slider(ui) {
+
+        if self.phase_spread.to_slider_modulate(ui, mods) {
             change = UpdateBehaviour::HotUpdate;
         }
+
         if self.color.ui(ui) {
             change = UpdateBehaviour::HotUpdate;
         }
@@ -151,17 +183,19 @@ impl AnimatorSettings for WaveLinesSettings {
     fn reset(&mut self) {}
 }
 
+impl WaveLinesSettings {}
+
 pub struct WaveLine {
     index: usize,
     total_lines: u32,
     width: f32,
     height: f32,
-    amplitude_base: f32,
-    amplitude_current: f32,
-    frequency: f32,
-    speed: f32,
-    thickness: f32,
-    phase_spread: f32,
+    pub amplitude_base: f32,
+    pub amplitude_current: f32,
+    pub frequency: f32,
+    pub speed: f32,
+    pub thickness: f32,
+    pub phase_spread: f32,
     phase: f32,
     color: Rgba8,
 }
