@@ -78,25 +78,42 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
 
     crate::ui::style::apply_custom_style(&ctx, _model.global_settings.window_opacity.value);
 
-    egui::Window::new("Global Settings").show(&ctx, |ui| {
-        _model.global_settings.ui(ui);
-    });
+// Modular Windows with this
+// egui::Window::new("Global Settings").show(&ctx, |ui| {
 
-    egui::Window::new("Device").show(&ctx, |ui| {
-        _model.animators.grid.ui(ui);
-    });
+    egui::SidePanel::left("control_panel")
+        .resizable(true)
+        .min_width(240.0)
+        .max_width(420.0)
+        .default_width(300.0)
+        .show(&ctx, |ui| {
+            ui.heading("Welosa Control");
+            ui.separator();
 
-    egui::Window::new("Mod Matrix").show(&ctx, |ui| {
-        _model.animators.mod_matrix.ui(ui);
-    });
+            ui.collapsing("Global", |ui| {
+                _model.global_settings.ui(ui);
+            });
+            ui.separator();
 
-    egui::Window::new("Animator Controls").show(&ctx, |ui| match _model.animators.ui(ui) {
-        UpdateBehaviour::NeedsReset => _model.animators.reset(&win_rect),
-        UpdateBehaviour::HotUpdate => _model.animators.behaviour_hot_update(),
-        UpdateBehaviour::LoadPreset => {}
-        UpdateBehaviour::SavePrest => _model.animators.save_preset(),
-        UpdateBehaviour::None => {}
-    });
+            ui.collapsing("Device", |ui| {
+                _model.animators.grid.ui(ui);
+            });
+            ui.separator();
+
+            ui.collapsing("Mod Matrix", |ui| {
+                let current_animation = _model.animators.curr_an_type;
+                _model.animators.mod_matrix.ui(ui, current_animation);
+            });
+            ui.separator();
+
+            ui.collapsing("Animator", |ui| match _model.animators.ui(ui) {
+                UpdateBehaviour::NeedsReset => _model.animators.reset(&win_rect),
+                UpdateBehaviour::HotUpdate => _model.animators.behaviour_hot_update(),
+                UpdateBehaviour::LoadPreset => {}
+                UpdateBehaviour::SavePrest => _model.animators.save_preset(),
+                UpdateBehaviour::None => {}
+            });
+        });
 
     _model
         .animators
