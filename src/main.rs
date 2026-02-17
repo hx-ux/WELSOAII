@@ -17,7 +17,7 @@ fn main() {
 }
 
 struct Model {
-    animators: Animator,
+    animator: Animator,
     settings_egui: Egui,
     global_settings: GlobalSettings,
 }
@@ -52,7 +52,7 @@ fn model(app: &App) -> Model {
         Rect::from_x_y_w_h(0.0, 0.0, 400.0, 300.0),
         20,
         20,
-        true,
+        false,
         LayoutMode::FollowColum,
     );
 
@@ -62,7 +62,7 @@ fn model(app: &App) -> Model {
     app.set_loop_mode(LoopMode::RefreshSync);
 
     Model {
-        animators: animator,
+        animator,
         settings_egui,
         global_settings,
     }
@@ -78,8 +78,8 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
 
     crate::ui::style::apply_custom_style(&ctx, _model.global_settings.window_opacity.value);
 
-// Modular Windows with this
-// egui::Window::new("Global Settings").show(&ctx, |ui| {
+    // Modular Windows with this
+    // egui::Window::new("Global Settings").show(&ctx, |ui| {
 
     egui::SidePanel::left("control_panel")
         .resizable(true)
@@ -94,46 +94,76 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
                 _model.global_settings.ui(ui);
             });
             ui.separator();
+            ui.collapsing("Time Code", |ui| {
+                _model.animator.clock.ui(ui);
+            });
+            ui.separator();
 
             ui.collapsing("Device", |ui| {
-                _model.animators.grid.ui(ui);
+                _model.animator.grid.ui(ui);
             });
             ui.separator();
 
             ui.collapsing("Mod Matrix", |ui| {
-                let current_animation = _model.animators.curr_an_type;
-                _model.animators.mod_matrix.ui(ui, current_animation);
+                _model
+                    .animator
+                    .mod_matrix
+                    .ui(ui, _model.animator.animation_type);
             });
             ui.separator();
 
-            ui.collapsing("Animator", |ui| match _model.animators.ui(ui) {
-                UpdateBehaviour::NeedsReset => _model.animators.reset(&win_rect),
-                UpdateBehaviour::HotUpdate => _model.animators.behaviour_hot_update(),
+            ui.collapsing("Animator", |ui| match _model.animator.ui(ui) {
+                UpdateBehaviour::NeedsReset => _model.animator.reset(&win_rect),
+                UpdateBehaviour::HotUpdate => _model.animator.behaviour_hot_update(),
                 UpdateBehaviour::LoadPreset => {}
-                UpdateBehaviour::SavePrest => _model.animators.save_preset(),
+                UpdateBehaviour::SavePrest => _model.animator.save_preset(),
                 UpdateBehaviour::None => {}
             });
         });
 
     _model
-        .animators
+        .animator
         .update(&win_rect, _app.duration.since_prev_update.as_secs_f32());
 }
 
 fn event(_app: &App, _model: &mut Model, event: WindowEvent) {
-    let receiver = &mut _model.animators.grid;
-
+    let receiver = &mut _model.animator.grid;
+    let win_rect = _app.window_rect();
     match event {
         KeyPressed(_key) => match _key {
-            Key::Up => receiver.move_by(vec2(0.0, 10.0)),
-            Key::Down => receiver.move_by(vec2(0.0, -10.0)),
-            Key::Left => receiver.move_by(vec2(-10.0, 0.0)),
-            Key::Right => receiver.move_by(vec2(10.0, 0.0)),
+            Key::Up => {
+                if receiver.edit_mode {
+                    receiver.move_by(vec2(0.0, 10.0))
+                }
+            }
+
+            Key::Down => {
+                if receiver.edit_mode {
+                    receiver.move_by(vec2(0.0, -10.0))
+                }
+            }
+            Key::Right => {
+                if receiver.edit_mode {
+                    receiver.move_by(vec2(10.0, 0.0));
+                } else {
+                    _model.animator.switch_animation_tye(1);
+                    _model.animator.reset(&win_rect);
+                }
+            }
+
+            Key::Left => {
+                if receiver.edit_mode {
+                    receiver.move_by(vec2(-10.0, 0.0));
+                } else {
+                    _model.animator.switch_animation_tye(-1);
+                    _model.animator.reset(&win_rect);
+                }
+            }
+
             Key::Equals | Key::Plus => receiver.resize_by(vec2(10.0, 10.0)),
             Key::Minus => receiver.resize_by(vec2(-10.0, -10.0)),
             Key::P => _model.global_settings.app_mode = AppMode::Presentation,
             Key::E => _model.global_settings.app_mode = AppMode::Edit,
-
             _ => (),
         },
         MousePressed(_button) => {}
@@ -147,8 +177,8 @@ fn view(_app: &App, _model: &Model, frame: Frame) {
     let draw = _app.draw();
     draw.background().color(BLACK);
 
-    _model.animators.draw_animator(&draw);
-    _model.animators.draw_grid(&draw);
+    _model.animator.draw_animator(&draw);
+    _model.animator.draw_grid(&draw);
 
     draw.to_frame(_app, &frame).unwrap();
 

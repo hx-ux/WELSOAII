@@ -63,7 +63,6 @@ pub struct ReceiverGrid {
     pub cells: Vec<GridCell>,
     pub cols: u32,
     pub rows: u32,
-    // #[serde(skip)]
     device: ReceiverDevice,
     show_debug_info: bool,
     show_grid: bool,
@@ -73,10 +72,12 @@ pub struct ReceiverGrid {
     cell_w: f32,
     #[serde(skip)]
     cell_h: f32,
-    #[serde(skip)]
+    // #[serde(skip)]
     layout_mode: LayoutMode,
     #[serde(skip)]
     persistence: PresetManager<ReceiverGrid>,
+    #[serde(skip)]
+    pub edit_mode: bool,
 }
 
 impl ReceiverGrid {
@@ -105,6 +106,7 @@ impl ReceiverGrid {
             layout_mode,
             persistence: PresetManager::new_grid(PresetMode::Grid, "Leds 1".to_string()),
             show_grid: false,
+            edit_mode: false,
         };
 
         grid.update_cells();
@@ -276,25 +278,29 @@ impl ReceiverGrid {
     }
 
     pub fn move_by(&mut self, offset: Vec2) {
-        let new_center = self.main_rect.xy() + offset;
-        self.main_rect = Rect::from_x_y_w_h(
-            new_center.x,
-            new_center.y,
-            self.main_rect.w(),
-            self.main_rect.h(),
-        );
-        self.update_cells();
+        if self.edit_mode {
+            let new_center = self.main_rect.xy() + offset;
+            self.main_rect = Rect::from_x_y_w_h(
+                new_center.x,
+                new_center.y,
+                self.main_rect.w(),
+                self.main_rect.h(),
+            );
+            self.update_cells();
+        }
     }
 
     pub fn resize_by(&mut self, amount: Vec2) {
-        let new_size = (self.main_rect.wh() + amount).max(vec2(20.0, 20.0));
-        self.main_rect = Rect::from_x_y_w_h(
-            self.main_rect.x(),
-            self.main_rect.y(),
-            new_size.x,
-            new_size.y,
-        );
-        self.update_cells();
+        if self.edit_mode  {
+            let new_size = (self.main_rect.wh() + amount).max(vec2(20.0, 20.0));
+            self.main_rect = Rect::from_x_y_w_h(
+                self.main_rect.x(),
+                self.main_rect.y(),
+                new_size.x,
+                new_size.y,
+            );
+            self.update_cells();
+        }
     }
     pub fn ui(&mut self, ui: &mut egui::Ui) -> bool {
         let mut changed = false;
@@ -309,8 +315,12 @@ impl ReceiverGrid {
 
         let mut ip = self.device.ip.clone();
         if ui.add(styled_text_edit(&mut ip, "IP Address")).changed() {
-            // todo validate IP
+            // TODO validate IP
             self.device.ip = ip;
+            changed = true;
+        }
+
+        if ui.checkbox(&mut self.edit_mode, "Edit").clicked() {
             changed = true;
         }
 

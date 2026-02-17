@@ -174,37 +174,6 @@ impl ModMatrix {
                 }
             });
 
-        egui::ComboBox::from_label("Target")
-            .selected_text(format!("{}", self.mod_route_placeholder.target))
-            .show_ui(ui, |ui| {
-                for option in
-                    ModTarget::iter().filter(|target| target.for_animation(animation_type))
-                {
-                    ui.selectable_value(
-                        &mut self.mod_route_placeholder.target,
-                        option,
-                        format!("{}", option),
-                    );
-                }
-            });
-
-        if ui.button("Add Route").clicked() {
-            let selected_target = self.mod_route_placeholder.target;
-            if selected_target != ModTarget::None {
-                if let Some(existing) = self
-                    .routes
-                    .iter_mut()
-                    .find(|route| route.target == selected_target)
-                {
-                    existing.enabled = true;
-                    existing.amount = self.mod_route_placeholder.amount;
-                } else {
-                    self.routes.push(self.mod_route_placeholder.clone());
-                }
-            }
-            self.mod_route_placeholder = ModRoute::default();
-        }
-
         let mut remove_idx: Option<usize> = None;
 
         for (i, route) in self
@@ -218,13 +187,14 @@ impl ModMatrix {
                 ui.checkbox(&mut route.enabled, format!("{}", route.target));
                 ui.add(egui::Slider::new(&mut route.amount, 0.0..=1.0).text("Depth"));
 
-                if ui
-                    .add(egui::Button::new("-"))
-                    .on_hover_text("Remove")
-                    .clicked()
-                {
-                    remove_idx = Some(i);
-                }
+                // Disabled for now
+                // if ui
+                //     .add(egui::Button::new("-"))
+                //     .on_hover_text("Remove")
+                //     .clicked()
+                // {
+                //     remove_idx = Some(i);
+                // }
             });
         }
         if let Some(idx) = remove_idx {

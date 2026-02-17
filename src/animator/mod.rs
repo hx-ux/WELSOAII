@@ -79,12 +79,12 @@ pub trait AnimatorSettings {
 pub struct Animator {
     pub objects: Vec<Box<dyn AnimatedObject>>,
     pub grid: ReceiverGrid,
-    pub curr_an_type: AnimationType,
+    pub animation_type: AnimationType,
     pub clock: TimeCode,
     pub mod_matrix: ModMatrix,
     bouncing_ball_settings: BouncingBallSettings,
     scanline_settings: ScanLineSettings,
-    pulse_bg_settings: PulseBackgroundSettings,
+    pulse_settings: PulseBackgroundSettings,
     wave_lines_settings: WaveLinesSettings,
 }
 
@@ -133,15 +133,30 @@ impl Animator {
 
         Animator {
             objects: Vec::new(),
-            curr_an_type: AnimationType::BouncingBalls,
-            clock: TimeCode::new(),
+            animation_type: AnimationType::BouncingBalls,
+            clock: timecode::TimeCode::new(),
             mod_matrix,
             grid,
             bouncing_ball_settings,
             scanline_settings,
-            pulse_bg_settings: pulse_settings,
+            pulse_settings,
             wave_lines_settings,
         }
+    }
+
+    pub fn switch_animation_tye(&mut self, dir: i8) {
+        let mut new_index = self.animation_type as usize;
+        let count = AnimationType::iter().count();
+        if dir == 1 {
+            new_index = (new_index + 1) % count;
+        } else if dir == -1 {
+            new_index = if new_index == 0 {
+                count - 1
+            } else {
+                new_index - 1
+            };
+        }
+        self.animation_type = AnimationType::from(new_index);
     }
 
     /// Clears and repopulates the animations objects based on current settings.
@@ -151,28 +166,27 @@ impl Animator {
         // if reset in bind to on_window_resize
         self.scanline_settings.set_dimension(win_rect);
         self.bouncing_ball_settings.set_dimension(win_rect);
-        self.pulse_bg_settings.set_dimension(win_rect);
+        self.pulse_settings.set_dimension(win_rect);
         self.wave_lines_settings.set_dimension(win_rect);
 
-        self.objects = match self.curr_an_type {
+        self.objects = match self.animation_type {
             AnimationType::BouncingBalls => self.bouncing_ball_settings.create(),
             AnimationType::ScanLine => self.scanline_settings.create(),
-            AnimationType::PulseBackground => self.pulse_bg_settings.create(),
+            AnimationType::PulseBackground => self.pulse_settings.create(),
             AnimationType::WaveLines => self.wave_lines_settings.create(),
         };
     }
     /// Apply hot updates to existing objects without recreating them
     pub fn behaviour_hot_update(&mut self) {
-        match self.curr_an_type {
+        match self.animation_type {
             AnimationType::BouncingBalls => {
                 self.bouncing_ball_settings.hot_update(&mut self.objects);
             }
-
             AnimationType::ScanLine => {
                 self.scanline_settings.hot_update(&mut self.objects);
             }
             AnimationType::PulseBackground => {
-                self.pulse_bg_settings.hot_update(&mut self.objects);
+                self.pulse_settings.hot_update(&mut self.objects);
             }
             AnimationType::WaveLines => {
                 self.wave_lines_settings.hot_update(&mut self.objects);
@@ -181,7 +195,7 @@ impl Animator {
     }
 
     pub fn save_preset(&mut self) {
-        match self.curr_an_type {
+        match self.animation_type {
             AnimationType::BouncingBalls => {
                 let _ = self.bouncing_ball_settings.save_preset();
             }
@@ -189,7 +203,7 @@ impl Animator {
                 let _ = self.scanline_settings.save_preset();
             }
             AnimationType::PulseBackground => {
-                let _ = self.pulse_bg_settings.save_preset();
+                let _ = self.pulse_settings.save_preset();
             }
             AnimationType::WaveLines => {
                 let _ = self.wave_lines_settings.save_preset();
@@ -295,10 +309,10 @@ impl Animator {
         self.scanline_settings.speed.ghost_value = None;
         self.scanline_settings.width.ghost_value = None;
 
-        self.pulse_bg_settings.speed.ghost_value = None;
-        self.pulse_bg_settings.limit.ghost_value = None;
-        self.pulse_bg_settings.ring_count.ghost_value = None;
-        self.pulse_bg_settings.rotation_speed.ghost_value = None;
+        self.pulse_settings.speed.ghost_value = None;
+        self.pulse_settings.limit.ghost_value = None;
+        self.pulse_settings.ring_count.ghost_value = None;
+        self.pulse_settings.rotation_speed.ghost_value = None;
 
         self.wave_lines_settings.amplitude.ghost_value = None;
         self.wave_lines_settings.frequency.ghost_value = None;
@@ -313,15 +327,15 @@ impl Animator {
         if self.mod_matrix.routes.is_empty() || !self.mod_matrix.enabled {
             return;
         }
-
         let beat_pos = self.clock.get_beats();
 
-        match self.curr_an_type {
+        match self.animation_type {
             AnimationType::BouncingBalls => {
                 let speed = self.bouncing_ball_settings.speed.value
                     * self
                         .mod_matrix
                         .calc_modulation(beat_pos, ModTarget::BouncingSpeed);
+
                 let radius = self.bouncing_ball_settings.radius.value
                     * self
                         .mod_matrix
@@ -375,21 +389,21 @@ impl Animator {
                 }
             }
             AnimationType::PulseBackground => {
-                let speed = self.pulse_bg_settings.speed.value
+                let speed = self.pulse_settings.speed.value
                     * self
                         .mod_matrix
                         .calc_modulation(beat_pos, ModTarget::PulseSpeed);
-                let limit = self.pulse_bg_settings.limit.value
+                let limit = self.pulse_settings.limit.value
                     * self
                         .mod_matrix
                         .calc_modulation(beat_pos, ModTarget::PulseLimit);
-                let ring_count = (self.pulse_bg_settings.ring_count.value as f32
+                let ring_count = (self.pulse_settings.ring_count.value as f32
                     * self
                         .mod_matrix
                         .calc_modulation(beat_pos, ModTarget::PulseRingCount))
                 .round()
                 .clamp(1.0, 32.0) as usize;
-                let rotation_speed = self.pulse_bg_settings.rotation_speed.value
+                let rotation_speed = self.pulse_settings.rotation_speed.value
                     * self
                         .mod_matrix
                         .calc_modulation(beat_pos, ModTarget::PulseRotation);
@@ -407,16 +421,16 @@ impl Animator {
                 }
 
                 if self.mod_matrix.has_target(ModTarget::PulseSpeed) {
-                    self.pulse_bg_settings.speed.ghost_value = Some(speed);
+                    self.pulse_settings.speed.ghost_value = Some(speed);
                 }
                 if self.mod_matrix.has_target(ModTarget::PulseLimit) {
-                    self.pulse_bg_settings.limit.ghost_value = Some(limit);
+                    self.pulse_settings.limit.ghost_value = Some(limit);
                 }
                 if self.mod_matrix.has_target(ModTarget::PulseRingCount) {
-                    self.pulse_bg_settings.ring_count.ghost_value = Some(ring_count as u32);
+                    self.pulse_settings.ring_count.ghost_value = Some(ring_count as u32);
                 }
                 if self.mod_matrix.has_target(ModTarget::PulseRotation) {
-                    self.pulse_bg_settings.rotation_speed.ghost_value = Some(rotation_speed);
+                    self.pulse_settings.rotation_speed.ghost_value = Some(rotation_speed);
                 }
             }
             AnimationType::WaveLines => {
@@ -469,24 +483,20 @@ impl Animator {
             }
         }
     }
-    // draws the grid
+
     pub fn draw_grid(&self, draw: &Draw) {
         self.grid.draw(draw);
     }
 
     pub fn ui(&mut self, ui: &mut egui::Ui) -> UpdateBehaviour {
         let mut change_type = UpdateBehaviour::None;
-
-        self.clock.ui(ui);
-        ui.separator();
-
         // --- General Settings ---
         egui::ComboBox::from_label("")
-            .selected_text(format!("{:?}", self.curr_an_type))
+            .selected_text(format!("{:?}", self.animation_type))
             .show_ui(ui, |ui| {
                 for option in AnimationType::iter() {
                     if ui
-                        .selectable_value(&mut self.curr_an_type, option, format!("{}", option))
+                        .selectable_value(&mut self.animation_type, option, format!("{}", option))
                         .clicked()
                     {
                         change_type = UpdateBehaviour::NeedsReset;
@@ -495,12 +505,12 @@ impl Animator {
             });
 
         // --- Show controls for each animator settings
-        let settings_change = match self.curr_an_type {
+        let settings_change = match self.animation_type {
             AnimationType::BouncingBalls => {
                 self.bouncing_ball_settings.ui(ui, &mut self.mod_matrix)
             }
             AnimationType::ScanLine => self.scanline_settings.ui(ui, &mut self.mod_matrix),
-            AnimationType::PulseBackground => self.pulse_bg_settings.ui(ui, &mut self.mod_matrix),
+            AnimationType::PulseBackground => self.pulse_settings.ui(ui, &mut self.mod_matrix),
             AnimationType::WaveLines => self.wave_lines_settings.ui(ui, &mut self.mod_matrix),
         };
 

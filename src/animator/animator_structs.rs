@@ -101,11 +101,6 @@ impl<T> AnimationParam<T> {
         self.value = self.default.clone();
     }
 
-    pub fn disconnect_modulation(&mut self) {
-        self.modulator_active = false;
-        self.ghost_value = None;
-    }
-
     pub fn connect_modulation(&self, mods: &mut ModMatrix) {
         mods.routes.push(ModRoute::new(self.mod_target));
     }
@@ -147,6 +142,7 @@ impl<T> AnimationParam<T> {
             } else {
                 egui::Color32::RED
             };
+            
             let button = egui::Button::new("M1").fill(color);
 
             if ui.add(button).clicked() {

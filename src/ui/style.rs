@@ -41,20 +41,20 @@ pub fn apply_custom_style(ctx: &egui::Context, opacity: u8) {
 
     style
         .text_styles
-        .insert(TextStyle::Heading, FontId::new(18.0, FontFamily::Monospace));
+        .insert(TextStyle::Heading, FontId::new(16.0, FontFamily::Monospace));
     style
         .text_styles
-        .insert(TextStyle::Body, FontId::new(14.0, FontFamily::Monospace));
+        .insert(TextStyle::Body, FontId::new(12.0, FontFamily::Monospace));
     style
         .text_styles
-        .insert(TextStyle::Button, FontId::new(13.0, FontFamily::Monospace));
+        .insert(TextStyle::Button, FontId::new(11.0, FontFamily::Monospace));
     style.text_styles.insert(
         TextStyle::Monospace,
         FontId::new(13.0, FontFamily::Monospace),
     );
     style
         .text_styles
-        .insert(TextStyle::Small, FontId::new(12.0, FontFamily::Monospace));
+        .insert(TextStyle::Small, FontId::new(9.0, FontFamily::Monospace));
 
     ctx.set_style(style);
 }
