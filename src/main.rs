@@ -1,6 +1,6 @@
 extern crate nannou;
 use nannou::prelude::*;
-use nannou_egui::{self, Egui, egui};
+use nannou_egui::{self, egui, Egui};
 mod animator;
 mod color;
 mod receiver;
@@ -166,8 +166,15 @@ fn event(_app: &App, _model: &mut Model, event: WindowEvent) {
             Key::E => _model.global_settings.app_mode = AppMode::Edit,
             _ => (),
         },
-        MousePressed(_button) => {}
-        MouseReleased(_button) => {}
+        MousePressed(button) => {
+            receiver.mouse_pressed(_app.mouse.position(), button);
+        }
+        MouseReleased(button) => {
+            receiver.mouse_released(button);
+        }
+        MouseMoved(pos) => {
+            receiver.mouse_moved(pos);
+        }
 
         _other => {}
     }
