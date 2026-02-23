@@ -61,7 +61,6 @@ impl ColorParam {
                         ),
                     );
                 });
-                self.mode = ColorMode::Solid;
             }
 
             ColorMode::Palette => {
@@ -69,15 +68,13 @@ impl ColorParam {
                     .selected_text(format!("{}", format!("{}", self.palette)))
                     .show_ui(ui, |ui| {
                         for option in ColorPalette::iter() {
-                            if ui
+                            changed |= ui
                                 .selectable_value(&mut self.palette, option, format!("{}", option))
-                                .changed()
-                            {}
+                                .changed();
                         }
                     });
 
                 ui.label("Palette mode");
-                self.mode = ColorMode::Palette;
             }
         }
 
@@ -89,13 +86,13 @@ impl ColorParam {
             return self.single_color;
         }
 
-        let other = match self.mode {
-            ColorMode::Solid => todo!(),
-            ColorMode::Palette => self.palette.as_vec(),
-        };
+        let palette = self.palette.as_vec();
+        if palette.is_empty() {
+            return self.single_color;
+        }
 
-        let mapped_index = clamp(index % other.len(), 0, other.len());
-        other[mapped_index]
+        let mapped_index = clamp(index % palette.len(), 0, palette.len() - 1);
+        palette[mapped_index]
     }
 }
 
