@@ -10,7 +10,7 @@ pub enum AnimationType {
     #[strum(to_string = "Pulse Background")]
     PulseBackground = 1,
     #[strum(to_string = "Scan Line ")]
-    ScanLine =2,
+    ScanLine = 2,
     #[strum(to_string = "Wave Lines")]
     WaveLines = 3,
 }
@@ -26,9 +26,6 @@ impl From<usize> for AnimationType {
         }
     }
 }
-
-
-
 
 #[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize, Default, Display, EnumIter)]
 pub enum ScanLineModes {

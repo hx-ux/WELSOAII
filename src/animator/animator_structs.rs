@@ -142,7 +142,7 @@ impl<T> AnimationParam<T> {
             } else {
                 egui::Color32::RED
             };
-            
+
             let button = egui::Button::new("M1").fill(color);
 
             if ui.add(button).clicked() {

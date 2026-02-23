@@ -243,4 +243,3 @@ pub fn sample_wave(wave: ModWave, beat_pos: f32) -> f32 {
         ModWave::RampDown => 1.0 - ((phase / std::f32::consts::TAU).fract()) * 2.0,
     }
 }
-
