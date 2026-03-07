@@ -1,6 +1,4 @@
 use crate::animator::animation_type::AnimationType;
-use nannou::rand::rand;
-use nannou::rand::random_range;
 use nannou_egui::egui::{self};
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
