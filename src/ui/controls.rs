@@ -1,7 +1,7 @@
 //! Common styled controls for egui UI
+use nannou_egui::egui;
 use std::ops::RangeInclusive;
 
-use nannou_egui::egui;
 /// Styled single-line text edit with monospace font and code editor look
 pub fn styled_text_edit<'a>(text: &'a mut String, hint: &'a str) -> egui::TextEdit<'a> {
     egui::TextEdit::singleline(text)
@@ -69,4 +69,3 @@ pub fn icon_button(ui: &mut egui::Ui, icon: IconKind, tooltip: Option<&str>) -> 
         response
     }
 }
-

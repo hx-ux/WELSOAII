@@ -3,6 +3,8 @@ use nannou::prelude::*;
 use nannou_egui::{self, Egui, egui};
 mod animator;
 mod color;
+mod modulator;
+mod presets;
 mod receiver;
 mod ui;
 mod utils;

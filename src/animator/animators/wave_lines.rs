@@ -1,13 +1,13 @@
 use crate::{
     animator::{
         AnimatedObject, AnimatorSettings, ObjectShape, UpdateBehaviour,
-        animation_type::AnimationType,
-        animator_structs::AnimationParam,
-        modulation::{ModMatrix, ModTarget},
+        animation_type::AnimationType, animator_structs::AnimationParam,
     },
     color::ColorParam,
 };
 
+use crate::modulator::ModMatrix;
+use crate::modulator::ModTarget;
 use nannou::prelude::*;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
@@ -30,7 +30,7 @@ pub struct WaveLinesSettings {
 
 impl AnimatorSettings for WaveLinesSettings {
     fn new(win_rect: &Rect) -> Self {
-        Self {
+        let wave_lines_settings = Self {
             line_count: AnimationParam::new(14, 2, 60, "lines"),
             amplitude: AnimationParam::new_modulate(
                 90.0,
@@ -65,7 +65,8 @@ impl AnimatorSettings for WaveLinesSettings {
             width: win_rect.w(),
             height: win_rect.h(),
             //presets: PresetManager::new_animator(AnimationType::WaveLines),
-        }
+        };
+        wave_lines_settings
     }
 
     fn ui(&mut self, ui: &mut egui::Ui, mods: &mut ModMatrix) -> UpdateBehaviour {

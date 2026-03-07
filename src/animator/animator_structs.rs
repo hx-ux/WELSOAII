@@ -1,5 +1,5 @@
 use crate::{
-    animator::modulation::{ModMatrix, ModRoute, ModTarget},
+    modulator::{ModMatrix, ModRoute, ModTarget},
     ui::controls::styled_slider,
 };
 use nannou_egui::egui::{self, Label};

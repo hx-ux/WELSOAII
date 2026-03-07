@@ -5,10 +5,11 @@ use crate::animator::UpdateBehaviour;
 use crate::animator::animation_type::AnimationType;
 use crate::animator::animator_structs::AnimationParam;
 use crate::animator::animator_structs::RangeHolder;
-use crate::animator::modulation;
-use crate::animator::modulation::ModMatrix;
 use crate::animator::timecode::TimeCode;
 use crate::color::ColorParam;
+use crate::modulator::ModMatrix;
+use crate::modulator::ModTarget;
+
 use anyhow::Ok;
 use nannou::prelude::*;
 use nannou_egui::egui;
@@ -36,20 +37,14 @@ impl AnimatorSettings for BouncingBallSettings {
     fn new(win_rect: &Rect) -> Self {
         Self {
             ball_count: AnimationParam::new(20, 1, 400, "Ball Count"),
-            speed: AnimationParam::new_modulate(
-                1.0,
-                1.0,
-                5.0,
-                "Speed",
-                modulation::ModTarget::BouncingSpeed,
-            ),
+            speed: AnimationParam::new_modulate(1.0, 1.0, 5.0, "Speed", ModTarget::BouncingSpeed),
             dimension: *win_rect,
             radius: AnimationParam::new_modulate(
                 10.0,
                 6.0,
                 30.0,
                 "radius",
-                modulation::ModTarget::BouncingRadius,
+                ModTarget::BouncingRadius,
             ),
             ball_vel_range_x: RangeHolder::new(-100.0, 100.0),
             ball_vel_range_y: RangeHolder::new(-100.0, 100.0),

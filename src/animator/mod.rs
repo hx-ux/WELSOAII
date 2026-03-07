@@ -16,11 +16,12 @@ use nannou_egui::egui::{self};
 pub mod animation_type;
 pub mod animator_structs;
 mod animators;
-pub mod modulation;
 pub mod timecode;
 
+use crate::modulator::ModMatrix;
+use crate::modulator::ModTarget;
+
 use bouncing_ball::BouncingBallSettings;
-use modulation::{ModMatrix, ModTarget};
 use pulse_background::PulseBackgroundSettings;
 use scan_line::ScanLineSettings;
 use timecode::TimeCode;
@@ -107,7 +108,7 @@ impl Animator {
         let scanline_settings = ScanLineSettings::new(win_rect);
         let pulse_settings = PulseBackgroundSettings::new(win_rect);
         let wave_lines_settings = WaveLinesSettings::new(win_rect);
-        let mut mod_matrix = modulation::ModMatrix::default();
+        let mut mod_matrix = ModMatrix::default();
 
         bouncing_ball_settings
             .speed
