@@ -1,15 +1,21 @@
-use super::{AnimatedObject, AnimatorSettings, ObjectShape, UpdateBehaviour};
-use crate::animator::{
-    animation_type::{AnimationType, ScanLineModes},
-    animator_structs::AnimationParam,
-    modulation::{ModMatrix, ModTarget},
-    presets_manager::PresetManager,
-};
+use crate::animator::AnimatedObject;
+use crate::animator::AnimatorSettings;
+use crate::animator::ObjectShape;
+use crate::animator::UpdateBehaviour;
+use crate::animator::animation_type::AnimationType;
+use crate::animator::animation_type::PulseModes;
+use crate::animator::animation_type::ScanLineModes;
+use crate::animator::animator_structs::AnimationParam;
+use crate::animator::modulation::ModMatrix;
+use crate::animator::modulation::ModTarget;
+//use crate::animator::presets_manager::PresetManager;
 use crate::color::ColorParam;
-
+use anyhow::Ok;
 use nannou::prelude::*;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
+
+use nannou::prelude::*;
 use strum::IntoEnumIterator;
 
 #[derive(Serialize, Deserialize)]
@@ -23,8 +29,7 @@ pub struct ScanLineSettings {
     height: f32,
     #[serde(skip)]
     begin_pos: f32,
-    #[serde(skip)]
-    presets: PresetManager<ScanLineSettings>,
+    //presets: PresetManager<ScanLineSettings>,
 }
 
 impl AnimatorSettings for ScanLineSettings {
@@ -37,7 +42,7 @@ impl AnimatorSettings for ScanLineSettings {
             multi_line_count: AnimationParam::new(1, 1, 10, "line_count"),
             height: win_rect.h(),
             begin_pos: win_rect.left(),
-            presets: PresetManager::new_animator(AnimationType::ScanLine),
+            //presets: PresetManager::new_animator(AnimationType::ScanLine),
         }
     }
 
@@ -80,9 +85,6 @@ impl AnimatorSettings for ScanLineSettings {
             change_type = UpdateBehaviour::HotUpdate;
         }
 
-        if self.presets.ui(ui) {
-            change_type = UpdateBehaviour::LoadPreset;
-        }
         change_type
     }
 
@@ -128,7 +130,7 @@ impl AnimatorSettings for ScanLineSettings {
     }
 
     fn save_preset(&mut self) -> anyhow::Result<()> {
-        self.presets.save_to_file(self, None)?;
+        //  self.presets.save_to_file(self, None)?;
         Ok(())
     }
 
@@ -187,7 +189,6 @@ impl AnimatedObject for ScanLine {
         // let speed_multiplier = 1.0 + (beat_pulse * self.beat_snap);
 
         self.position.x += self.speed * delta_time;
-
 
         let half_width = self.width / 2.0;
         let left_bound = win_rect.left() + half_width;

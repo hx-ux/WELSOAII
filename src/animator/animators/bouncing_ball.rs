@@ -1,17 +1,18 @@
+use crate::animator::AnimatedObject;
+use crate::animator::AnimatorSettings;
+use crate::animator::ObjectShape;
+use crate::animator::UpdateBehaviour;
+use crate::animator::animation_type::AnimationType;
 use crate::animator::animator_structs::AnimationParam;
 use crate::animator::animator_structs::RangeHolder;
 use crate::animator::modulation;
 use crate::animator::modulation::ModMatrix;
-use crate::animator::presets_manager::PresetManager;
 use crate::animator::timecode::TimeCode;
 use crate::color::ColorParam;
 use anyhow::Ok;
-use serde::{Deserialize, Serialize};
-
-use super::{AnimatedObject, AnimatorSettings, ObjectShape, UpdateBehaviour};
-use crate::animator::animation_type::AnimationType;
 use nannou::prelude::*;
 use nannou_egui::egui;
+use serde::{Deserialize, Serialize};
 
 fn default_rect() -> Rect {
     Rect::from_w_h(800.0, 600.0)
@@ -28,8 +29,7 @@ pub struct BouncingBallSettings {
     #[serde(default = "default_rect")]
     dimension: Rect,
     color: ColorParam,
-    #[serde(skip)]
-    presets: PresetManager<BouncingBallSettings>,
+    // presets: PresetManager<BouncingBallSettings>,
 }
 
 impl AnimatorSettings for BouncingBallSettings {
@@ -54,7 +54,7 @@ impl AnimatorSettings for BouncingBallSettings {
             ball_vel_range_x: RangeHolder::new(-100.0, 100.0),
             ball_vel_range_y: RangeHolder::new(-100.0, 100.0),
             color: ColorParam::default(),
-            presets: PresetManager::new_animator(AnimationType::BouncingBalls),
+            //presets: PresetManager::new_animator(AnimationType::BouncingBalls),
         }
     }
 
@@ -130,10 +130,6 @@ impl AnimatorSettings for BouncingBallSettings {
             change_type = UpdateBehaviour::HotUpdate;
         }
 
-        if self.presets.ui(ui) {
-            change_type = UpdateBehaviour::LoadPreset
-        }
-
         change_type
     }
 
@@ -205,7 +201,7 @@ impl AnimatorSettings for BouncingBallSettings {
     }
 
     fn save_preset(&mut self) -> anyhow::Result<()> {
-        self.presets.save_to_file(self, None)?;
+        // self.presets.save_to_file(self, None)?;
         Ok(())
     }
 

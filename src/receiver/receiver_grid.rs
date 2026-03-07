@@ -1,5 +1,4 @@
 extern crate nannou;
-use crate::animator::presets_manager::{PresetManager, PresetMode};
 use crate::receiver::ReceiverDevice;
 use nannou::prelude::*;
 use nannou_egui::egui;
@@ -74,8 +73,7 @@ pub struct ReceiverGrid {
     cell_h: f32,
     // #[serde(skip)]
     layout_mode: LayoutMode,
-    #[serde(skip)]
-    persistence: PresetManager<ReceiverGrid>,
+    //persistence: PresetManager<ReceiverGrid>,
     #[serde(skip)]
     pub edit_mode: bool,
 }
@@ -104,7 +102,7 @@ impl ReceiverGrid {
             cell_w: 0.0,
             cell_h: 0.0,
             layout_mode,
-            persistence: PresetManager::new_grid(PresetMode::Grid, "Leds 1".to_string()),
+            //persistence: PresetManager::new_grid(PresetMode::Grid, "Leds 1".to_string()),
             show_grid: false,
             edit_mode: false,
         };
@@ -291,7 +289,7 @@ impl ReceiverGrid {
     }
 
     pub fn resize_by(&mut self, amount: Vec2) {
-        if self.edit_mode  {
+        if self.edit_mode {
             let new_size = (self.main_rect.wh() + amount).max(vec2(20.0, 20.0));
             self.main_rect = Rect::from_x_y_w_h(
                 self.main_rect.x(),
@@ -344,9 +342,9 @@ impl ReceiverGrid {
         ui.checkbox(&mut self.show_grid, "Show grid");
 
         if ui.button("Save Settings").clicked() {
-            let _ = self
-                .persistence
-                .save_to_file(self, Some(self.device.name.clone()));
+            //     let _ = self
+            //  .persistence
+            //  .save_to_file(self, Some(self.device.name.clone()));
             changed = true;
         }
 

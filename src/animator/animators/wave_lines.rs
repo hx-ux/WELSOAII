@@ -1,10 +1,9 @@
-use super::{AnimatedObject, AnimatorSettings, ObjectShape, UpdateBehaviour};
 use crate::{
     animator::{
+        AnimatedObject, AnimatorSettings, ObjectShape, UpdateBehaviour,
         animation_type::AnimationType,
         animator_structs::AnimationParam,
         modulation::{ModMatrix, ModTarget},
-        presets_manager::PresetManager,
     },
     color::ColorParam,
 };
@@ -26,8 +25,7 @@ pub struct WaveLinesSettings {
     width: f32,
     #[serde(skip)]
     height: f32,
-    #[serde(skip)]
-    presets: PresetManager<WaveLinesSettings>,
+    //presets: PresetManager<WaveLinesSettings>,
 }
 
 impl AnimatorSettings for WaveLinesSettings {
@@ -66,7 +64,7 @@ impl AnimatorSettings for WaveLinesSettings {
             color: ColorParam::default(),
             width: win_rect.w(),
             height: win_rect.h(),
-            presets: PresetManager::new_animator(AnimationType::WaveLines),
+            //presets: PresetManager::new_animator(AnimationType::WaveLines),
         }
     }
 
@@ -99,10 +97,6 @@ impl AnimatorSettings for WaveLinesSettings {
 
         if self.color.ui(ui) {
             change = UpdateBehaviour::HotUpdate;
-        }
-
-        if self.presets.ui(ui) {
-            change = UpdateBehaviour::LoadPreset;
         }
 
         change
@@ -176,7 +170,6 @@ impl AnimatorSettings for WaveLinesSettings {
     }
 
     fn save_preset(&mut self) -> anyhow::Result<()> {
-        self.presets.save_to_file(self, None)?;
         Ok(())
     }
 

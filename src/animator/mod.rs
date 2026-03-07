@@ -3,26 +3,27 @@ extern crate nannou;
 use anyhow::Result;
 use strum::IntoEnumIterator;
 
-use crate::{animator::animation_type::AnimationType, receiver::ReceiverGrid};
+use crate::{
+    animator::{
+        animation_type::AnimationType,
+        animators::{WaveLinesSettings, bouncing_ball, pulse_background, scan_line, wave_lines},
+    },
+    receiver::ReceiverGrid,
+};
 use nannou::prelude::*;
 use nannou_egui::egui::{self};
 
 pub mod animation_type;
 pub mod animator_structs;
-pub mod bouncing_ball;
+mod animators;
 pub mod modulation;
-pub mod presets_manager;
-pub mod pulse_background;
-pub mod scan_line;
 pub mod timecode;
-pub mod wave_lines;
 
 use bouncing_ball::BouncingBallSettings;
 use modulation::{ModMatrix, ModTarget};
 use pulse_background::PulseBackgroundSettings;
 use scan_line::ScanLineSettings;
 use timecode::TimeCode;
-use wave_lines::WaveLinesSettings;
 
 macro_rules! with_current_settings {
     ($self:expr, $method:ident $(, $args:expr)*) => {

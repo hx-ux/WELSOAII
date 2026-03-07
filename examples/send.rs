@@ -17,7 +17,6 @@ fn main() -> Result<()> {
     let framerate = 60;
     let c: u64 = 1000 / framerate;
     let mut gg = 0;
-    let len = 400;
 
     loop {
         let clr = test_section(gg, 400)?;

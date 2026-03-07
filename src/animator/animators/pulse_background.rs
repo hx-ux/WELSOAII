@@ -1,12 +1,16 @@
-use super::modulation::ModTarget;
-use super::{AnimatedObject, AnimatorSettings, ObjectShape, UpdateBehaviour};
-use crate::animator::animation_type::{AnimationType, PulseModes};
+use crate::animator::AnimatedObject;
+use crate::animator::AnimatorSettings;
+use crate::animator::ObjectShape;
+use crate::animator::UpdateBehaviour;
+use crate::animator::animation_type::AnimationType;
+use crate::animator::animation_type::PulseModes;
 use crate::animator::animator_structs::AnimationParam;
 use crate::animator::modulation::ModMatrix;
-use crate::animator::presets_manager::PresetManager;
+use crate::animator::modulation::ModTarget;
 use crate::color::ColorParam;
+use anyhow::Ok;
 use nannou::prelude::*;
-use nannou_egui::egui::{self};
+use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 
@@ -19,8 +23,7 @@ pub struct PulseBackgroundSettings {
     // pub beat_multiplier: AnimationParam<f32>,
     pub ring_count: AnimationParam<u32>,
     pub rotation_speed: AnimationParam<f32>,
-    #[serde(skip)]
-    pub presets: PresetManager<PulseBackgroundSettings>,
+    //pub presets: PresetManager<PulseBackgroundSettings>,
 }
 
 impl AnimatorSettings for PulseBackgroundSettings {
@@ -45,7 +48,7 @@ impl AnimatorSettings for PulseBackgroundSettings {
                 "rotation",
                 ModTarget::PulseRotation,
             ),
-            presets: PresetManager::new_animator(AnimationType::PulseBackground),
+            // presets: PresetManager::new_animator(AnimationType::PulseBackground),
         }
     }
 
@@ -82,10 +85,6 @@ impl AnimatorSettings for PulseBackgroundSettings {
 
         if self.rotation_speed.to_slider_modulate(ui, mods) {
             change_type = UpdateBehaviour::HotUpdate;
-        }
-
-        if self.presets.ui(ui) {
-            change_type = UpdateBehaviour::LoadPreset
         }
 
         if self.color.ui(ui) {
@@ -131,7 +130,7 @@ impl AnimatorSettings for PulseBackgroundSettings {
     }
 
     fn save_preset(&mut self) -> anyhow::Result<()> {
-        self.presets.save_to_file(self, None)?;
+        //self.presets.save_to_file(self, None)?;
         Ok(())
     }
 
