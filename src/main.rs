@@ -9,10 +9,11 @@ mod receiver;
 mod ui;
 mod utils;
 use animator::Animator;
-use animator::UpdateBehaviour;
 use receiver::{LayoutMode, ReceiverGrid};
 pub use utils::AppMode;
 use utils::GlobalSettings;
+
+use crate::animator::animation_type::UpdateBehaviour;
 
 fn main() {
     nannou::app(model).update(update).run();

@@ -54,7 +54,7 @@ pub struct AnimationParam<T> {
     #[serde(skip_serializing)]
     pub display_text: String,
     #[serde(skip_serializing)]
-    pub modulator_active: bool,
+    pub modulatotion_active: bool,
     #[serde(skip_serializing)]
     pub ghost_value: Option<T>,
     pub mod_target: ModTarget,
@@ -63,34 +63,23 @@ pub struct AnimationParam<T> {
 impl<T> AnimationParam<T> {
     const SPACE: f32 = 5.0;
 
-    pub fn new(default: T, lower: T, upper: T, desc: &str) -> Self
+    /// A Slider, which cannot be Modulated
+    pub fn new(default: T, lower: T, upper: T, desc: &str, mod_target: Option<ModTarget>) -> Self
     where
         T: Clone,
     {
-        Self {
-            value: default.clone(),
-            default,
-            range: RangeHolder::new(lower, upper),
-            display_text: desc.to_string(),
-            ghost_value: None,
-            modulator_active: false,
-            mod_target: ModTarget::None,
-            // modulator:None
-        }
-    }
+        let target = mod_target
+            .filter(|t| *t != ModTarget::None)
+            .unwrap_or(ModTarget::None);
 
-    pub fn new_modulate(default: T, lower: T, upper: T, desc: &str, mod_target: ModTarget) -> Self
-    where
-        T: Clone,
-    {
         Self {
             value: default.clone(),
             default,
             range: RangeHolder::new(lower, upper),
             display_text: desc.to_string(),
             ghost_value: None,
-            modulator_active: false,
-            mod_target,
+            modulatotion_active: false,
+            mod_target: target,
         }
     }
 
@@ -102,7 +91,9 @@ impl<T> AnimationParam<T> {
     }
 
     pub fn connect_modulation(&self, mods: &mut ModMatrix) {
-        mods.routes.push(ModRoute::new(self.mod_target));
+        if self.mod_target != ModTarget::None {
+            mods.routes.push(ModRoute::new(self.mod_target));
+        }
     }
 
     fn to_slider_core(&mut self, ui: &mut egui::Ui) -> bool
@@ -137,7 +128,7 @@ impl<T> AnimationParam<T> {
         ui.add(Label::new(self.display_text.to_string()));
 
         if self.mod_target != ModTarget::None {
-            let color = if self.modulator_active {
+            let color = if self.modulatotion_active {
                 egui::Color32::GREEN
             } else {
                 egui::Color32::RED
@@ -146,8 +137,8 @@ impl<T> AnimationParam<T> {
             let button = egui::Button::new("M1").fill(color);
 
             if ui.add(button).clicked() {
-                self.modulator_active = !self.modulator_active;
-                mods.set_enables(self.modulator_active, self.mod_target);
+                self.modulatotion_active = !self.modulatotion_active;
+                mods.set_enables(self.modulatotion_active, self.mod_target);
                 changed = true;
             }
         }

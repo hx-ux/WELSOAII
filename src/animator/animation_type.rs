@@ -2,6 +2,23 @@ use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
 use strum_macros::{Display, EnumString};
 
+#[derive(Debug, PartialEq)]
+// Defines, how the animators behave, if an Param is changed
+pub enum UpdateBehaviour {
+    None,
+    // Resets the current animator and its object.
+    // Mainly used for switching between Animators
+    // Does call Animator::new()
+    NeedsReset,
+    // Hot updates, which affect the animator in the next frame(s)
+    // Does not call Animator::new()
+    HotUpdate,
+    //
+    LoadPreset,
+    //
+    SavePresets,
+}
+
 #[derive(Debug, PartialEq, Clone, Copy, Default, EnumString, Display, EnumIter)]
 pub enum AnimationType {
     #[default]

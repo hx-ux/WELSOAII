@@ -1,5 +1,5 @@
 use crate::animator::animation_type::AnimationType;
-use crate::animator::animator_structs::AnimationParam;
+use crate::animator::animator_param::AnimationParam;
 use crate::utils::PathManager;
 use anyhow::Result;
 use nannou_egui::egui;
@@ -33,7 +33,7 @@ impl GlobalSettings {
             framerate: 60.0,
             view_window_size: (1000, 1000),
             app_mode: AppMode::Edit,
-            window_opacity: AnimationParam::new(200, 1, 255, "opacity"),
+            window_opacity: AnimationParam::new(200, 1, 255, "opacity", None),
         }
     }
 

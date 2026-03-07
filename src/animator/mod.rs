@@ -1,11 +1,10 @@
 extern crate nannou;
-
 use anyhow::Result;
 use strum::IntoEnumIterator;
 
 use crate::{
     animator::{
-        animation_type::AnimationType,
+        animation_type::{AnimationType, UpdateBehaviour},
         animators::{WaveLinesSettings, bouncing_ball, pulse_background, scan_line, wave_lines},
     },
     receiver::ReceiverGrid,
@@ -14,7 +13,7 @@ use nannou::prelude::*;
 use nannou_egui::egui::{self};
 
 pub mod animation_type;
-pub mod animator_structs;
+pub mod animator_param;
 mod animators;
 pub mod timecode;
 
@@ -35,23 +34,6 @@ macro_rules! with_current_settings {
             AnimationType::WaveLines => $self.wave_lines_settings.$method($($args),*),
         }
     };
-}
-
-#[derive(Debug, PartialEq)]
-// Defines, how the animators behave, if an Param is changed
-pub enum UpdateBehaviour {
-    None,
-    // Resets the current animator and its object.
-    // Mainly used for switching between Animators
-    // Does call Animator::new()
-    NeedsReset,
-    // Hot updates, which affect the animator in the next frame(s)
-    // Does not call Animator::new()
-    HotUpdate,
-    //
-    LoadPreset,
-    //
-    SavePresets,
 }
 
 // An animated object, which every animator does emit

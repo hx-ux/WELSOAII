@@ -3,9 +3,8 @@ use crate::animator::AnimatorSettings;
 use crate::animator::ObjectShape;
 use crate::animator::UpdateBehaviour;
 use crate::animator::animation_type::AnimationType;
-use crate::animator::animation_type::PulseModes;
 use crate::animator::animation_type::ScanLineModes;
-use crate::animator::animator_structs::AnimationParam;
+use crate::animator::animator_param::AnimationParam;
 use crate::modulator::ModMatrix;
 use crate::modulator::ModTarget;
 //use crate::animator::presets_manager::PresetManager;
@@ -36,10 +35,10 @@ impl AnimatorSettings for ScanLineSettings {
     fn new(win_rect: &Rect) -> Self {
         Self {
             mode: ScanLineModes::default(),
-            speed: AnimationParam::new_modulate(300.0, 0.0, 1000.0, "speed", ModTarget::ScanSpeed),
-            width: AnimationParam::new_modulate(20.0, 5.0, 100.0, "width", ModTarget::ScanWidth),
+            speed: AnimationParam::new(300.0, 0.0, 1000.0, "speed", Some(ModTarget::ScanSpeed)),
+            width: AnimationParam::new(20.0, 5.0, 100.0, "width", Some(ModTarget::ScanWidth)),
             color: ColorParam::default(),
-            multi_line_count: AnimationParam::new(1, 1, 10, "line_count"),
+            multi_line_count: AnimationParam::new(1, 1, 10, "line_count", None),
             height: win_rect.h(),
             begin_pos: win_rect.left(),
             //presets: PresetManager::new_animator(AnimationType::ScanLine),

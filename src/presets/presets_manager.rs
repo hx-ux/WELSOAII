@@ -1,5 +1,5 @@
 use crate::{
-    animator::{UpdateBehaviour, animation_type::AnimationType},
+    animator::animation_type::{AnimationType, UpdateBehaviour},
     utils::PathManager,
 };
 

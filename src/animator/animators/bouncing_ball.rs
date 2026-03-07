@@ -3,8 +3,8 @@ use crate::animator::AnimatorSettings;
 use crate::animator::ObjectShape;
 use crate::animator::UpdateBehaviour;
 use crate::animator::animation_type::AnimationType;
-use crate::animator::animator_structs::AnimationParam;
-use crate::animator::animator_structs::RangeHolder;
+use crate::animator::animator_param::AnimationParam;
+use crate::animator::animator_param::RangeHolder;
 use crate::animator::timecode::TimeCode;
 use crate::color::ColorParam;
 use crate::modulator::ModMatrix;
@@ -36,16 +36,10 @@ pub struct BouncingBallSettings {
 impl AnimatorSettings for BouncingBallSettings {
     fn new(win_rect: &Rect) -> Self {
         Self {
-            ball_count: AnimationParam::new(20, 1, 400, "Ball Count"),
-            speed: AnimationParam::new_modulate(1.0, 1.0, 5.0, "Speed", ModTarget::BouncingSpeed),
+            ball_count: AnimationParam::new(20, 1, 400, "Ball Count", None),
+            speed: AnimationParam::new(1.0, 1.0, 5.0, "Speed", Some(ModTarget::BouncingSpeed)),
             dimension: *win_rect,
-            radius: AnimationParam::new_modulate(
-                10.0,
-                6.0,
-                30.0,
-                "radius",
-                ModTarget::BouncingRadius,
-            ),
+            radius: AnimationParam::new(10.0, 6.0, 30.0, "radius", Some(ModTarget::BouncingRadius)),
             ball_vel_range_x: RangeHolder::new(-100.0, 100.0),
             ball_vel_range_y: RangeHolder::new(-100.0, 100.0),
             color: ColorParam::default(),

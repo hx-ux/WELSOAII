@@ -4,7 +4,7 @@ use crate::animator::ObjectShape;
 use crate::animator::UpdateBehaviour;
 use crate::animator::animation_type::AnimationType;
 use crate::animator::animation_type::PulseModes;
-use crate::animator::animator_structs::AnimationParam;
+use crate::animator::animator_param::AnimationParam;
 use crate::color::ColorParam;
 use crate::modulator::ModMatrix;
 use crate::modulator::ModTarget;
@@ -30,23 +30,23 @@ impl AnimatorSettings for PulseBackgroundSettings {
     fn new(win_rect: &Rect) -> Self {
         Self {
             mode: PulseModes::default(),
-            speed: AnimationParam::new_modulate(100.0, 1.0, 200.0, "speed", ModTarget::PulseSpeed),
+            speed: AnimationParam::new(100.0, 1.0, 200.0, "speed", Some(ModTarget::PulseSpeed)),
             color: ColorParam::default(),
-            limit: AnimationParam::new_modulate(0.8, 0.1, 1.0, "limit", ModTarget::PulseLimit),
+            limit: AnimationParam::new(0.8, 0.1, 1.0, "limit", Some(ModTarget::PulseLimit)),
             // beat_multiplier: AnimationParam::new(1.0, 0.0, 4.0, "beat_mult"),
-            ring_count: AnimationParam::new_modulate(
+            ring_count: AnimationParam::new(
                 3,
                 1,
                 10,
                 "ring_count",
-                ModTarget::PulseRingCount,
+                Some(ModTarget::PulseRingCount),
             ),
-            rotation_speed: AnimationParam::new_modulate(
+            rotation_speed: AnimationParam::new(
                 0.5,
                 0.0,
                 3.0,
                 "rotation",
-                ModTarget::PulseRotation,
+                Some(ModTarget::PulseRotation),
             ),
             // presets: PresetManager::new_animator(AnimationType::PulseBackground),
         }

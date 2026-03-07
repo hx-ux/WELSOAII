@@ -1,7 +1,7 @@
 use crate::{
     animator::{
         AnimatedObject, AnimatorSettings, ObjectShape, UpdateBehaviour,
-        animation_type::AnimationType, animator_structs::AnimationParam,
+        animation_type::AnimationType, animator_param::AnimationParam,
     },
     color::ColorParam,
 };
@@ -31,35 +31,35 @@ pub struct WaveLinesSettings {
 impl AnimatorSettings for WaveLinesSettings {
     fn new(win_rect: &Rect) -> Self {
         let wave_lines_settings = Self {
-            line_count: AnimationParam::new(14, 2, 60, "lines"),
-            amplitude: AnimationParam::new_modulate(
+            line_count: AnimationParam::new(14, 2, 60, "lines", None),
+            amplitude: AnimationParam::new(
                 90.0,
                 5.0,
                 260.0,
                 "amplitude",
-                ModTarget::WaveAmplitude,
+                Some(ModTarget::WaveAmplitude),
             ),
-            frequency: AnimationParam::new_modulate(
+            frequency: AnimationParam::new(
                 0.018,
                 0.003,
                 0.08,
                 "frequency",
-                ModTarget::WaveFrequency,
+                Some(ModTarget::WaveFrequency),
             ),
-            speed: AnimationParam::new_modulate(1.5, 0.1, 6.0, "speed", ModTarget::WaveSpeed),
-            thickness: AnimationParam::new_modulate(
+            speed: AnimationParam::new(1.5, 0.1, 6.0, "speed", Some(ModTarget::WaveSpeed)),
+            thickness: AnimationParam::new(
                 4.0,
                 1.0,
                 14.0,
                 "thickness",
-                ModTarget::WaveThickness,
+                Some(ModTarget::WaveThickness),
             ),
-            phase_spread: AnimationParam::new_modulate(
+            phase_spread: AnimationParam::new(
                 0.0,
                 -2.0,
                 2.0,
                 "phase spread",
-                ModTarget::WavePhaseSpread,
+                Some(ModTarget::WavePhaseSpread),
             ),
             color: ColorParam::default(),
             width: win_rect.w(),
