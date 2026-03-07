@@ -115,7 +115,7 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
                 UpdateBehaviour::NeedsReset => _model.animator.reset(&win_rect),
                 UpdateBehaviour::HotUpdate => _model.animator.behaviour_hot_update(),
                 UpdateBehaviour::LoadPreset => {}
-                UpdateBehaviour::SavePrest => _model.animator.save_preset(),
+                UpdateBehaviour::SavePresets => _model.animator.save_preset(),
                 UpdateBehaviour::None => {}
             });
         });

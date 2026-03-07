@@ -24,6 +24,17 @@ use scan_line::ScanLineSettings;
 use timecode::TimeCode;
 use wave_lines::WaveLinesSettings;
 
+macro_rules! with_current_settings {
+    ($self:expr, $method:ident $(, $args:expr)*) => {
+        match $self.animation_type {
+            AnimationType::BouncingBalls => $self.bouncing_ball_settings.$method($($args),*),
+            AnimationType::ScanLine => $self.scanline_settings.$method($($args),*),
+            AnimationType::PulseBackground => $self.pulse_settings.$method($($args),*),
+            AnimationType::WaveLines => $self.wave_lines_settings.$method($($args),*),
+        }
+    };
+}
+
 #[derive(Debug, PartialEq)]
 // Defines, how the animators behave, if an Param is changed
 pub enum UpdateBehaviour {
@@ -38,7 +49,7 @@ pub enum UpdateBehaviour {
     //
     LoadPreset,
     //
-    SavePrest,
+    SavePresets,
 }
 
 // An animated object, which every animator does emit
@@ -59,6 +70,7 @@ pub trait AnimatedObject {
     // For downcasting to concrete types
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any;
 }
+//DispatchFromDyn
 
 pub trait AnimatorSettings {
     fn new(win_rect: &Rect) -> Self;
@@ -169,46 +181,15 @@ impl Animator {
         self.pulse_settings.set_dimension(win_rect);
         self.wave_lines_settings.set_dimension(win_rect);
 
-        self.objects = match self.animation_type {
-            AnimationType::BouncingBalls => self.bouncing_ball_settings.create(),
-            AnimationType::ScanLine => self.scanline_settings.create(),
-            AnimationType::PulseBackground => self.pulse_settings.create(),
-            AnimationType::WaveLines => self.wave_lines_settings.create(),
-        };
+        self.objects = with_current_settings!(self, create);
     }
     /// Apply hot updates to existing objects without recreating them
     pub fn behaviour_hot_update(&mut self) {
-        match self.animation_type {
-            AnimationType::BouncingBalls => {
-                self.bouncing_ball_settings.hot_update(&mut self.objects);
-            }
-            AnimationType::ScanLine => {
-                self.scanline_settings.hot_update(&mut self.objects);
-            }
-            AnimationType::PulseBackground => {
-                self.pulse_settings.hot_update(&mut self.objects);
-            }
-            AnimationType::WaveLines => {
-                self.wave_lines_settings.hot_update(&mut self.objects);
-            }
-        }
+        with_current_settings!(self, hot_update, &mut self.objects);
     }
 
     pub fn save_preset(&mut self) {
-        match self.animation_type {
-            AnimationType::BouncingBalls => {
-                let _ = self.bouncing_ball_settings.save_preset();
-            }
-            AnimationType::ScanLine => {
-                let _ = self.scanline_settings.save_preset();
-            }
-            AnimationType::PulseBackground => {
-                let _ = self.pulse_settings.save_preset();
-            }
-            AnimationType::WaveLines => {
-                let _ = self.wave_lines_settings.save_preset();
-            }
-        }
+        with_current_settings!(self, save_preset);
     }
 
     pub fn update(&mut self, win_rect: &Rect, delta_time: f32) {
