@@ -146,7 +146,6 @@ pub struct PulseBackground {
     pub speed: f32,
     current_size_w: f32,
     current_size_h: f32,
-    time: f32,
     pub limit: f32,
     index: usize,
     pub ring_count: usize,
@@ -170,7 +169,6 @@ impl PulseBackground {
             color,
             current_size_w: 20.0,
             current_size_h: 20.0,
-            time: 0.0,
             limit,
             index,
             ring_count: ring_count as usize,
@@ -195,8 +193,6 @@ impl AnimatedObject for PulseBackground {
 
         let max_w_allowed = max_w * self.limit;
         let max_h_allowed = max_h * self.limit;
-
-        self.time += delta_time;
 
         // Update rotation based on beat
         let beat_progress = clock.get_beat_progress();
@@ -256,27 +252,6 @@ impl AnimatedObject for PulseBackground {
             .height(self.current_size_h)
             .rotate(self.rotation)
             .color(self.color);
-
-        // Add corner highlights for extra visual pop
-        if self.current_size_w > 100.0 {
-            let highlight_color = rgba8(255, 255, 255, 80);
-            let offset = self.current_size_w * 0.4;
-
-            // Four corner highlights
-            let corners = [
-                vec2(offset, offset),
-                vec2(-offset, offset),
-                vec2(offset, -offset),
-                vec2(-offset, -offset),
-            ];
-
-            for corner in corners.iter() {
-                draw.ellipse()
-                    .xy(*corner)
-                    .radius(20.0)
-                    .color(highlight_color);
-            }
-        }
     }
 
     fn shape(&self) -> ObjectShape {

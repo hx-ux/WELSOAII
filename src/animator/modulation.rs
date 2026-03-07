@@ -1,4 +1,6 @@
 use crate::animator::animation_type::AnimationType;
+use nannou::rand::rand;
+use nannou::rand::random_range;
 use nannou_egui::egui::{self};
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
@@ -18,6 +20,8 @@ pub enum ModWave {
     RampUp,
     #[strum(to_string = "RampDown")]
     RampDown,
+    #[strum(to_string = "Random")]
+    Random,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default, Display, EnumIter)]
@@ -35,9 +39,6 @@ pub enum ModTarget {
     ScanSpeed,
     #[strum(to_string = "Scan Width")]
     ScanWidth,
-    // TODO check if this looks good
-    // ScanBeatSnap,
-    // Pulse Background
     #[strum(to_string = "Pulse Speed")]
     PulseSpeed,
     #[strum(to_string = "Pulse Limit")]
@@ -162,9 +163,13 @@ impl ModMatrix {
     pub fn ui(&mut self, ui: &mut egui::Ui, animation_type: AnimationType) {
         ui.add(egui::Slider::new(&mut self.amount, -1.0..=1.0).text("Depth"));
         // todo 0.5 Steps
-        ui.add(egui::Slider::new(&mut self.freq_mul, 0.1..=8.0).text("Rate (x beat)"));
+        ui.add(
+            egui::Slider::new(&mut self.freq_mul, 0.5..=2.0)
+                .text("Rate (x beat)")
+                .step_by(0.5),
+        );
         // todo higher steps
-        ui.add(egui::Slider::new(&mut self.phase, -4.0..=4.0).text("Phase (beats)"));
+        // ui.add(egui::Slider::new(&mut self.phase, -4.0..=4.0).text("Phase (beats)"));
 
         egui::ComboBox::from_label("Wave")
             .selected_text(format!("{:?}", self.wave))
@@ -186,15 +191,6 @@ impl ModMatrix {
             ui.horizontal(|ui| {
                 ui.checkbox(&mut route.enabled, format!("{}", route.target));
                 ui.add(egui::Slider::new(&mut route.amount, 0.0..=1.0).text("Depth"));
-
-                // Disabled for now
-                // if ui
-                //     .add(egui::Button::new("-"))
-                //     .on_hover_text("Remove")
-                //     .clicked()
-                // {
-                //     remove_idx = Some(i);
-                // }
             });
         }
         if let Some(idx) = remove_idx {
@@ -207,7 +203,10 @@ impl ModMatrix {
             return 1.0;
         }
 
-        let lfo = sample_wave(self.wave, beat_pos * self.freq_mul + self.phase);
+        // let lfo = sample_wave(self.wave, beat_pos * self.freq_mul + self.phase);
+        // let lfo = sample_wave(self.wave, beat_pos * self.freq_mul + self.phase);
+        let lfo = sample_wave(self.wave, beat_pos * self.freq_mul);
+
         let mut factor = 1.0;
 
         for route in self
@@ -241,5 +240,7 @@ pub fn sample_wave(wave: ModWave, beat_pos: f32) -> f32 {
         }
         ModWave::RampUp => ((phase / std::f32::consts::TAU).fract()) * 2.0 - 1.0,
         ModWave::RampDown => 1.0 - ((phase / std::f32::consts::TAU).fract()) * 2.0,
+        // TODO
+        ModWave::Random => 0.0,
     }
 }

@@ -18,7 +18,6 @@ pub struct ScanLineSettings {
     pub speed: AnimationParam<f32>,
     pub width: AnimationParam<f32>,
     color: ColorParam,
-    // pub beat_snap: AnimationParam<f32>,
     multi_line_count: AnimationParam<u32>,
     #[serde(skip)]
     height: f32,
@@ -35,8 +34,6 @@ impl AnimatorSettings for ScanLineSettings {
             speed: AnimationParam::new_modulate(300.0, 0.0, 1000.0, "speed", ModTarget::ScanSpeed),
             width: AnimationParam::new_modulate(20.0, 5.0, 100.0, "width", ModTarget::ScanWidth),
             color: ColorParam::default(),
-            // beat_snap: AnimationParam::new(0.0, 0.0, 2.0, "beat_snap"),
-            // TODO
             multi_line_count: AnimationParam::new(1, 1, 10, "line_count"),
             height: win_rect.h(),
             begin_pos: win_rect.left(),
@@ -83,24 +80,6 @@ impl AnimatorSettings for ScanLineSettings {
             change_type = UpdateBehaviour::HotUpdate;
         }
 
-        // ui.separator();
-        // ui.label("Beat Sync Controls:");
-
-        // if self.beat_snap.to_slider_modulate(
-        //     ui,
-        //     mods.has_target(crate::animator::modulation::ModTarget::ScanBeatSnap),
-        //     Some(
-        //         self.beat_snap.value
-        //             * crate::animator::modulation::factor(
-        //                 &mods.routes,
-        //                 crate::animator::modulation::ModTarget::ScanBeatSnap,
-        //                 beat_now,
-        //             ),
-        //     ),
-        // ) {
-        //     change_type = UpdateBehaviour::HotUpdate;
-        // }
-
         if self.presets.ui(ui) {
             change_type = UpdateBehaviour::LoadPreset;
         }
@@ -122,7 +101,6 @@ impl AnimatorSettings for ScanLineSettings {
                 self.width.value,
                 self.height,
                 self.begin_pos,
-                // self.beat_snap.value,
                 index as usize,
             )));
         }
@@ -142,8 +120,6 @@ impl AnimatorSettings for ScanLineSettings {
                 scan_line.width = self.width.value;
                 scan_line.mode = self.mode;
                 scan_line.height = self.height;
-                // scan_line.beat_snap = self.beat_snap.value;
-
                 // Update speed, preserving direction
                 let direction = scan_line.speed.signum();
                 scan_line.speed = self.speed.value.abs() * direction;
@@ -179,11 +155,9 @@ impl ScanLine {
         width: f32,
         height: f32,
         begin_pos: f32,
-        // beat_snap: f32,
         index: usize,
     ) -> Self {
         let half_width = width / 2.0;
-        // Offset each line's starting position for multi-line effect
         let phase_offset = (index as f32 * std::f32::consts::PI * 2.0) / 10.0;
         let position = vec2(begin_pos + half_width + (index as f32 * 50.0), 0.0);
 
@@ -195,7 +169,6 @@ impl ScanLine {
             height,
             width,
             index,
-            // beat_snap,
             phase_offset,
         }
     }
@@ -215,7 +188,6 @@ impl AnimatedObject for ScanLine {
 
         self.position.x += self.speed * delta_time;
 
-        // self.position.x += self.speed * delta_time * speed_multiplier;
 
         let half_width = self.width / 2.0;
         let left_bound = win_rect.left() + half_width;

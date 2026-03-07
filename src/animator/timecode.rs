@@ -49,10 +49,8 @@ pub struct TimeCode {
     #[serde(skip)]
     pub is_running: bool,
     #[serde(skip)]
-    is_linked: bool,
-    #[serde(skip)]
-    ablLsync: AblLinkState,
-    does_sync_to_abl_link: bool,
+    abl_sync_state: AblLinkState,
+    sync_active: bool,
     #[serde(skip)]
     prev_time: f32,
     #[serde(skip)]
@@ -66,18 +64,23 @@ impl TimeCode {
             current_time: 0.0,
             total_beats: 0.0,
             is_running: true,
-            is_linked: false,
-            ablLsync: AblLinkState::new(),
-            does_sync_to_abl_link: false,
+            // is_linked: false,
+            abl_sync_state: AblLinkState::new(),
+            sync_active: false,
             prev_time: 0.0,
             delta_time: 0.0,
         }
     }
 
-    pub fn toggle_start_link(&mut self) {
+    pub fn start_link(&mut self) {
         println!("toggle link");
-        self.does_sync_to_abl_link = !self.does_sync_to_abl_link;
-        self.ablLsync.link.enable(self.does_sync_to_abl_link);
+        self.sync_active = true;
+        self.abl_sync_state.link.enable(true);
+    }
+    pub fn stop_link(&mut self) {
+        println!("toggle link");
+        self.sync_active = false;
+        self.abl_sync_state.link.enable_start_stop_sync(false);
     }
 
     pub fn set_bpm(&mut self, bpm: f32) {
@@ -101,7 +104,7 @@ impl TimeCode {
 
     pub fn update(&mut self, delta_time: f32) -> f32 {
         if self.is_running {
-            if self.does_sync_to_abl_link {
+            if self.sync_active {
                 self.update_from_link();
             } else {
                 self.current_time += delta_time;
@@ -116,25 +119,25 @@ impl TimeCode {
     }
 
     fn update_from_link(&mut self) {
-        self.ablLsync.capture_app_state();
+        self.abl_sync_state.capture_app_state();
 
         // Get the current time
-        let time = self.ablLsync.link.clock_micros();
+        let time = self.abl_sync_state.link.clock_micros();
 
         // Get the current beat position from Link's session
         // This will always give a beat position, even with no peers
         let beats = self
-            .ablLsync
+            .abl_sync_state
             .session_state
-            .beat_at_time(time, self.ablLsync.quantum);
+            .beat_at_time(time, self.abl_sync_state.quantum);
 
         self.total_beats = beats as f32;
 
-        self.tempo = self.ablLsync.session_state.tempo() as f32;
+        self.tempo = self.abl_sync_state.session_state.tempo() as f32;
         self.current_time = (self.total_beats * 60.0) / self.tempo;
 
         // let phase = self.ablLsync.session_state.session_state.phase_at_time(time, state.quantum);
-        self.ablLsync.commit_app_state();
+        self.abl_sync_state.commit_app_state();
     }
 
     pub fn get_time(&self) -> f32 {
@@ -172,8 +175,6 @@ impl TimeCode {
     }
 
     pub fn ui(&mut self, ui: &mut egui::Ui) {
-        // let mut change_type = UpdateBehaviour::None;
-
         ui.separator();
         ui.heading("Master Clock");
 
@@ -223,15 +224,16 @@ impl TimeCode {
             ui.label(format!("Total Beats: {} ", self.total_beats as usize));
         });
 
-        let enabled = match self.does_sync_to_abl_link {
+        let enabled = match self.sync_active {
             true => "Disconnect Link",
             false => "Connect Link",
         };
 
         if ui.button(enabled).clicked() {
-            if self.does_sync_to_abl_link {
+            if self.sync_active {
+                self.stop_link();
             } else {
-                self.toggle_start_link();
+                self.start_link();
             }
         }
     }

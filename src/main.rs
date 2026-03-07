@@ -75,7 +75,6 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
     egui.set_elapsed_time(_update.since_start);
 
     let ctx = egui.begin_frame();
-
     crate::ui::style::apply_custom_style(&ctx, _model.global_settings.window_opacity.value);
 
     // Modular Windows with this
@@ -83,11 +82,11 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
 
     egui::SidePanel::left("control_panel")
         .resizable(true)
-        .min_width(240.0)
-        .max_width(420.0)
-        .default_width(300.0)
-        .show(&ctx, |ui| {
-            ui.heading("Welosa Control");
+        .min_width(_model.global_settings.view_window_size.1 as f32 * 0.2)
+        .max_width(_model.global_settings.view_window_size.1 as f32)
+        .default_width(_model.global_settings.view_window_size.1 as f32 * 0.3)
+        .show_animated(&ctx, true, |ui| {
+            ui.heading("Welosa II");
             ui.separator();
 
             ui.collapsing("Global", |ui| {
@@ -136,7 +135,6 @@ fn event(_app: &App, _model: &mut Model, event: WindowEvent) {
                     receiver.move_by(vec2(0.0, 10.0))
                 }
             }
-
             Key::Down => {
                 if receiver.edit_mode {
                     receiver.move_by(vec2(0.0, -10.0))
@@ -150,7 +148,6 @@ fn event(_app: &App, _model: &mut Model, event: WindowEvent) {
                     _model.animator.reset(&win_rect);
                 }
             }
-
             Key::Left => {
                 if receiver.edit_mode {
                     receiver.move_by(vec2(-10.0, 0.0));
