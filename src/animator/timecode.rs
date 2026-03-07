@@ -1,15 +1,15 @@
 // use nannou::{ draw::background::new};
-use nannou_egui::egui::{self, Rect};
+use nannou_egui::egui;
 use rusty_link::{AblLink, SessionState};
 use serde::{Deserialize, Serialize};
-// https://github.com/anzbert/rusty_link/blob/master/examples/link_hut_silent/main.rs
 
-// Currently read only
+/// Currently read only
 pub struct AblLinkState {
     pub link: AblLink,
     pub session_state: SessionState,
     pub quantum: f64,
 }
+
 impl AblLinkState {
     pub fn new() -> Self {
         Self {
@@ -22,19 +22,11 @@ impl AblLinkState {
     pub fn capture_app_state(&mut self) {
         self.link.capture_app_session_state(&mut self.session_state);
     }
-
-    pub fn commit_app_state(&mut self) {
-        self.link.commit_app_session_state(&self.session_state);
-    }
 }
 
 impl Default for AblLinkState {
     fn default() -> Self {
-        Self {
-            link: AblLink::new(120.),
-            session_state: Default::default(),
-            quantum: Default::default(),
-        }
+        Self::new()
     }
 }
 
@@ -49,10 +41,8 @@ pub struct TimeCode {
     #[serde(skip)]
     pub is_running: bool,
     #[serde(skip)]
-    is_linked: bool,
-    #[serde(skip)]
-    ablLsync: AblLinkState,
-    does_sync_to_abl_link: bool,
+    abl_sync_state: AblLinkState,
+    sync_active: bool,
     #[serde(skip)]
     prev_time: f32,
     #[serde(skip)]
@@ -66,22 +56,25 @@ impl TimeCode {
             current_time: 0.0,
             total_beats: 0.0,
             is_running: true,
-            is_linked: false,
-            ablLsync: AblLinkState::new(),
-            does_sync_to_abl_link: false,
+            abl_sync_state: AblLinkState::new(),
+            sync_active: false,
             prev_time: 0.0,
             delta_time: 0.0,
         }
     }
 
-    pub fn toggle_start_link(&mut self) {
-        println!("toggle link");
-        self.does_sync_to_abl_link = !self.does_sync_to_abl_link;
-        self.ablLsync.link.enable(self.does_sync_to_abl_link);
+    pub fn start_link(&mut self) {
+        self.sync_active = true;
+        self.abl_sync_state.link.enable(true);
+    }
+
+    pub fn stop_link(&mut self) {
+        self.sync_active = false;
+        self.abl_sync_state.link.enable(false);
     }
 
     pub fn set_bpm(&mut self, bpm: f32) {
-        self.tempo = bpm.max(1.0).min(240.0);
+        self.tempo = bpm.max(40.0).min(300.0);
     }
 
     pub fn start(&mut self) {
@@ -101,7 +94,7 @@ impl TimeCode {
 
     pub fn update(&mut self, delta_time: f32) -> f32 {
         if self.is_running {
-            if self.does_sync_to_abl_link {
+            if self.sync_active {
                 self.update_from_link();
             } else {
                 self.current_time += delta_time;
@@ -116,25 +109,17 @@ impl TimeCode {
     }
 
     fn update_from_link(&mut self) {
-        self.ablLsync.capture_app_state();
+        self.abl_sync_state.capture_app_state();
 
-        // Get the current time
-        let time = self.ablLsync.link.clock_micros();
-
-        // Get the current beat position from Link's session
-        // This will always give a beat position, even with no peers
+        let time = self.abl_sync_state.link.clock_micros();
         let beats = self
-            .ablLsync
+            .abl_sync_state
             .session_state
-            .beat_at_time(time, self.ablLsync.quantum);
+            .beat_at_time(time, self.abl_sync_state.quantum);
 
         self.total_beats = beats as f32;
-
-        self.tempo = self.ablLsync.session_state.tempo() as f32;
+        self.tempo = self.abl_sync_state.session_state.tempo() as f32;
         self.current_time = (self.total_beats * 60.0) / self.tempo;
-
-        // let phase = self.ablLsync.session_state.session_state.phase_at_time(time, state.quantum);
-        self.ablLsync.commit_app_state();
     }
 
     pub fn get_time(&self) -> f32 {
@@ -153,10 +138,6 @@ impl TimeCode {
         self.total_beats.fract()
     }
 
-    // pub fn get_bar_progress(&self) -> u8 {
-    //     (self.total_beats / 4.0).fract() as u8
-    // }
-
     pub fn get_formatted_time(&self) -> String {
         let minutes = (self.current_time / 60.0).floor() as i32;
         let seconds = (self.current_time % 60.0).floor() as i32;
@@ -164,16 +145,13 @@ impl TimeCode {
         format!("{:02}:{:02}:{:03}", minutes, seconds, milliseconds)
     }
 
-    // todo ableton live
     pub fn get_beat_counter(&self) -> (i32, f32) {
-        let beat = self.total_beats.floor() as i32 % 4 + 1;
+        let beat = (self.total_beats.floor() as i32).wrapping_rem_euclid(4) + 1;
         let progress = self.get_beat_progress();
         (beat, progress)
     }
 
     pub fn ui(&mut self, ui: &mut egui::Ui) {
-        // let mut change_type = UpdateBehaviour::None;
-
         ui.separator();
         ui.heading("Master Clock");
 
@@ -192,25 +170,29 @@ impl TimeCode {
             }
 
             ui.label("BPM:");
-            let mut bpm = self.tempo;
-            // todo bpm should always be int
-
-            if ui.add(egui::DragValue::new(&mut bpm).speed(0.5)).changed() {
-                bpm = bpm.clamp(60.0, 240.0);
-                self.set_bpm(bpm);
+            if self.sync_active {
+                ui.label(format!("{:.1}", self.tempo));
+            } else {
+                let mut bpm = self.tempo.round() as i32;
+                if ui
+                    .add(
+                        egui::DragValue::new(&mut bpm)
+                            .speed(1)
+                            .clamp_range(40..=300),
+                    )
+                    .changed()
+                {
+                    self.set_bpm(bpm as f32);
+                }
             }
 
-            for i in 1..5 {
-                let mut col = egui::Color32::from_rgba_premultiplied(0, 0, 0, 255);
-
+            for i in 1..=4 {
+                let mut col = egui::Color32::BLACK;
                 if i == self.get_beat_counter().0 {
-                    col = egui::Color32::from_rgba_premultiplied(255, 255, 255, 255);
+                    col = egui::Color32::WHITE;
                 }
-
-                let color_preview =
-                    ui.allocate_exact_size(egui::vec2(10.0, 10.0), egui::Sense::hover());
-
-                ui.painter().rect_filled(color_preview.0, 4.0, col);
+                let rect = ui.allocate_exact_size(egui::vec2(10.0, 10.0), egui::Sense::hover());
+                ui.painter().rect_filled(rect.0, 4.0, col);
             }
         });
 
@@ -218,21 +200,26 @@ impl TimeCode {
             ui.label(format!("Time: {}", self.get_formatted_time()));
 
             let (beat, progress) = self.get_beat_counter();
-
             ui.label(format!("Beat: {} ({:.2})", beat, progress));
-            ui.label(format!("Total Beats: {} ", self.total_beats as usize));
+            ui.label(format!("Total Beats: {:.0}", self.total_beats));
         });
 
-        let enabled = match self.does_sync_to_abl_link {
-            true => "Disconnect Link",
-            false => "Connect Link",
+        let enabled = if self.sync_active {
+            "Disconnect Link"
+        } else {
+            "Connect Link"
         };
 
         if ui.button(enabled).clicked() {
-            if self.does_sync_to_abl_link {
+            if self.sync_active {
+                self.stop_link();
             } else {
-                self.toggle_start_link();
+                self.start_link();
             }
         }
+
+        self.abl_sync_state.capture_app_state();
+        let peers = self.abl_sync_state.link.num_peers();
+        ui.label(format!("Link Peers: {}", peers));
     }
 }

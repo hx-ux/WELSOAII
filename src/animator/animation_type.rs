@@ -6,13 +6,25 @@ use strum_macros::{Display, EnumString};
 pub enum AnimationType {
     #[default]
     #[strum(to_string = "Bouncing Balls")]
-    BouncingBalls,
-    #[strum(to_string = "Gravity Fountain")]
-    ScanLine,
+    BouncingBalls = 0,
     #[strum(to_string = "Pulse Background")]
-    PulseBackground,
+    PulseBackground = 1,
+    #[strum(to_string = "Scan Line ")]
+    ScanLine = 2,
     #[strum(to_string = "Wave Lines")]
-    WaveLines,
+    WaveLines = 3,
+}
+
+impl From<usize> for AnimationType {
+    fn from(value: usize) -> Self {
+        match value {
+            _ if value == AnimationType::BouncingBalls as usize => AnimationType::BouncingBalls,
+            _ if value == AnimationType::PulseBackground as usize => AnimationType::PulseBackground,
+            _ if value == AnimationType::ScanLine as usize => AnimationType::ScanLine,
+            _ if value == AnimationType::WaveLines as usize => AnimationType::WaveLines,
+            _ => AnimationType::BouncingBalls,
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize, Default, Display, EnumIter)]
@@ -29,6 +41,6 @@ pub enum PulseModes {
     #[default]
     #[strum(to_string = "Wrap Around")]
     Smooth,
-    #[strum(to_string = "Wrap Around")]
+    #[strum(to_string = "Elastic")]
     Elastic,
 }

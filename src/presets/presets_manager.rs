@@ -1,7 +1,8 @@
 use crate::{
-    animator::{AnimatorSettings, UpdateBehaviour, animation_type::AnimationType},
+    animator::{UpdateBehaviour, animation_type::AnimationType},
     utils::PathManager,
 };
+
 use chrono::prelude::*;
 use nannou_egui::egui::{self};
 use serde::Serialize;

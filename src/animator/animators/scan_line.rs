@@ -1,61 +1,65 @@
-use super::{AnimatedObject, AnimatorSettings, ObjectShape, UpdateBehaviour};
-use crate::animator::{
-    animation_type::{AnimationType, ScanLineModes},
-    animator_structs::AnimationParam,
-    presets_manager::PresetManager,
-};
+use crate::animator::AnimatedObject;
+use crate::animator::AnimatorSettings;
+use crate::animator::ObjectShape;
+use crate::animator::UpdateBehaviour;
+use crate::animator::animation_type::AnimationType;
+use crate::animator::animation_type::PulseModes;
+use crate::animator::animation_type::ScanLineModes;
+use crate::animator::animator_structs::AnimationParam;
+use crate::modulator::ModMatrix;
+use crate::modulator::ModTarget;
+//use crate::animator::presets_manager::PresetManager;
 use crate::color::ColorParam;
-
+use anyhow::Ok;
 use nannou::prelude::*;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
+
+use nannou::prelude::*;
 use strum::IntoEnumIterator;
 
 #[derive(Serialize, Deserialize)]
 pub struct ScanLineSettings {
     mode: ScanLineModes,
-    speed: AnimationParam<f32>,
-    width: AnimationParam<f32>,
+    pub speed: AnimationParam<f32>,
+    pub width: AnimationParam<f32>,
     color: ColorParam,
-    beat_snap: AnimationParam<f32>,
     multi_line_count: AnimationParam<u32>,
     #[serde(skip)]
     height: f32,
     #[serde(skip)]
     begin_pos: f32,
-    #[serde(skip)]
-    presets: PresetManager<ScanLineSettings>,
+    //presets: PresetManager<ScanLineSettings>,
 }
 
 impl AnimatorSettings for ScanLineSettings {
     fn new(win_rect: &Rect) -> Self {
         Self {
             mode: ScanLineModes::default(),
-            speed: AnimationParam::new(300.0, 0.0, 1000.0, "speed"),
-            width: AnimationParam::new(20.0, 5.0, 100.0, "width"),
+            speed: AnimationParam::new_modulate(300.0, 0.0, 1000.0, "speed", ModTarget::ScanSpeed),
+            width: AnimationParam::new_modulate(20.0, 5.0, 100.0, "width", ModTarget::ScanWidth),
             color: ColorParam::default(),
-            beat_snap: AnimationParam::new(0.0, 0.0, 2.0, "beat_snap"),
             multi_line_count: AnimationParam::new(1, 1, 10, "line_count"),
             height: win_rect.h(),
             begin_pos: win_rect.left(),
-            presets: PresetManager::new_animator(AnimationType::ScanLine),
+            //presets: PresetManager::new_animator(AnimationType::ScanLine),
         }
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui) -> UpdateBehaviour {
+    fn ui(&mut self, ui: &mut egui::Ui, mods: &mut ModMatrix) -> UpdateBehaviour {
         let mut change_type = UpdateBehaviour::None;
 
         ui.heading(format!("{}", self.animation_type()));
         ui.add_space(5.0);
 
         ui.label("Speed");
-        if self.speed.to_slider(ui) {
+        if self.speed.to_slider_modulate(ui, mods) {
             change_type = UpdateBehaviour::HotUpdate;
         }
         ui.add_space(5.0);
 
         ui.label("Width");
-        if self.width.to_slider(ui) {
+        if self.width.to_slider_modulate(ui, mods) {
             change_type = UpdateBehaviour::HotUpdate;
         }
         ui.add_space(5.0);
@@ -73,24 +77,14 @@ impl AnimatorSettings for ScanLineSettings {
             }
         });
 
-        if self.color.ui(ui) {
-            change_type = UpdateBehaviour::HotUpdate;
-        }
-
-        ui.separator();
-        ui.label("Beat Sync Controls:");
-
-        if self.beat_snap.to_slider(ui) {
-            change_type = UpdateBehaviour::HotUpdate;
-        }
-
         if self.multi_line_count.to_slider(ui) {
             change_type = UpdateBehaviour::NeedsReset;
         }
 
-        if self.presets.ui(ui) {
-            change_type = UpdateBehaviour::LoadPreset;
+        if self.color.ui(ui) {
+            change_type = UpdateBehaviour::HotUpdate;
         }
+
         change_type
     }
 
@@ -109,7 +103,6 @@ impl AnimatorSettings for ScanLineSettings {
                 self.width.value,
                 self.height,
                 self.begin_pos,
-                self.beat_snap.value,
                 index as usize,
             )));
         }
@@ -129,8 +122,6 @@ impl AnimatorSettings for ScanLineSettings {
                 scan_line.width = self.width.value;
                 scan_line.mode = self.mode;
                 scan_line.height = self.height;
-                scan_line.beat_snap = self.beat_snap.value;
-
                 // Update speed, preserving direction
                 let direction = scan_line.speed.signum();
                 scan_line.speed = self.speed.value.abs() * direction;
@@ -139,7 +130,7 @@ impl AnimatorSettings for ScanLineSettings {
     }
 
     fn save_preset(&mut self) -> anyhow::Result<()> {
-        self.presets.save_to_file(self, None)?;
+        //  self.presets.save_to_file(self, None)?;
         Ok(())
     }
 
@@ -148,13 +139,13 @@ impl AnimatorSettings for ScanLineSettings {
 
 pub struct ScanLine {
     mode: ScanLineModes,
-    speed: f32,
-    color: Rgba8,
+    pub speed: f32,
+    pub color: Rgba8,
     position: Vec2,
     height: f32,
-    width: f32,
+    pub width: f32,
     index: usize,
-    beat_snap: f32,
+    // pub beat_snap: f32,
     phase_offset: f32,
 }
 
@@ -166,11 +157,9 @@ impl ScanLine {
         width: f32,
         height: f32,
         begin_pos: f32,
-        beat_snap: f32,
         index: usize,
     ) -> Self {
         let half_width = width / 2.0;
-        // Offset each line's starting position for multi-line effect
         let phase_offset = (index as f32 * std::f32::consts::PI * 2.0) / 10.0;
         let position = vec2(begin_pos + half_width + (index as f32 * 50.0), 0.0);
 
@@ -182,7 +171,6 @@ impl ScanLine {
             height,
             width,
             index,
-            beat_snap,
             phase_offset,
         }
     }
@@ -198,9 +186,9 @@ impl AnimatedObject for ScanLine {
         // Beat-synced speed modulation with snap
         let beat_progress = clock.get_beat_progress();
         let beat_pulse = ((beat_progress + self.phase_offset) * std::f32::consts::PI * 2.0).sin();
-        let speed_multiplier = 1.0 + (beat_pulse * self.beat_snap);
+        // let speed_multiplier = 1.0 + (beat_pulse * self.beat_snap);
 
-        self.position.x += self.speed * delta_time * speed_multiplier;
+        self.position.x += self.speed * delta_time;
 
         let half_width = self.width / 2.0;
         let left_bound = win_rect.left() + half_width;

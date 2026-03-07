@@ -1,10 +1,16 @@
-use super::{AnimatedObject, AnimatorSettings, ObjectShape, UpdateBehaviour};
-use crate::animator::animation_type::{AnimationType, PulseModes};
+use crate::animator::AnimatedObject;
+use crate::animator::AnimatorSettings;
+use crate::animator::ObjectShape;
+use crate::animator::UpdateBehaviour;
+use crate::animator::animation_type::AnimationType;
+use crate::animator::animation_type::PulseModes;
 use crate::animator::animator_structs::AnimationParam;
-use crate::animator::presets_manager::PresetManager;
 use crate::color::ColorParam;
+use crate::modulator::ModMatrix;
+use crate::modulator::ModTarget;
+use anyhow::Ok;
 use nannou::prelude::*;
-use nannou_egui::egui::{self};
+use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 
@@ -14,28 +20,39 @@ pub struct PulseBackgroundSettings {
     pub speed: AnimationParam<f32>,
     pub color: ColorParam,
     pub limit: AnimationParam<f32>,
-    pub beat_multiplier: AnimationParam<f32>,
+    // pub beat_multiplier: AnimationParam<f32>,
     pub ring_count: AnimationParam<u32>,
     pub rotation_speed: AnimationParam<f32>,
-    #[serde(skip)]
-    pub presets: PresetManager<PulseBackgroundSettings>,
+    //pub presets: PresetManager<PulseBackgroundSettings>,
 }
 
 impl AnimatorSettings for PulseBackgroundSettings {
     fn new(win_rect: &Rect) -> Self {
         Self {
             mode: PulseModes::default(),
-            speed: AnimationParam::new(100.0, 1.0, 200.0, "speed"),
+            speed: AnimationParam::new_modulate(100.0, 1.0, 200.0, "speed", ModTarget::PulseSpeed),
             color: ColorParam::default(),
-            limit: AnimationParam::new(0.8, 0.1, 1.0, "limit"),
-            beat_multiplier: AnimationParam::new(1.0, 0.0, 4.0, "beat_mult"),
-            ring_count: AnimationParam::new(3, 1, 10, "ring_count"),
-            rotation_speed: AnimationParam::new(0.5, 0.0, 3.0, "rotation"),
-            presets: PresetManager::new_animator(AnimationType::PulseBackground),
+            limit: AnimationParam::new_modulate(0.8, 0.1, 1.0, "limit", ModTarget::PulseLimit),
+            // beat_multiplier: AnimationParam::new(1.0, 0.0, 4.0, "beat_mult"),
+            ring_count: AnimationParam::new_modulate(
+                3,
+                1,
+                10,
+                "ring_count",
+                ModTarget::PulseRingCount,
+            ),
+            rotation_speed: AnimationParam::new_modulate(
+                0.5,
+                0.0,
+                3.0,
+                "rotation",
+                ModTarget::PulseRotation,
+            ),
+            // presets: PresetManager::new_animator(AnimationType::PulseBackground),
         }
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui) -> UpdateBehaviour {
+    fn ui(&mut self, ui: &mut egui::Ui, mods: &mut ModMatrix) -> UpdateBehaviour {
         let mut change_type = UpdateBehaviour::None;
 
         ui.heading(format!("{}", self.animation_type()));
@@ -54,33 +71,24 @@ impl AnimatorSettings for PulseBackgroundSettings {
             }
         });
 
-        if self.speed.to_slider(ui) {
+        if self.speed.to_slider_modulate(ui, mods) {
             change_type = UpdateBehaviour::HotUpdate;
         }
-        if self.limit.to_slider(ui) {
+
+        if self.limit.to_slider_modulate(ui, mods) {
             change_type = UpdateBehaviour::HotUpdate;
         }
+
+        if self.ring_count.to_slider_modulate(ui, mods) {
+            change_type = UpdateBehaviour::HotUpdate;
+        }
+
+        if self.rotation_speed.to_slider_modulate(ui, mods) {
+            change_type = UpdateBehaviour::HotUpdate;
+        }
+
         if self.color.ui(ui) {
             change_type = UpdateBehaviour::HotUpdate;
-        }
-
-        ui.separator();
-        ui.label("Beat Sync Controls:");
-
-        if self.beat_multiplier.to_slider(ui) {
-            change_type = UpdateBehaviour::HotUpdate;
-        }
-
-        if self.ring_count.to_slider(ui) {
-            change_type = UpdateBehaviour::HotUpdate;
-        }
-
-        if self.rotation_speed.to_slider(ui) {
-            change_type = UpdateBehaviour::HotUpdate;
-        }
-
-        if self.presets.ui(ui) {
-            change_type = UpdateBehaviour::LoadPreset
         }
 
         change_type
@@ -98,7 +106,6 @@ impl AnimatorSettings for PulseBackgroundSettings {
             self.color.clone().value_mapped(0),
             self.speed.value,
             self.limit.value,
-            self.beat_multiplier.value,
             self.ring_count.value,
             self.rotation_speed.value,
             0,
@@ -116,7 +123,6 @@ impl AnimatorSettings for PulseBackgroundSettings {
                 pulse_bg.speed = self.speed.value;
                 pulse_bg.mode = self.mode;
                 pulse_bg.limit = self.limit.value;
-                pulse_bg.beat_multiplier = self.beat_multiplier.value;
                 pulse_bg.ring_count = self.ring_count.value as usize;
                 pulse_bg.rotation_speed = self.rotation_speed.value;
             }
@@ -124,7 +130,7 @@ impl AnimatorSettings for PulseBackgroundSettings {
     }
 
     fn save_preset(&mut self) -> anyhow::Result<()> {
-        self.presets.save_to_file(self, None)?;
+        //self.presets.save_to_file(self, None)?;
         Ok(())
     }
 
@@ -135,16 +141,14 @@ impl AnimatorSettings for PulseBackgroundSettings {
 
 pub struct PulseBackground {
     mode: PulseModes,
-    color: Rgba8,
-    speed: f32,
+    pub color: Rgba8,
+    pub speed: f32,
     current_size_w: f32,
     current_size_h: f32,
-    time: f32,
-    limit: f32,
+    pub limit: f32,
     index: usize,
-    beat_multiplier: f32,
-    ring_count: usize,
-    rotation_speed: f32,
+    pub ring_count: usize,
+    pub rotation_speed: f32,
     rotation: f32,
 }
 
@@ -154,7 +158,6 @@ impl PulseBackground {
         color: Rgba8,
         speed: f32,
         limit: f32,
-        beat_multiplier: f32,
         ring_count: u32,
         rotation_speed: f32,
         index: usize,
@@ -165,10 +168,8 @@ impl PulseBackground {
             color,
             current_size_w: 20.0,
             current_size_h: 20.0,
-            time: 0.0,
             limit,
             index,
-            beat_multiplier,
             ring_count: ring_count as usize,
             rotation_speed,
             rotation: 0.0,
@@ -192,14 +193,9 @@ impl AnimatedObject for PulseBackground {
         let max_w_allowed = max_w * self.limit;
         let max_h_allowed = max_h * self.limit;
 
-        self.time += delta_time;
-
         // Update rotation based on beat
         let beat_progress = clock.get_beat_progress();
         self.rotation += delta_time * self.rotation_speed;
-
-        // Beat-synced pulsing
-        let beat_scale = 1.0 + (beat_progress * self.beat_multiplier * 0.2);
 
         match self.mode {
             PulseModes::Smooth => {
@@ -207,19 +203,18 @@ impl AnimatedObject for PulseBackground {
                 let beats = clock.get_beats();
                 let beat_cycle = beats.fract();
 
-                self.current_size_w = (beat_cycle * max_w_allowed * beat_scale).max(min_w);
-                self.current_size_h = (beat_cycle * max_h_allowed * beat_scale).max(min_h);
+                self.current_size_w = (beat_cycle * max_w_allowed).max(min_w);
+                self.current_size_h = (beat_cycle * max_h_allowed).max(min_h);
             }
             PulseModes::Elastic => {
-                // Beat-synced elastic pulsing with enhanced effect
                 let beat_phase = beat_progress * std::f32::consts::PI * 2.0;
-                let normalized = (beat_phase.sin() + 1.0) * 0.5; // 0.0..1.0
+                let normalized = (beat_phase.sin() + 1.0) * 0.5;
 
                 // Apply easing curve for smooth, powerful pulsing
                 let eased = normalized * normalized * (3.0 - 2.0 * normalized); // Smoothstep
 
-                self.current_size_w = min_w + eased * (max_w_allowed - min_w) * beat_scale;
-                self.current_size_h = min_h + eased * (max_h_allowed - min_h) * beat_scale;
+                self.current_size_w = min_w + eased * (max_w_allowed - min_w);
+                self.current_size_h = min_h + eased * (max_h_allowed - min_h);
             }
         }
     }
@@ -256,27 +251,6 @@ impl AnimatedObject for PulseBackground {
             .height(self.current_size_h)
             .rotate(self.rotation)
             .color(self.color);
-
-        // Add corner highlights for extra visual pop
-        if self.current_size_w > 100.0 {
-            let highlight_color = rgba8(255, 255, 255, 80);
-            let offset = self.current_size_w * 0.4;
-
-            // Four corner highlights
-            let corners = [
-                vec2(offset, offset),
-                vec2(-offset, offset),
-                vec2(offset, -offset),
-                vec2(-offset, -offset),
-            ];
-
-            for corner in corners.iter() {
-                draw.ellipse()
-                    .xy(*corner)
-                    .radius(20.0)
-                    .color(highlight_color);
-            }
-        }
     }
 
     fn shape(&self) -> ObjectShape {

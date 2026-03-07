@@ -1,5 +1,4 @@
 extern crate nannou;
-use crate::animator::presets_manager::{PresetManager, PresetMode};
 use crate::receiver::ReceiverDevice;
 use nannou::prelude::*;
 use nannou_egui::egui;
@@ -63,7 +62,6 @@ pub struct ReceiverGrid {
     pub cells: Vec<GridCell>,
     pub cols: u32,
     pub rows: u32,
-    // #[serde(skip)]
     device: ReceiverDevice,
     show_debug_info: bool,
     show_grid: bool,
@@ -73,10 +71,11 @@ pub struct ReceiverGrid {
     cell_w: f32,
     #[serde(skip)]
     cell_h: f32,
-    #[serde(skip)]
+    // #[serde(skip)]
     layout_mode: LayoutMode,
+    //persistence: PresetManager<ReceiverGrid>,
     #[serde(skip)]
-    persistence: PresetManager<ReceiverGrid>,
+    pub edit_mode: bool,
 }
 
 impl ReceiverGrid {
@@ -103,8 +102,9 @@ impl ReceiverGrid {
             cell_w: 0.0,
             cell_h: 0.0,
             layout_mode,
-            persistence: PresetManager::new_grid(PresetMode::Grid, "Leds 1".to_string()),
+            //persistence: PresetManager::new_grid(PresetMode::Grid, "Leds 1".to_string()),
             show_grid: false,
+            edit_mode: false,
         };
 
         grid.update_cells();
@@ -257,42 +257,48 @@ impl ReceiverGrid {
     }
 
     pub fn update_led_buffer_and_send(&mut self) {
-        let buffer_len = self.cells.len() * 3;
-        if self.led_buffer.len() != buffer_len {
-            self.led_buffer.resize(buffer_len, 0);
-        }
+        if self.device.establish_conn {
+            let buffer_len = self.cells.len() * 3;
+            if self.led_buffer.len() != buffer_len {
+                self.led_buffer.resize(buffer_len, 0);
+            }
 
-        for (idx, cell) in self.cells.iter().enumerate() {
-            let cell_send_col = cell.get_send_color();
-            let base_idx = idx * 3;
-            self.led_buffer[base_idx] = cell_send_col.red;
-            self.led_buffer[base_idx + 1] = cell_send_col.green;
-            self.led_buffer[base_idx + 2] = cell_send_col.blue;
-        }
+            for (idx, cell) in self.cells.iter().enumerate() {
+                let cell_send_col = cell.get_send_color();
+                let base_idx = idx * 3;
+                self.led_buffer[base_idx] = cell_send_col.red;
+                self.led_buffer[base_idx + 1] = cell_send_col.green;
+                self.led_buffer[base_idx + 2] = cell_send_col.blue;
+            }
 
-        let _ = self.device.send_data(&self.led_buffer);
+            let _ = self.device.send_data(&self.led_buffer);
+        }
     }
 
     pub fn move_by(&mut self, offset: Vec2) {
-        let new_center = self.main_rect.xy() + offset;
-        self.main_rect = Rect::from_x_y_w_h(
-            new_center.x,
-            new_center.y,
-            self.main_rect.w(),
-            self.main_rect.h(),
-        );
-        self.update_cells();
+        if self.edit_mode {
+            let new_center = self.main_rect.xy() + offset;
+            self.main_rect = Rect::from_x_y_w_h(
+                new_center.x,
+                new_center.y,
+                self.main_rect.w(),
+                self.main_rect.h(),
+            );
+            self.update_cells();
+        }
     }
 
     pub fn resize_by(&mut self, amount: Vec2) {
-        let new_size = (self.main_rect.wh() + amount).max(vec2(20.0, 20.0));
-        self.main_rect = Rect::from_x_y_w_h(
-            self.main_rect.x(),
-            self.main_rect.y(),
-            new_size.x,
-            new_size.y,
-        );
-        self.update_cells();
+        if self.edit_mode {
+            let new_size = (self.main_rect.wh() + amount).max(vec2(20.0, 20.0));
+            self.main_rect = Rect::from_x_y_w_h(
+                self.main_rect.x(),
+                self.main_rect.y(),
+                new_size.x,
+                new_size.y,
+            );
+            self.update_cells();
+        }
     }
     pub fn ui(&mut self, ui: &mut egui::Ui) -> bool {
         let mut changed = false;
@@ -307,8 +313,12 @@ impl ReceiverGrid {
 
         let mut ip = self.device.ip.clone();
         if ui.add(styled_text_edit(&mut ip, "IP Address")).changed() {
-            // todo validate IP
+            // TODO validate IP
             self.device.ip = ip;
+            changed = true;
+        }
+
+        if ui.checkbox(&mut self.edit_mode, "Edit").clicked() {
             changed = true;
         }
 
@@ -332,9 +342,9 @@ impl ReceiverGrid {
         ui.checkbox(&mut self.show_grid, "Show grid");
 
         if ui.button("Save Settings").clicked() {
-            let _ = self
-                .persistence
-                .save_to_file(self, Some(self.device.name.clone()));
+            //     let _ = self
+            //  .persistence
+            //  .save_to_file(self, Some(self.device.name.clone()));
             changed = true;
         }
 

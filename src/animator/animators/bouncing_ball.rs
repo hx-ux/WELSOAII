@@ -1,15 +1,19 @@
+use crate::animator::AnimatedObject;
+use crate::animator::AnimatorSettings;
+use crate::animator::ObjectShape;
+use crate::animator::UpdateBehaviour;
+use crate::animator::animation_type::AnimationType;
 use crate::animator::animator_structs::AnimationParam;
 use crate::animator::animator_structs::RangeHolder;
-use crate::animator::presets_manager::PresetManager;
 use crate::animator::timecode::TimeCode;
 use crate::color::ColorParam;
-use anyhow::Ok;
-use serde::{Deserialize, Serialize};
+use crate::modulator::ModMatrix;
+use crate::modulator::ModTarget;
 
-use super::{AnimatedObject, AnimatorSettings, ObjectShape, UpdateBehaviour};
-use crate::animator::animation_type::AnimationType;
+use anyhow::Ok;
 use nannou::prelude::*;
 use nannou_egui::egui;
+use serde::{Deserialize, Serialize};
 
 fn default_rect() -> Rect {
     Rect::from_w_h(800.0, 600.0)
@@ -17,45 +21,52 @@ fn default_rect() -> Rect {
 
 #[derive(Serialize, Deserialize)]
 pub struct BouncingBallSettings {
-    ball_count: AnimationParam<u32>,
-    speed: AnimationParam<f32>,
-    radius: AnimationParam<f32>,
+    pub ball_count: AnimationParam<u32>,
+    pub speed: AnimationParam<f32>,
+    pub radius: AnimationParam<f32>,
     ball_vel_range_x: RangeHolder<f32>,
     ball_vel_range_y: RangeHolder<f32>,
     #[serde(skip)]
     #[serde(default = "default_rect")]
     dimension: Rect,
     color: ColorParam,
-    #[serde(skip)]
-    presets: PresetManager<BouncingBallSettings>,
+    // presets: PresetManager<BouncingBallSettings>,
 }
 
 impl AnimatorSettings for BouncingBallSettings {
     fn new(win_rect: &Rect) -> Self {
         Self {
             ball_count: AnimationParam::new(20, 1, 400, "Ball Count"),
-            speed: AnimationParam::new(1.0, 1.0, 5.0, "Speed"),
+            speed: AnimationParam::new_modulate(1.0, 1.0, 5.0, "Speed", ModTarget::BouncingSpeed),
             dimension: *win_rect,
-            radius: AnimationParam::new(10.0, 6.0, 30.0, "radius"),
+            radius: AnimationParam::new_modulate(
+                10.0,
+                6.0,
+                30.0,
+                "radius",
+                ModTarget::BouncingRadius,
+            ),
             ball_vel_range_x: RangeHolder::new(-100.0, 100.0),
             ball_vel_range_y: RangeHolder::new(-100.0, 100.0),
             color: ColorParam::default(),
-            presets: PresetManager::new_animator(AnimationType::BouncingBalls),
+            //presets: PresetManager::new_animator(AnimationType::BouncingBalls),
         }
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui) -> UpdateBehaviour {
+    fn ui(&mut self, ui: &mut egui::Ui, mods: &mut ModMatrix) -> UpdateBehaviour {
         let mut change_type = UpdateBehaviour::None;
 
         ui.heading(format!("{}", self.animation_type()));
 
-        if self.ball_count.to_slider(ui) {
-            change_type = UpdateBehaviour::NeedsReset;
-        }
-        if self.speed.to_slider(ui) {
+        if self.ball_count.to_slider_modulate(ui, mods) {
             change_type = UpdateBehaviour::HotUpdate;
         }
-        if self.radius.to_slider(ui) {
+
+        if self.radius.to_slider_modulate(ui, mods) {
+            change_type = UpdateBehaviour::HotUpdate;
+        }
+
+        if self.speed.to_slider_modulate(ui, mods) {
             change_type = UpdateBehaviour::HotUpdate;
         }
 
@@ -112,10 +123,6 @@ impl AnimatorSettings for BouncingBallSettings {
 
         if self.color.ui(ui) {
             change_type = UpdateBehaviour::HotUpdate;
-        }
-
-        if self.presets.ui(ui) {
-            change_type = UpdateBehaviour::LoadPreset
         }
 
         change_type
@@ -189,7 +196,7 @@ impl AnimatorSettings for BouncingBallSettings {
     }
 
     fn save_preset(&mut self) -> anyhow::Result<()> {
-        self.presets.save_to_file(self, None)?;
+        // self.presets.save_to_file(self, None)?;
         Ok(())
     }
 
