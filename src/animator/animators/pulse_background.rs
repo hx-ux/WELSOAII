@@ -17,7 +17,7 @@ use strum::IntoEnumIterator;
 
 #[derive(Serialize, Deserialize)]
 pub struct PulseBackgroundSettings {
-    pub ring_count: ConstantParam,
+    pub ring_count: ConstantParam<u32>,
     pub mode: PulseModes,
     pub speed: AnimationParam,
     pub color: ColorParam,
@@ -35,7 +35,7 @@ impl AnimatorSettings for PulseBackgroundSettings {
             color: ColorParam::default(),
             limit: AnimationParam::new(0.8, 0.1, 1.0, "limit", Some(ModTarget::PulseLimit)),
             // beat_multiplier: AnimationParam::new(1.0, 0.0, 4.0, "beat_mult"),
-            ring_count: ConstantParam::new(3, 1, 10, "ring_count", Some(ModTarget::PulseRingCount)),
+            ring_count: ConstantParam::new(3, 1, 10, "ring_count"),
             rotation_speed: AnimationParam::new(
                 0.5,
                 0.0,

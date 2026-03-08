@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct WaveLinesSettings {
-    pub line_count: ConstantParam,
+    pub line_count: ConstantParam<u32>,
     pub amplitude: AnimationParam,
     pub frequency: AnimationParam,
     pub speed: AnimationParam,
@@ -32,7 +32,7 @@ pub struct WaveLinesSettings {
 impl AnimatorSettings for WaveLinesSettings {
     fn new(win_rect: &Rect) -> Self {
         let wave_lines_settings = Self {
-            line_count: ConstantParam::new(14, 2, 60, "lines", None),
+            line_count: ConstantParam::new(14, 2, 60, "lines"),
             amplitude: AnimationParam::new(
                 90.0,
                 5.0,

@@ -19,7 +19,7 @@ use strum::IntoEnumIterator;
 
 #[derive(Serialize, Deserialize)]
 pub struct ScanLineSettings {
-    multi_line_count: ConstantParam,
+    multi_line_count: ConstantParam<u8>,
 
     mode: ScanLineModes,
     pub speed: AnimationParam,
@@ -35,7 +35,7 @@ pub struct ScanLineSettings {
 impl AnimatorSettings for ScanLineSettings {
     fn new(win_rect: &Rect) -> Self {
         Self {
-            multi_line_count: ConstantParam::new(1, 1, 10, "line_count", None),
+            multi_line_count: ConstantParam::new(1, 1, 10, "line_count"),
             mode: ScanLineModes::default(),
             speed: AnimationParam::new(300.0, 0.0, 1000.0, "speed", Some(ModTarget::ScanSpeed)),
             width: AnimationParam::new(20.0, 5.0, 100.0, "width", Some(ModTarget::ScanWidth)),

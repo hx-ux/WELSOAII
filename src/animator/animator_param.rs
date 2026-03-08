@@ -7,82 +7,95 @@ use serde::{Deserialize, Serialize};
 use std::ops::RangeInclusive;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
-pub struct RangeHolder {
-    pub lower: f32,
-    pub upper: f32,
+pub struct RangeHolder<T> {
+    pub lower: T,
+    pub upper: T,
+
     #[serde(skip_serializing)]
-    pub default: (f32, f32),
+    pub default: (T, T),
 }
 
-impl RangeHolder {
-    pub fn new(lower: f32, upper: f32) -> Self {
+impl<T> RangeHolder<T> {
+    pub fn new(lower: T, upper: T) -> Self
+    where
+        T: Clone,
+    {
         Self {
-            lower,
-            upper,
+            lower: lower.clone(),
+            upper: upper.clone(),
             default: (lower, upper),
         }
     }
 
-    pub fn as_range(&self) -> RangeInclusive<f32> {
-        RangeInclusive::new(self.lower, self.upper)
+    pub fn as_range(&self) -> RangeInclusive<T>
+    where
+        T: Clone,
+    {
+        RangeInclusive::new(self.lower.to_owned(), self.upper.to_owned())
     }
 
-    pub fn reset(&mut self) {
-        self.lower = self.default.0;
-        self.upper = self.default.1;
+    pub fn reset(&mut self)
+    where
+        T: Clone,
+    {
+        self.lower = self.default.0.clone();
+        self.upper = self.default.1.clone();
     }
 }
-
+//#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+//pub struct AnimationParam<T> {
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
-pub struct ConstantParam {
-    pub value: u32,
-    pub default: u32,
-    // pub range: RangeHolder,
-    pub lower: u32,
-    pub upper: u32,
-
+pub struct ConstantParam<T> {
+    pub value: T,
+    pub default: T,
+    pub range: RangeHolder<T>,
+    //  pub lower: T,
+    // pub upper: T,
     pub display_text: String,
 }
 
-impl ConstantParam {
-    pub fn new(
-        default: u32,
-        lower: u32,
-        upper: u32,
-        desc: &str,
-        mod_target: Option<ModTarget>,
-    ) -> Self {
+impl<T> ConstantParam<T> {
+    pub fn new(default: T, lower: T, upper: T, desc: &str) -> Self
+    where
+        T: Clone,
+    {
         Self {
-            value: default,
-            default,
-            lower,
-            upper,
-            //  range: RangeHolder::new(lower, upper),
+            value: default.clone(),
+            default: default,
+            //   lower,
+            //     upper,
+            range: RangeHolder::new(lower.clone(), upper),
             display_text: desc.to_string(),
         }
     }
 
-    pub fn to_slider(&mut self, ui: &mut egui::Ui) -> bool {
+    pub fn to_slider(&mut self, ui: &mut egui::Ui) -> bool
+    where
+        T: egui::emath::Numeric + Clone,
+    {
         let mut changed = false;
         ui.horizontal(|ui| {
             changed |= ui
                 .add(single_slider_styled(
                     &mut self.value,
-                    self.lower..=self.upper,
+                    self.range.lower..=self.range.upper,
                     "",
                 ))
                 .changed();
             if ui.button("↻").clicked() {
                 changed = true;
-                // self.reset();
+                self.reset();
             }
         })
         .inner;
 
         changed
     }
-    pub fn reset(&mut self) {
-        self.value = self.default;
+    pub fn reset(&mut self)
+    where
+        T: Clone,
+    {
+        self.value = self.default.clone();
     }
 }
 
@@ -92,7 +105,7 @@ pub struct AnimationParam {
     #[serde(skip_serializing)]
     pub default: f32,
     // #[serde(skip_serializing)]
-    pub range: RangeHolder,
+    pub range: (f32, f32),
     #[serde(skip_serializing)]
     pub display_text: String,
     #[serde(skip_serializing)]
@@ -120,7 +133,7 @@ impl AnimationParam {
         Self {
             value: default,
             default,
-            range: RangeHolder::new(lower, upper),
+            range: (lower, upper),
             display_text: desc.to_string(),
             ghost_value: None,
             modulation_active: false,
@@ -144,7 +157,7 @@ impl AnimationParam {
             changed |= ui
                 .add(single_slider_styled(
                     &mut self.value,
-                    self.range.lower..=self.range.upper,
+                    self.range.0..=self.range.1,
                     "",
                 ))
                 .changed();
@@ -184,13 +197,13 @@ impl AnimationParam {
             ui.add(styled_dual_slider(
                 &mut self.value,
                 Some(ghost),
-                self.range.lower..=self.range.upper,
+                self.range.0..=self.range.1,
                 "",
             ));
         } else {
             ui.add(single_slider_styled(
                 &mut self.value,
-                self.range.lower..=self.range.upper,
+                self.range.1..=self.range.1,
                 "",
             ));
         }

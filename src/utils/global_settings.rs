@@ -20,7 +20,7 @@ pub struct GlobalSettings {
     pub framerate: f64,
     pub view_window_size: (u32, u32),
     pub app_mode: AppMode,
-    pub window_opacity: ConstantParam,
+    pub window_opacity: ConstantParam<u8>,
 }
 
 impl GlobalSettings {
@@ -33,7 +33,7 @@ impl GlobalSettings {
             framerate: 60.0,
             view_window_size: (1000, 1000),
             app_mode: AppMode::Edit,
-            window_opacity: ConstantParam::new(200, 1, 255, "opacity", None),
+            window_opacity: ConstantParam::new(200, 1, 255, "opacity"),
         }
     }
 

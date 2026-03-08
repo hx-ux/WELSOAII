@@ -22,11 +22,11 @@ fn default_rect() -> Rect {
 
 #[derive(Serialize, Deserialize)]
 pub struct BouncingBallSettings {
-    pub ball_count: ConstantParam,
+    pub ball_count: ConstantParam<u32>,
     pub speed: AnimationParam,
     pub radius: AnimationParam,
-    ball_vel_range_x: RangeHolder,
-    ball_vel_range_y: RangeHolder,
+    ball_vel_range_x: RangeHolder<f32>,
+    ball_vel_range_y: RangeHolder<f32>,
     #[serde(skip)]
     #[serde(default = "default_rect")]
     dimension: Rect,
@@ -37,7 +37,7 @@ pub struct BouncingBallSettings {
 impl AnimatorSettings for BouncingBallSettings {
     fn new(win_rect: &Rect) -> Self {
         Self {
-            ball_count: ConstantParam::new(20, 1, 400, "Ball Count", None),
+            ball_count: ConstantParam::new(20, 1, 400, "Ball Count"),
             speed: AnimationParam::new(1.0, 1.0, 5.0, "Speed", Some(ModTarget::BouncingSpeed)),
             dimension: *win_rect,
             radius: AnimationParam::new(10.0, 6.0, 30.0, "radius", Some(ModTarget::BouncingRadius)),
@@ -218,8 +218,8 @@ impl BouncingBall {
         win_rect: &Rect,
         color: Rgba8,
         radius: f32,
-        horizontal_velocity: &RangeHolder,
-        vertical_velocity: &RangeHolder,
+        horizontal_velocity: &RangeHolder<f32>,
+        vertical_velocity: &RangeHolder<f32>,
         speed: f32,
         index: usize,
     ) -> Self {
