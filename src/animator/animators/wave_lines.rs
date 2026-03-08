@@ -1,7 +1,8 @@
 use crate::{
     animator::{
         AnimatedObject, AnimatorSettings, ObjectShape, UpdateBehaviour,
-        animation_type::AnimationType, animator_param::AnimationParam,
+        animation_type::AnimationType,
+        animator_param::{AnimationParam, ConstantParam},
     },
     color::ColorParam,
 };
@@ -14,12 +15,12 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct WaveLinesSettings {
-    pub line_count: AnimationParam<u32>,
-    pub amplitude: AnimationParam<f32>,
-    pub frequency: AnimationParam<f32>,
-    pub speed: AnimationParam<f32>,
-    pub thickness: AnimationParam<f32>,
-    pub phase_spread: AnimationParam<f32>,
+    pub line_count: ConstantParam,
+    pub amplitude: AnimationParam,
+    pub frequency: AnimationParam,
+    pub speed: AnimationParam,
+    pub thickness: AnimationParam,
+    pub phase_spread: AnimationParam,
     color: ColorParam,
     #[serde(skip)]
     width: f32,
@@ -31,7 +32,7 @@ pub struct WaveLinesSettings {
 impl AnimatorSettings for WaveLinesSettings {
     fn new(win_rect: &Rect) -> Self {
         let wave_lines_settings = Self {
-            line_count: AnimationParam::new(14, 2, 60, "lines", None),
+            line_count: ConstantParam::new(14, 2, 60, "lines", None),
             amplitude: AnimationParam::new(
                 90.0,
                 5.0,

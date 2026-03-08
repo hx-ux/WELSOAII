@@ -4,6 +4,7 @@ use crate::animator::ObjectShape;
 use crate::animator::UpdateBehaviour;
 use crate::animator::animation_type::AnimationType;
 use crate::animator::animator_param::AnimationParam;
+use crate::animator::animator_param::ConstantParam;
 use crate::animator::animator_param::RangeHolder;
 use crate::animator::timecode::TimeCode;
 use crate::color::ColorParam;
@@ -21,11 +22,11 @@ fn default_rect() -> Rect {
 
 #[derive(Serialize, Deserialize)]
 pub struct BouncingBallSettings {
-    pub ball_count: AnimationParam<u32>,
-    pub speed: AnimationParam<f32>,
-    pub radius: AnimationParam<f32>,
-    ball_vel_range_x: RangeHolder<f32>,
-    ball_vel_range_y: RangeHolder<f32>,
+    pub ball_count: ConstantParam,
+    pub speed: AnimationParam,
+    pub radius: AnimationParam,
+    ball_vel_range_x: RangeHolder,
+    ball_vel_range_y: RangeHolder,
     #[serde(skip)]
     #[serde(default = "default_rect")]
     dimension: Rect,
@@ -36,7 +37,7 @@ pub struct BouncingBallSettings {
 impl AnimatorSettings for BouncingBallSettings {
     fn new(win_rect: &Rect) -> Self {
         Self {
-            ball_count: AnimationParam::new(20, 1, 400, "Ball Count", None),
+            ball_count: ConstantParam::new(20, 1, 400, "Ball Count", None),
             speed: AnimationParam::new(1.0, 1.0, 5.0, "Speed", Some(ModTarget::BouncingSpeed)),
             dimension: *win_rect,
             radius: AnimationParam::new(10.0, 6.0, 30.0, "radius", Some(ModTarget::BouncingRadius)),
@@ -52,7 +53,7 @@ impl AnimatorSettings for BouncingBallSettings {
 
         ui.heading(format!("{}", self.animation_type()));
 
-        if self.ball_count.to_slider_modulate(ui, mods) {
+        if self.ball_count.to_slider(ui) {
             change_type = UpdateBehaviour::HotUpdate;
         }
 
@@ -217,8 +218,8 @@ impl BouncingBall {
         win_rect: &Rect,
         color: Rgba8,
         radius: f32,
-        horizontal_velocity: &RangeHolder<f32>,
-        vertical_velocity: &RangeHolder<f32>,
+        horizontal_velocity: &RangeHolder,
+        vertical_velocity: &RangeHolder,
         speed: f32,
         index: usize,
     ) -> Self {

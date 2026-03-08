@@ -1,93 +1,135 @@
 use crate::{
     modulator::{ModMatrix, ModRoute, ModTarget},
-    ui::controls::styled_slider,
+    ui::controls::{DualSlider, single_slider_styled, styled_dual_slider},
 };
 use nannou_egui::egui::{self, Label};
 use serde::{Deserialize, Serialize};
 use std::ops::RangeInclusive;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
-pub struct RangeHolder<T> {
-    pub lower: T,
-    pub upper: T,
+pub struct RangeHolder {
+    pub lower: f32,
+    pub upper: f32,
     #[serde(skip_serializing)]
-    pub default: (T, T),
+    pub default: (f32, f32),
 }
 
-impl<T> RangeHolder<T> {
-    pub fn new(lower: T, upper: T) -> Self
-    where
-        T: Clone,
-    {
+impl RangeHolder {
+    pub fn new(lower: f32, upper: f32) -> Self {
         Self {
-            lower: lower.clone(),
-            upper: upper.clone(),
+            lower,
+            upper,
             default: (lower, upper),
         }
     }
 
-    pub fn as_range(&self) -> RangeInclusive<T>
-    where
-        T: Clone,
-    {
-        RangeInclusive::new(self.lower.to_owned(), self.upper.to_owned())
+    pub fn as_range(&self) -> RangeInclusive<f32> {
+        RangeInclusive::new(self.lower, self.upper)
     }
 
-    pub fn reset(&mut self)
-    where
-        T: Clone,
-    {
-        {
-            self.lower = self.default.0.clone();
-            self.upper = self.default.1.clone();
-        }
+    pub fn reset(&mut self) {
+        self.lower = self.default.0;
+        self.upper = self.default.1;
     }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
-pub struct AnimationParam<T> {
-    pub value: T,
+pub struct ConstantParam {
+    pub value: u32,
+    pub default: u32,
+    // pub range: RangeHolder,
+    pub lower: u32,
+    pub upper: u32,
+
+    pub display_text: String,
+}
+
+impl ConstantParam {
+    pub fn new(
+        default: u32,
+        lower: u32,
+        upper: u32,
+        desc: &str,
+        mod_target: Option<ModTarget>,
+    ) -> Self {
+        Self {
+            value: default,
+            default,
+            lower,
+            upper,
+            //  range: RangeHolder::new(lower, upper),
+            display_text: desc.to_string(),
+        }
+    }
+
+    pub fn to_slider(&mut self, ui: &mut egui::Ui) -> bool {
+        let mut changed = false;
+        ui.horizontal(|ui| {
+            changed |= ui
+                .add(single_slider_styled(
+                    &mut self.value,
+                    self.lower..=self.upper,
+                    "",
+                ))
+                .changed();
+            if ui.button("↻").clicked() {
+                changed = true;
+                // self.reset();
+            }
+        })
+        .inner;
+
+        changed
+    }
+    pub fn reset(&mut self) {
+        self.value = self.default;
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+pub struct AnimationParam {
+    pub value: f32,
     #[serde(skip_serializing)]
-    pub default: T,
+    pub default: f32,
     // #[serde(skip_serializing)]
-    pub range: RangeHolder<T>,
+    pub range: RangeHolder,
     #[serde(skip_serializing)]
     pub display_text: String,
     #[serde(skip_serializing)]
-    pub modulatotion_active: bool,
+    pub modulation_active: bool,
     #[serde(skip_serializing)]
-    pub ghost_value: Option<T>,
+    pub ghost_value: Option<f32>,
     pub mod_target: ModTarget,
 }
 
-impl<T> AnimationParam<T> {
+impl AnimationParam {
     const SPACE: f32 = 5.0;
 
     /// A Slider, which cannot be Modulated
-    pub fn new(default: T, lower: T, upper: T, desc: &str, mod_target: Option<ModTarget>) -> Self
-    where
-        T: Clone,
-    {
+    pub fn new(
+        default: f32,
+        lower: f32,
+        upper: f32,
+        desc: &str,
+        mod_target: Option<ModTarget>,
+    ) -> Self {
         let target = mod_target
             .filter(|t| *t != ModTarget::None)
             .unwrap_or(ModTarget::None);
 
         Self {
-            value: default.clone(),
+            value: default,
             default,
             range: RangeHolder::new(lower, upper),
             display_text: desc.to_string(),
             ghost_value: None,
-            modulatotion_active: false,
+            modulation_active: false,
             mod_target: target,
         }
     }
 
-    pub fn reset(&mut self)
-    where
-        T: Clone,
-    {
-        self.value = self.default.clone();
+    pub fn reset(&mut self) {
+        self.value = self.default;
     }
 
     pub fn connect_modulation(&self, mods: &mut ModMatrix) {
@@ -96,14 +138,11 @@ impl<T> AnimationParam<T> {
         }
     }
 
-    fn to_slider_core(&mut self, ui: &mut egui::Ui) -> bool
-    where
-        T: egui::emath::Numeric + Clone,
-    {
+    fn to_slider_core(&mut self, ui: &mut egui::Ui) -> bool {
         let mut changed = false;
         ui.horizontal(|ui| {
             changed |= ui
-                .add(styled_slider(
+                .add(single_slider_styled(
                     &mut self.value,
                     self.range.lower..=self.range.upper,
                     "",
@@ -119,16 +158,13 @@ impl<T> AnimationParam<T> {
         changed
     }
 
-    pub fn to_slider_modulate(&mut self, ui: &mut egui::Ui, mods: &mut ModMatrix) -> bool
-    where
-        T: egui::emath::Numeric + Clone,
-    {
+    pub fn to_slider_modulate(&mut self, ui: &mut egui::Ui, mods: &mut ModMatrix) -> bool {
         ui.add_space(Self::SPACE);
         let mut changed = false;
         ui.add(Label::new(self.display_text.to_string()));
 
         if self.mod_target != ModTarget::None {
-            let color = if self.modulatotion_active {
+            let color = if self.modulation_active {
                 egui::Color32::GREEN
             } else {
                 egui::Color32::RED
@@ -137,30 +173,33 @@ impl<T> AnimationParam<T> {
             let button = egui::Button::new("M1").fill(color);
 
             if ui.add(button).clicked() {
-                self.modulatotion_active = !self.modulatotion_active;
-                mods.set_enables(self.modulatotion_active, self.mod_target);
+                self.modulation_active = !self.modulation_active;
+                mods.set_enables(self.modulation_active, self.mod_target);
                 changed = true;
             }
         }
 
-        if self.mod_target != ModTarget::None {
-            if let Some(mut ghost) = self.ghost_value {
-                ui.add_enabled(
-                    false,
-                    egui::Slider::new(&mut ghost, self.range.lower..=self.range.upper)
-                        .show_value(false),
-                );
-            }
+        // In to_slider_modulate or ghost render:
+        if let Some(ghost) = self.ghost_value {
+            ui.add(styled_dual_slider(
+                &mut self.value,
+                Some(ghost),
+                self.range.lower..=self.range.upper,
+                "",
+            ));
+        } else {
+            ui.add(single_slider_styled(
+                &mut self.value,
+                self.range.lower..=self.range.upper,
+                "",
+            ));
         }
 
-        changed |= self.to_slider_core(ui);
+        //changed |= self.to_slider_core(ui);
         changed
     }
 
-    pub fn to_slider(&mut self, ui: &mut egui::Ui) -> bool
-    where
-        T: egui::emath::Numeric + Clone,
-    {
+    pub fn to_slider(&mut self, ui: &mut egui::Ui) -> bool {
         ui.add_space(Self::SPACE);
         let mut changed = false;
         ui.add(Label::new(self.display_text.to_string()));

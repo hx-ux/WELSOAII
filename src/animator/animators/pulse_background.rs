@@ -5,6 +5,7 @@ use crate::animator::UpdateBehaviour;
 use crate::animator::animation_type::AnimationType;
 use crate::animator::animation_type::PulseModes;
 use crate::animator::animator_param::AnimationParam;
+use crate::animator::animator_param::ConstantParam;
 use crate::color::ColorParam;
 use crate::modulator::ModMatrix;
 use crate::modulator::ModTarget;
@@ -16,13 +17,13 @@ use strum::IntoEnumIterator;
 
 #[derive(Serialize, Deserialize)]
 pub struct PulseBackgroundSettings {
+    pub ring_count: ConstantParam,
     pub mode: PulseModes,
-    pub speed: AnimationParam<f32>,
+    pub speed: AnimationParam,
     pub color: ColorParam,
-    pub limit: AnimationParam<f32>,
+    pub limit: AnimationParam,
     // pub beat_multiplier: AnimationParam<f32>,
-    pub ring_count: AnimationParam<u32>,
-    pub rotation_speed: AnimationParam<f32>,
+    pub rotation_speed: AnimationParam,
     //pub presets: PresetManager<PulseBackgroundSettings>,
 }
 
@@ -34,13 +35,7 @@ impl AnimatorSettings for PulseBackgroundSettings {
             color: ColorParam::default(),
             limit: AnimationParam::new(0.8, 0.1, 1.0, "limit", Some(ModTarget::PulseLimit)),
             // beat_multiplier: AnimationParam::new(1.0, 0.0, 4.0, "beat_mult"),
-            ring_count: AnimationParam::new(
-                3,
-                1,
-                10,
-                "ring_count",
-                Some(ModTarget::PulseRingCount),
-            ),
+            ring_count: ConstantParam::new(3, 1, 10, "ring_count", Some(ModTarget::PulseRingCount)),
             rotation_speed: AnimationParam::new(
                 0.5,
                 0.0,
@@ -79,7 +74,7 @@ impl AnimatorSettings for PulseBackgroundSettings {
             change_type = UpdateBehaviour::HotUpdate;
         }
 
-        if self.ring_count.to_slider_modulate(ui, mods) {
+        if self.ring_count.to_slider(ui) {
             change_type = UpdateBehaviour::HotUpdate;
         }
 

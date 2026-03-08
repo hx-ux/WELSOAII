@@ -104,9 +104,7 @@ impl Animator {
 
         pulse_settings.speed.connect_modulation(&mut mod_matrix);
         pulse_settings.limit.connect_modulation(&mut mod_matrix);
-        pulse_settings
-            .ring_count
-            .connect_modulation(&mut mod_matrix);
+
         pulse_settings
             .rotation_speed
             .connect_modulation(&mut mod_matrix);
@@ -276,7 +274,6 @@ impl Animator {
 
         self.pulse_settings.speed.ghost_value = None;
         self.pulse_settings.limit.ghost_value = None;
-        self.pulse_settings.ring_count.ghost_value = None;
         self.pulse_settings.rotation_speed.ghost_value = None;
 
         self.wave_lines_settings.amplitude.ghost_value = None;
@@ -391,9 +388,7 @@ impl Animator {
                 if self.mod_matrix.has_target(ModTarget::PulseLimit) {
                     self.pulse_settings.limit.ghost_value = Some(limit);
                 }
-                if self.mod_matrix.has_target(ModTarget::PulseRingCount) {
-                    self.pulse_settings.ring_count.ghost_value = Some(ring_count as u32);
-                }
+
                 if self.mod_matrix.has_target(ModTarget::PulseRotation) {
                     self.pulse_settings.rotation_speed.ghost_value = Some(rotation_speed);
                 }

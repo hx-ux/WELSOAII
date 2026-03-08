@@ -5,6 +5,7 @@ use crate::animator::UpdateBehaviour;
 use crate::animator::animation_type::AnimationType;
 use crate::animator::animation_type::ScanLineModes;
 use crate::animator::animator_param::AnimationParam;
+use crate::animator::animator_param::ConstantParam;
 use crate::modulator::ModMatrix;
 use crate::modulator::ModTarget;
 //use crate::animator::presets_manager::PresetManager;
@@ -14,16 +15,16 @@ use nannou::prelude::*;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 
-use nannou::prelude::*;
 use strum::IntoEnumIterator;
 
 #[derive(Serialize, Deserialize)]
 pub struct ScanLineSettings {
+    multi_line_count: ConstantParam,
+
     mode: ScanLineModes,
-    pub speed: AnimationParam<f32>,
-    pub width: AnimationParam<f32>,
+    pub speed: AnimationParam,
+    pub width: AnimationParam,
     color: ColorParam,
-    multi_line_count: AnimationParam<u32>,
     #[serde(skip)]
     height: f32,
     #[serde(skip)]
@@ -34,11 +35,11 @@ pub struct ScanLineSettings {
 impl AnimatorSettings for ScanLineSettings {
     fn new(win_rect: &Rect) -> Self {
         Self {
+            multi_line_count: ConstantParam::new(1, 1, 10, "line_count", None),
             mode: ScanLineModes::default(),
             speed: AnimationParam::new(300.0, 0.0, 1000.0, "speed", Some(ModTarget::ScanSpeed)),
             width: AnimationParam::new(20.0, 5.0, 100.0, "width", Some(ModTarget::ScanWidth)),
             color: ColorParam::default(),
-            multi_line_count: AnimationParam::new(1, 1, 10, "line_count", None),
             height: win_rect.h(),
             begin_pos: win_rect.left(),
             //presets: PresetManager::new_animator(AnimationType::ScanLine),
