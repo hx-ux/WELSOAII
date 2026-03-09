@@ -5,7 +5,7 @@ use crate::animator::UpdateBehaviour;
 use crate::animator::animation_type::AnimationType;
 use crate::animator::animator_param::AnimationParam;
 use crate::animator::animator_param::ConstantParam;
-use crate::animator::animator_param::RangeHolder;
+//use crate::animator::animator_param::RangeHolder;
 use crate::animator::timecode::TimeCode;
 use crate::color::ColorParam;
 use crate::modulator::ModMatrix;
@@ -25,8 +25,8 @@ pub struct BouncingBallSettings {
     pub ball_count: ConstantParam<u32>,
     pub speed: AnimationParam,
     pub radius: AnimationParam,
-    ball_vel_range_x: RangeHolder<f32>,
-    ball_vel_range_y: RangeHolder<f32>,
+    ball_vel_range_x: ConstantParam<f32>,
+    ball_vel_range_y: ConstantParam<f32>,
     #[serde(skip)]
     #[serde(default = "default_rect")]
     dimension: Rect,
@@ -41,8 +41,8 @@ impl AnimatorSettings for BouncingBallSettings {
             speed: AnimationParam::new(1.0, 1.0, 5.0, "Speed", Some(ModTarget::BouncingSpeed)),
             dimension: *win_rect,
             radius: AnimationParam::new(10.0, 6.0, 30.0, "radius", Some(ModTarget::BouncingRadius)),
-            ball_vel_range_x: RangeHolder::new(-100.0, 100.0),
-            ball_vel_range_y: RangeHolder::new(-100.0, 100.0),
+            ball_vel_range_x: ConstantParam::new(0.0, -100.0, 100.0, "Range X"),
+            ball_vel_range_y: ConstantParam::new(0.0, -100.0, 100.0, "Range Y"),
             color: ColorParam::default(),
             //presets: PresetManager::new_animator(AnimationType::BouncingBalls),
         }
@@ -135,8 +135,8 @@ impl AnimatorSettings for BouncingBallSettings {
                 &self.dimension,
                 self.color.clone().value_mapped(index),
                 self.radius.value,
-                &self.ball_vel_range_x,
-                &self.ball_vel_range_y,
+                self.ball_vel_range_x.value,
+                self.ball_vel_range_y.value,
                 self.speed.value,
                 index,
             ));
@@ -161,8 +161,8 @@ impl AnimatorSettings for BouncingBallSettings {
                     &self.dimension,
                     self.color.clone().value_mapped(index),
                     self.radius.value,
-                    &self.ball_vel_range_x,
-                    &self.ball_vel_range_y,
+                    self.ball_vel_range_x.value,
+                    self.ball_vel_range_y.value,
                     self.speed.value,
                     index,
                 ));
@@ -218,8 +218,8 @@ impl BouncingBall {
         win_rect: &Rect,
         color: Rgba8,
         radius: f32,
-        horizontal_velocity: &RangeHolder<f32>,
-        vertical_velocity: &RangeHolder<f32>,
+        horizontal_velocity: f32,
+        vertical_velocity: f32,
         speed: f32,
         index: usize,
     ) -> Self {
@@ -228,10 +228,7 @@ impl BouncingBall {
                 random_range(win_rect.left() + radius, win_rect.right() - radius),
                 random_range(win_rect.bottom() + radius, win_rect.top() - radius),
             ),
-            velocity: vec2(
-                random_range(horizontal_velocity.lower, horizontal_velocity.upper),
-                random_range(vertical_velocity.lower, vertical_velocity.upper),
-            ),
+            velocity: vec2(random_range(-100.0, 100.0), random_range(-100.0, 100.0)),
             radius,
             color,
             speed,
