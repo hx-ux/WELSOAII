@@ -4,57 +4,51 @@ use crate::{
 };
 use nannou_egui::egui::{self, Label};
 use serde::{Deserialize, Serialize};
-use std::ops::RangeInclusive;
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
-pub struct RangeHolder<T> {
-    pub lower: T,
-    pub upper: T,
-
-    #[serde(skip_serializing)]
-    pub default: (T, T),
-}
-
-impl<T> RangeHolder<T> {
-    pub fn new(lower: T, upper: T) -> Self
-    where
-        T: Clone,
-    {
-        Self {
-            lower: lower.clone(),
-            upper: upper.clone(),
-            default: (lower, upper),
-        }
-    }
-
-    pub fn as_range(&self) -> RangeInclusive<T>
-    where
-        T: Clone,
-    {
-        RangeInclusive::new(self.lower.to_owned(), self.upper.to_owned())
-    }
-
-    pub fn reset(&mut self)
-    where
-        T: Clone,
-    {
-        self.lower = self.default.0.clone();
-        self.upper = self.default.1.clone();
-    }
-}
-//#[derive(Debug, Serialize, Deserialize, Clone, Default)]
-//pub struct AnimationParam<T> {
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq, PartialOrd)]
 pub struct ConstantParam<T> {
     pub value: T,
     pub default: T,
-    pub range: RangeHolder<T>,
-    //  pub lower: T,
-    // pub upper: T,
+    //pub range: RangeHolder<T>,
+    pub lower: T,
+    pub upper: T,
     pub display_text: String,
 }
 
 impl<T> ConstantParam<T> {
+    fn get_value(&self) -> &T {
+        &self.value
+    }
+
+    fn set_value(&mut self, new_value: T) {
+        // TODO checks
+        self.value = new_value;
+    }
+
+    pub fn to_drag(&mut self, ui: &mut egui::Ui) -> bool
+    where
+        T: egui::emath::Numeric + Clone,
+    {
+        let mut changed = false;
+
+        ui.horizontal(|ui| {
+            changed |= ui
+                .add(
+                    egui::DragValue::new(&mut self.value)
+                        .speed(1)
+                        .clamp_range(self.lower..=self.upper),
+                )
+                .changed();
+            if ui.button("↻").clicked() {
+                changed = true;
+                self.reset();
+            }
+        })
+        .inner;
+
+        changed
+    }
+
     pub fn new(default: T, lower: T, upper: T, desc: &str) -> Self
     where
         T: Clone,
@@ -62,9 +56,8 @@ impl<T> ConstantParam<T> {
         Self {
             value: default.clone(),
             default: default,
-            //   lower,
-            //     upper,
-            range: RangeHolder::new(lower.clone(), upper),
+            lower,
+            upper,
             display_text: desc.to_string(),
         }
     }
@@ -78,7 +71,7 @@ impl<T> ConstantParam<T> {
             changed |= ui
                 .add(single_slider_styled(
                     &mut self.value,
-                    self.range.lower..=self.range.upper,
+                    self.lower..=self.upper,
                     "",
                 ))
                 .changed();
