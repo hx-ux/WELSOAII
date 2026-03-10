@@ -2,9 +2,8 @@ use crate::{
     animator::{
         AnimatedObject, AnimatorSettings, ObjectShape, UpdateBehaviour,
         animation_type::AnimationType,
-        animator_param::{AnimationParam, ConstantParam},
     },
-    color::ColorParam,
+    color::ColorParam, parameters::{ConstantParam, ModulatedParam},
 };
 
 use crate::modulator::ModMatrix;
@@ -16,46 +15,45 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize)]
 pub struct WaveLinesSettings {
     pub line_count: ConstantParam<u32>,
-    pub amplitude: AnimationParam,
-    pub frequency: AnimationParam,
-    pub speed: AnimationParam,
-    pub thickness: AnimationParam,
-    pub phase_spread: AnimationParam,
+    pub amplitude: ModulatedParam,
+    pub frequency: ModulatedParam,
+    pub speed: ModulatedParam,
+    pub thickness: ModulatedParam,
+    pub phase_spread: ModulatedParam,
     color: ColorParam,
     #[serde(skip)]
     width: f32,
     #[serde(skip)]
     height: f32,
-    //presets: PresetManager<WaveLinesSettings>,
 }
 
 impl AnimatorSettings for WaveLinesSettings {
     fn new(win_rect: &Rect) -> Self {
         let wave_lines_settings = Self {
             line_count: ConstantParam::new(14, 2, 60, "lines"),
-            amplitude: AnimationParam::new(
+            amplitude: ModulatedParam::new(
                 90.0,
                 5.0,
                 260.0,
                 "amplitude",
                 Some(ModTarget::WaveAmplitude),
             ),
-            frequency: AnimationParam::new(
+            frequency: ModulatedParam::new(
                 0.018,
                 0.003,
                 0.08,
                 "frequency",
                 Some(ModTarget::WaveFrequency),
             ),
-            speed: AnimationParam::new(1.5, 0.1, 6.0, "speed", Some(ModTarget::WaveSpeed)),
-            thickness: AnimationParam::new(
+            speed: ModulatedParam::new(1.5, 0.1, 6.0, "speed", Some(ModTarget::WaveSpeed)),
+            thickness: ModulatedParam::new(
                 4.0,
                 1.0,
                 14.0,
                 "thickness",
                 Some(ModTarget::WaveThickness),
             ),
-            phase_spread: AnimationParam::new(
+            phase_spread: ModulatedParam::new(
                 0.0,
                 -2.0,
                 2.0,
@@ -65,7 +63,6 @@ impl AnimatorSettings for WaveLinesSettings {
             color: ColorParam::default(),
             width: win_rect.w(),
             height: win_rect.h(),
-            //presets: PresetManager::new_animator(AnimationType::WaveLines),
         };
         wave_lines_settings
     }

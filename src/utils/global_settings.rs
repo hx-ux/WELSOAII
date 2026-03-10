@@ -1,6 +1,5 @@
-use crate::animator::animation_type::AnimationType;
-use crate::animator::animator_param::{AnimationParam, ConstantParam};
 use crate::utils::PathManager;
+use crate::{animator::animation_type::AnimationType, parameters::ConstantParam};
 use anyhow::Result;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};

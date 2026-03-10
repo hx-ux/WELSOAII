@@ -4,6 +4,7 @@ use nannou_egui::{self, Egui, egui};
 mod animator;
 mod color;
 mod modulator;
+mod parameters;
 mod presets;
 mod receiver;
 mod ui;

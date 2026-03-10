@@ -13,7 +13,6 @@ use nannou::prelude::*;
 use nannou_egui::egui::{self};
 
 pub mod animation_type;
-pub mod animator_param;
 mod animators;
 pub mod timecode;
 

@@ -4,12 +4,12 @@ use crate::animator::ObjectShape;
 use crate::animator::UpdateBehaviour;
 use crate::animator::animation_type::AnimationType;
 use crate::animator::animation_type::ScanLineModes;
-use crate::animator::animator_param::AnimationParam;
-use crate::animator::animator_param::ConstantParam;
 use crate::modulator::ModMatrix;
 use crate::modulator::ModTarget;
 //use crate::animator::presets_manager::PresetManager;
 use crate::color::ColorParam;
+use crate::parameters::ConstantParam;
+use crate::parameters::ModulatedParam;
 use anyhow::Ok;
 use nannou::prelude::*;
 use nannou_egui::egui;
@@ -22,8 +22,8 @@ pub struct ScanLineSettings {
     multi_line_count: ConstantParam<u8>,
 
     mode: ScanLineModes,
-    pub speed: AnimationParam,
-    pub width: AnimationParam,
+    pub speed: ModulatedParam,
+    pub width: ModulatedParam,
     color: ColorParam,
     #[serde(skip)]
     height: f32,
@@ -37,12 +37,11 @@ impl AnimatorSettings for ScanLineSettings {
         Self {
             multi_line_count: ConstantParam::new(1, 1, 10, "line_count"),
             mode: ScanLineModes::default(),
-            speed: AnimationParam::new(300.0, 0.0, 1000.0, "speed", Some(ModTarget::ScanSpeed)),
-            width: AnimationParam::new(20.0, 5.0, 100.0, "width", Some(ModTarget::ScanWidth)),
+            speed: ModulatedParam::new(300.0, 0.0, 1000.0, "speed", Some(ModTarget::ScanSpeed)),
+            width: ModulatedParam::new(20.0, 5.0, 100.0, "width", Some(ModTarget::ScanWidth)),
             color: ColorParam::default(),
             height: win_rect.h(),
             begin_pos: win_rect.left(),
-            //presets: PresetManager::new_animator(AnimationType::ScanLine),
         }
     }
 
@@ -130,7 +129,6 @@ impl AnimatorSettings for ScanLineSettings {
     }
 
     fn save_preset(&mut self) -> anyhow::Result<()> {
-        //  self.presets.save_to_file(self, None)?;
         Ok(())
     }
 
@@ -145,7 +143,6 @@ pub struct ScanLine {
     height: f32,
     pub width: f32,
     index: usize,
-    // pub beat_snap: f32,
     phase_offset: f32,
 }
 

@@ -3,13 +3,12 @@ use crate::animator::AnimatorSettings;
 use crate::animator::ObjectShape;
 use crate::animator::UpdateBehaviour;
 use crate::animator::animation_type::AnimationType;
-use crate::animator::animator_param::AnimationParam;
-use crate::animator::animator_param::ConstantParam;
-//use crate::animator::animator_param::RangeHolder;
 use crate::animator::timecode::TimeCode;
 use crate::color::ColorParam;
 use crate::modulator::ModMatrix;
 use crate::modulator::ModTarget;
+use crate::parameters::ConstantParam;
+use crate::parameters::ModulatedParam;
 
 use anyhow::Ok;
 use nannou::prelude::*;
@@ -23,8 +22,8 @@ fn default_rect() -> Rect {
 #[derive(Serialize, Deserialize)]
 pub struct BouncingBallSettings {
     pub ball_count: ConstantParam<u32>,
-    pub speed: AnimationParam,
-    pub radius: AnimationParam,
+    pub speed: ModulatedParam,
+    pub radius: ModulatedParam,
     ball_vel_range_x: ConstantParam<f32>,
     ball_vel_range_y: ConstantParam<f32>,
     #[serde(skip)]
@@ -38,13 +37,12 @@ impl AnimatorSettings for BouncingBallSettings {
     fn new(win_rect: &Rect) -> Self {
         Self {
             ball_count: ConstantParam::new(20, 1, 400, "Ball Count"),
-            speed: AnimationParam::new(1.0, 1.0, 5.0, "Speed", Some(ModTarget::BouncingSpeed)),
+            speed: ModulatedParam::new(1.0, 1.0, 5.0, "Speed", Some(ModTarget::BouncingSpeed)),
             dimension: *win_rect,
-            radius: AnimationParam::new(10.0, 6.0, 30.0, "radius", Some(ModTarget::BouncingRadius)),
+            radius: ModulatedParam::new(10.0, 6.0, 30.0, "radius", Some(ModTarget::BouncingRadius)),
             ball_vel_range_x: ConstantParam::new(0.0, -100.0, 100.0, "Range X"),
             ball_vel_range_y: ConstantParam::new(0.0, -100.0, 100.0, "Range Y"),
             color: ColorParam::default(),
-            //presets: PresetManager::new_animator(AnimationType::BouncingBalls),
         }
     }
 
@@ -67,22 +65,8 @@ impl AnimatorSettings for BouncingBallSettings {
 
         if ui
             .horizontal(|ui| {
-                let c1 = ui
-                    .add(egui::DragValue::new(&mut self.ball_vel_range_x.lower).speed(1.0))
-                    .changed();
-                let c2 = ui
-                    .add(egui::DragValue::new(&mut self.ball_vel_range_x.upper).speed(1.0))
-                    .changed();
-
-                // Ensure lower <= upper
-                if self.ball_vel_range_x.lower > self.ball_vel_range_x.upper {
-                    std::mem::swap(
-                        &mut self.ball_vel_range_x.lower,
-                        &mut self.ball_vel_range_x.upper,
-                    );
-                }
-                let _ = ui.label("Random Range");
-                c1 || c2
+                let c1 = self.ball_vel_range_x.to_drag(ui);
+                c1
             })
             .inner
         {
@@ -93,23 +77,8 @@ impl AnimatorSettings for BouncingBallSettings {
         ui.label("Velocity Range (Y-axis)");
         if ui
             .horizontal(|ui| {
-                let c1 = ui
-                    .add(egui::DragValue::new(&mut self.ball_vel_range_y.lower).speed(1.0))
-                    .changed();
-                let c2 = ui
-                    .add(egui::DragValue::new(&mut self.ball_vel_range_y.upper).speed(1.0))
-                    .changed();
-
-                // Ensure lower <= upper
-                if self.ball_vel_range_y.lower > self.ball_vel_range_y.upper {
-                    std::mem::swap(
-                        &mut self.ball_vel_range_y.lower,
-                        &mut self.ball_vel_range_y.upper,
-                    );
-                }
-
-                let _ = ui.label("Random Range");
-                c1 || c2
+                let c2 = self.ball_vel_range_y.to_drag(ui);
+                c2
             })
             .inner
         {

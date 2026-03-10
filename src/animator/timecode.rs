@@ -1,9 +1,8 @@
-// use nannou::{ draw::background::new};
 use nannou_egui::egui;
 use rusty_link::{AblLink, SessionState};
 use serde::{Deserialize, Serialize};
 
-use crate::animator::animator_param::ConstantParam;
+use crate::parameters::ConstantParam;
 
 /// Currently read only
 pub struct AblLinkState {

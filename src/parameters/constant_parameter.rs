@@ -1,0 +1,80 @@
+use crate::ui::controls::single_slider_styled;
+use nannou_egui::egui::{self};
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq, PartialOrd)]
+pub struct ConstantParam<T> {
+    pub value: T,
+    pub default: T,
+    pub lower: T,
+    pub upper: T,
+    pub display_text: String,
+}
+
+impl<T> ConstantParam<T> {
+    pub fn to_drag(&mut self, ui: &mut egui::Ui) -> bool
+    where
+        T: egui::emath::Numeric + Clone,
+    {
+        let mut changed = false;
+
+        ui.horizontal(|ui| {
+            changed |= ui
+                .add(
+                    egui::DragValue::new(&mut self.value)
+                        .speed(1)
+                        .clamp_range(self.lower..=self.upper),
+                )
+                .changed();
+            if ui.button("↻").clicked() {
+                changed = true;
+                self.reset();
+            }
+        })
+        .inner;
+
+        changed
+    }
+
+    pub fn new(default: T, lower: T, upper: T, desc: &str) -> Self
+    where
+        T: Clone,
+    {
+        Self {
+            value: default.clone(),
+            default: default,
+            lower,
+            upper,
+            display_text: desc.to_string(),
+        }
+    }
+
+    pub fn to_slider(&mut self, ui: &mut egui::Ui) -> bool
+    where
+        T: egui::emath::Numeric + Clone,
+    {
+        let mut changed = false;
+        ui.horizontal(|ui| {
+            changed |= ui
+                .add(single_slider_styled(
+                    &mut self.value,
+                    self.lower..=self.upper,
+                    "",
+                ))
+                .changed();
+            if ui.button("↻").clicked() {
+                changed = true;
+                self.reset();
+            }
+        })
+        .inner;
+
+        changed
+    }
+    pub fn reset(&mut self)
+    where
+        T: Clone,
+    {
+        self.value = self.default.clone();
+    }
+}

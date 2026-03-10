@@ -4,11 +4,11 @@ use crate::animator::ObjectShape;
 use crate::animator::UpdateBehaviour;
 use crate::animator::animation_type::AnimationType;
 use crate::animator::animation_type::PulseModes;
-use crate::animator::animator_param::AnimationParam;
-use crate::animator::animator_param::ConstantParam;
 use crate::color::ColorParam;
 use crate::modulator::ModMatrix;
 use crate::modulator::ModTarget;
+use crate::parameters::ConstantParam;
+use crate::parameters::ModulatedParam;
 use anyhow::Ok;
 use nannou::prelude::*;
 use nannou_egui::egui;
@@ -19,31 +19,27 @@ use strum::IntoEnumIterator;
 pub struct PulseBackgroundSettings {
     pub ring_count: ConstantParam<u32>,
     pub mode: PulseModes,
-    pub speed: AnimationParam,
+    pub speed: ModulatedParam,
     pub color: ColorParam,
-    pub limit: AnimationParam,
-    // pub beat_multiplier: AnimationParam<f32>,
-    pub rotation_speed: AnimationParam,
-    //pub presets: PresetManager<PulseBackgroundSettings>,
+    pub limit: ModulatedParam,
+    pub rotation_speed: ModulatedParam,
 }
 
 impl AnimatorSettings for PulseBackgroundSettings {
     fn new(win_rect: &Rect) -> Self {
         Self {
             mode: PulseModes::default(),
-            speed: AnimationParam::new(100.0, 1.0, 200.0, "speed", Some(ModTarget::PulseSpeed)),
+            speed: ModulatedParam::new(100.0, 1.0, 200.0, "speed", Some(ModTarget::PulseSpeed)),
             color: ColorParam::default(),
-            limit: AnimationParam::new(0.8, 0.1, 1.0, "limit", Some(ModTarget::PulseLimit)),
-            // beat_multiplier: AnimationParam::new(1.0, 0.0, 4.0, "beat_mult"),
+            limit: ModulatedParam::new(0.8, 0.1, 1.0, "limit", Some(ModTarget::PulseLimit)),
             ring_count: ConstantParam::new(3, 1, 10, "ring_count"),
-            rotation_speed: AnimationParam::new(
+            rotation_speed: ModulatedParam::new(
                 0.5,
                 0.0,
                 3.0,
                 "rotation",
                 Some(ModTarget::PulseRotation),
             ),
-            // presets: PresetManager::new_animator(AnimationType::PulseBackground),
         }
     }
 
