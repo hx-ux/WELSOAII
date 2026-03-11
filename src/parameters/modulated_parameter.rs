@@ -19,6 +19,8 @@ pub struct ModulatedParam {
     #[serde(skip_serializing)]
     pub ghost_value: Option<f32>,
     pub mod_target: ModTarget,
+    #[serde(skip_serializing)]
+    pub mod_amount: f32,
 }
 
 impl ModulatedParam {
@@ -41,6 +43,7 @@ impl ModulatedParam {
             ghost_value: None,
             modulation_active: false,
             mod_target: target,
+            mod_amount: 0.0,
         }
     }
 
@@ -52,26 +55,6 @@ impl ModulatedParam {
         if self.mod_target != ModTarget::None {
             mods.routes.push(ModRoute::new(self.mod_target));
         }
-    }
-
-    fn to_slider_core(&mut self, ui: &mut egui::Ui) -> bool {
-        let mut changed = false;
-        ui.horizontal(|ui| {
-            changed |= ui
-                .add(single_slider_styled(
-                    &mut self.value,
-                    self.range.0..=self.range.1,
-                    "",
-                ))
-                .changed();
-            if ui.button("↻").clicked() {
-                changed = true;
-                self.reset();
-            }
-        })
-        .inner;
-
-        changed
     }
 
     pub fn to_slider_modulate(&mut self, ui: &mut egui::Ui, mods: &mut ModMatrix) -> bool {
@@ -87,12 +70,14 @@ impl ModulatedParam {
 
         ui.horizontal(|ui| {
             if let Some(ghost) = self.ghost_value {
-                changed |= ui.add(styled_dual_slider(
-                    &mut self.value,
-                    Some(ghost),
-                    self.range.0..=self.range.1,
-                    "",
-                )).changed();
+                changed |= ui
+                    .add(styled_dual_slider(
+                        &mut self.value,
+                        Some(ghost),
+                        self.range.0..=self.range.1,
+                        "",
+                    ))
+                    .changed();
             } else {
                 changed |= ui
                     .add(single_slider_styled(
@@ -112,20 +97,13 @@ impl ModulatedParam {
                 mods.set_enables(self.modulation_active, self.mod_target);
                 changed = true;
             }
+
+            // TODO add clamp range
+            if self.ghost_value.is_some() {
+                ui.add(egui::DragValue::new(&mut self.mod_amount).speed(0.1));
+            }
         })
         .inner;
-
-        // In to_slider_modulate or ghost render:
-        if let Some(ghost) = self.ghost_value {
-            ui.add(styled_dual_slider(
-                &mut self.value,
-                Some(ghost),
-                self.range.0..=self.range.1,
-                "",
-            ));
-        }
-
-        //changed |= self.to_slider_core(ui);
         changed
     }
 }
