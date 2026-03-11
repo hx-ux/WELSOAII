@@ -3,11 +3,13 @@ use crate::{
         AnimatedObject, AnimatorSettings, ObjectShape, UpdateBehaviour,
         animation_type::AnimationType,
     },
-    color::ColorParam, parameters::{ConstantParam, ModulatedParam},
+    color::ColorParam,
+    parameters::{ConstantParam, ModulatedParam},
 };
 
 use crate::modulator::ModMatrix;
 use crate::modulator::ModTarget;
+use crate::timecode::TimeCode;
 use nannou::prelude::*;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
@@ -231,12 +233,7 @@ impl WaveLine {
 }
 
 impl AnimatedObject for WaveLine {
-    fn update(
-        &mut self,
-        win_rect: &Rect,
-        delta_time: f32,
-        clock: &crate::animator::timecode::TimeCode,
-    ) {
+    fn update(&mut self, win_rect: &Rect, delta_time: f32, clock: &TimeCode) {
         self.width = win_rect.w();
         self.height = win_rect.h();
         let beat = clock.get_beat_progress();

@@ -8,13 +8,13 @@ use crate::{
         animators::{WaveLinesSettings, bouncing_ball, pulse_background, scan_line, wave_lines},
     },
     receiver::ReceiverGrid,
+    timecode::TimeCode,
 };
 use nannou::prelude::*;
 use nannou_egui::egui::{self};
 
 pub mod animation_type;
 mod animators;
-pub mod timecode;
 
 use crate::modulator::ModMatrix;
 use crate::modulator::ModTarget;
@@ -22,7 +22,6 @@ use crate::modulator::ModTarget;
 use bouncing_ball::BouncingBallSettings;
 use pulse_background::PulseBackgroundSettings;
 use scan_line::ScanLineSettings;
-use timecode::TimeCode;
 
 macro_rules! with_current_settings {
     ($self:expr, $method:ident $(, $args:expr)*) => {
@@ -127,7 +126,7 @@ impl Animator {
         Animator {
             objects: Vec::new(),
             animation_type: AnimationType::BouncingBalls,
-            clock: timecode::TimeCode::new(),
+            clock: TimeCode::new(),
             mod_matrix,
             grid,
             bouncing_ball_settings,

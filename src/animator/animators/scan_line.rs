@@ -4,12 +4,12 @@ use crate::animator::ObjectShape;
 use crate::animator::UpdateBehaviour;
 use crate::animator::animation_type::AnimationType;
 use crate::animator::animation_type::ScanLineModes;
+use crate::color::ColorParam;
 use crate::modulator::ModMatrix;
 use crate::modulator::ModTarget;
-//use crate::animator::presets_manager::PresetManager;
-use crate::color::ColorParam;
 use crate::parameters::ConstantParam;
 use crate::parameters::ModulatedParam;
+use crate::timecode::TimeCode;
 use anyhow::Ok;
 use nannou::prelude::*;
 use nannou_egui::egui;
@@ -174,12 +174,7 @@ impl ScanLine {
 }
 
 impl AnimatedObject for ScanLine {
-    fn update(
-        &mut self,
-        win_rect: &Rect,
-        delta_time: f32,
-        clock: &crate::animator::timecode::TimeCode,
-    ) {
+    fn update(&mut self, win_rect: &Rect, delta_time: f32, clock: &TimeCode) {
         // Beat-synced speed modulation with snap
         let beat_progress = clock.get_beat_progress();
         let beat_pulse = ((beat_progress + self.phase_offset) * std::f32::consts::PI * 2.0).sin();

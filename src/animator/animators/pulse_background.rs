@@ -9,6 +9,7 @@ use crate::modulator::ModMatrix;
 use crate::modulator::ModTarget;
 use crate::parameters::ConstantParam;
 use crate::parameters::ModulatedParam;
+use crate::timecode::TimeCode;
 use anyhow::Ok;
 use nannou::prelude::*;
 use nannou_egui::egui;
@@ -169,12 +170,7 @@ impl PulseBackground {
 }
 
 impl AnimatedObject for PulseBackground {
-    fn update(
-        &mut self,
-        win_rect: &Rect,
-        delta_time: f32,
-        clock: &crate::animator::timecode::TimeCode,
-    ) {
+    fn update(&mut self, win_rect: &Rect, delta_time: f32, clock: &TimeCode) {
         let min_w = 20.0;
         let min_h = 20.0;
 

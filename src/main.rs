@@ -7,6 +7,7 @@ mod modulator;
 mod parameters;
 mod presets;
 mod receiver;
+mod timecode;
 mod ui;
 mod utils;
 use animator::Animator;

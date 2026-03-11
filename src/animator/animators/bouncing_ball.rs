@@ -3,12 +3,12 @@ use crate::animator::AnimatorSettings;
 use crate::animator::ObjectShape;
 use crate::animator::UpdateBehaviour;
 use crate::animator::animation_type::AnimationType;
-use crate::animator::timecode::TimeCode;
 use crate::color::ColorParam;
 use crate::modulator::ModMatrix;
 use crate::modulator::ModTarget;
 use crate::parameters::ConstantParam;
 use crate::parameters::ModulatedParam;
+use crate::timecode::TimeCode;
 
 use anyhow::Ok;
 use nannou::prelude::*;
