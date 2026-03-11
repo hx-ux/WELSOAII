@@ -1,3 +1,5 @@
+use std::ops::RangeInclusive;
+
 use crate::animator::animation_type::AnimationType;
 use nannou_egui::egui::{self};
 use serde::{Deserialize, Serialize};
@@ -5,10 +7,29 @@ use strum::IntoEnumIterator;
 use strum_macros::Display;
 use strum_macros::EnumIter;
 
+#[derive(Clone, Display, EnumIter, Serialize, Deserialize, PartialEq)]
+pub enum AmountType {
+    #[strum(to_string = "+")]
+    Plus,
+    #[strum(to_string = "-")]
+    Minus,
+    #[strum(to_string = "+-")]
+    PlusMinus,
+}
+
+impl AmountType {
+    pub fn range(&self) -> RangeInclusive<f32> {
+        match self {
+            AmountType::Plus => RangeInclusive::new(0.0, 1.0),
+            AmountType::Minus => RangeInclusive::new(0.0, 1.0),
+            AmountType::PlusMinus => RangeInclusive::new(-1.0, 1.0),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Default, Display, EnumIter)]
 pub enum ModWave {
     #[default]
-    #[strum(to_string = "Sine")]
     Sine,
     #[strum(to_string = "Triangle")]
     Triangle,
@@ -94,7 +115,7 @@ impl ModTarget {
 pub struct ModRoute {
     pub target: ModTarget,
     pub enabled: bool,
-    pub amount: f32, // TODO amount
+    pub amount: f32,
 }
 
 impl ModRoute {
@@ -117,12 +138,13 @@ impl Default for ModRoute {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct ModMatrix {
     pub routes: Vec<ModRoute>,
 
     /// ±1.0 equals ±100% around the base value.
     pub amount: f32,
+    pub amount_type: AmountType,
     pub wave: ModWave,
     /// Multiplier for the global beat clock (1.0 = 1 cycle per beat).
     pub freq_mul: f32,
@@ -137,6 +159,7 @@ impl Default for ModMatrix {
         Self {
             routes: Default::default(),
             amount: 0.25,
+            amount_type: AmountType::Plus,
             wave: ModWave::default(),
             freq_mul: 1.0,
             phase: 1.0,
@@ -159,8 +182,18 @@ impl ModMatrix {
     }
 
     pub fn ui(&mut self, ui: &mut egui::Ui, animation_type: AnimationType) {
-        ui.add(egui::Slider::new(&mut self.amount, -1.0..=1.0).text("Depth"));
-        // todo 0.5 Steps
+        ui.add(egui::Slider::new(&mut self.amount, self.amount_type.range()).text("Depth"));
+
+        ui.horizontal(|ui| {
+            for options in AmountType::iter() {
+                ui.radio_value(
+                    &mut self.amount_type,
+                    options.clone(),
+                    format!("{}", options),
+                );
+            }
+        });
+
         ui.add(
             egui::Slider::new(&mut self.freq_mul, 0.5..=2.0)
                 .text("Rate (x beat)")
@@ -197,22 +230,25 @@ impl ModMatrix {
     }
 
     pub fn calc_modulation(&self, beat_pos: f32, target: ModTarget) -> f32 {
+        
         if !self.enabled {
             return 1.0;
         }
-
         // let lfo = sample_wave(self.wave, beat_pos * self.freq_mul + self.phase);
-        // let lfo = sample_wave(self.wave, beat_pos * self.freq_mul + self.phase);
-        let lfo = sample_wave(self.wave, beat_pos * self.freq_mul);
-
+        let result = create_modulation(self.wave, beat_pos * self.freq_mul);
         let mut factor = 1.0;
+        let mut amount = self.amount;
+
+        if self.amount_type == AmountType::Minus {
+            amount *= -1.0;
+        }
 
         for route in self
             .routes
             .iter()
             .filter(|route| route.enabled && route.target == target)
         {
-            factor *= 1.0 + (self.amount * route.amount) * lfo;
+            factor *= 1.0 + (amount * route.amount) * result;
         }
 
         factor
@@ -220,7 +256,7 @@ impl ModMatrix {
 }
 
 /// Sample a waveform at the given beat position. Output in [-1, 1].
-pub fn sample_wave(wave: ModWave, beat_pos: f32) -> f32 {
+pub fn create_modulation(wave: ModWave, beat_pos: f32) -> f32 {
     let phase = beat_pos * std::f32::consts::TAU;
     match wave {
         ModWave::Sine => phase.sin(),
