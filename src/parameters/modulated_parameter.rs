@@ -69,24 +69,14 @@ impl ModulatedParam {
         }
 
         ui.horizontal(|ui| {
-            if let Some(ghost) = self.ghost_value {
-                changed |= ui
-                    .add(styled_dual_slider(
-                        &mut self.value,
-                        Some(ghost),
-                        self.range.0..=self.range.1,
-                        "",
-                    ))
-                    .changed();
-            } else {
-                changed |= ui
-                    .add(single_slider_styled(
-                        &mut self.value,
-                        self.range.0..=self.range.1,
-                        "",
-                    ))
-                    .changed();
-            }
+            changed |= ui
+                .add(styled_dual_slider(
+                    &mut self.value,
+                    self.ghost_value,
+                    self.range.0..=self.range.1,
+                    "",
+                ))
+                .changed();
 
             if ui.button("↻").clicked() {
                 changed = true;
@@ -100,7 +90,11 @@ impl ModulatedParam {
 
             // TODO add clamp range
             if self.ghost_value.is_some() {
-                ui.add(egui::DragValue::new(&mut self.mod_amount).speed(0.1));
+                ui.add(
+                    egui::DragValue::new(&mut self.mod_amount)
+                        .speed(0.1)
+                        .clamp_range(0.000..=1.000),
+                );
             }
         })
         .inner;
