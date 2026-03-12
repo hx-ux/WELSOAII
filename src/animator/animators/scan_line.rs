@@ -139,6 +139,11 @@ impl AnimatorSettings for ScanLineSettings {
     }
 
     fn reset(&mut self) {}
+
+    fn connect_modulations(&mut self, mod_matrix: &mut ModMatrix) {
+        self.speed.connect_modulation(mod_matrix);
+        self.width.connect_modulation(mod_matrix);
+    }
 }
 
 pub struct ScanLine {

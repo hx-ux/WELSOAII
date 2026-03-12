@@ -181,11 +181,23 @@ impl AnimatorSettings for WaveLinesSettings {
         }
     }
 
+    fn reset(&mut self) {}
+
+    fn force_update(&self) -> UpdateBehaviour {
+        UpdateBehaviour::NeedsReset
+    }
+
     fn save_preset(&mut self) -> anyhow::Result<()> {
         Ok(())
     }
 
-    fn reset(&mut self) {}
+    fn connect_modulations(&mut self, mod_matrix: &mut ModMatrix) {
+        self.amplitude.connect_modulation(mod_matrix);
+        self.frequency.connect_modulation(mod_matrix);
+        self.speed.connect_modulation(mod_matrix);
+        self.thickness.connect_modulation(mod_matrix);
+        self.phase_spread.connect_modulation(mod_matrix);
+    }
 }
 
 impl WaveLinesSettings {}

@@ -132,13 +132,19 @@ impl AnimatorSettings for PulseBackgroundSettings {
         }
     }
 
+    fn reset(&mut self) {
+        todo!()
+    }
+
+    fn connect_modulations(&mut self, mod_matrix: &mut ModMatrix) {
+        self.speed.connect_modulation(mod_matrix);
+        self.limit.connect_modulation(mod_matrix);
+        self.rotation_speed.connect_modulation(mod_matrix);
+    }
+
     fn save_preset(&mut self) -> anyhow::Result<()> {
         //self.presets.save_to_file(self, None)?;
         Ok(())
-    }
-
-    fn reset(&mut self) {
-        todo!()
     }
 }
 

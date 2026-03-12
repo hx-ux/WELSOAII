@@ -69,6 +69,7 @@ pub trait AnimatorSettings {
     fn force_update(&self) -> UpdateBehaviour {
         UpdateBehaviour::NeedsReset
     }
+    fn connect_modulations(&mut self, mod_matrix: &mut ModMatrix);
     fn save_preset(&mut self) -> Result<()>;
 }
 

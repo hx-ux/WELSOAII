@@ -167,15 +167,24 @@ impl AnimatorSettings for BouncingBallSettings {
         }
     }
 
-    fn save_preset(&mut self) -> anyhow::Result<()> {
-        // self.presets.save_to_file(self, None)?;
-        Ok(())
-    }
-
     fn reset(&mut self) {
         self.ball_count.reset();
         self.speed.reset();
         self.radius.reset();
+    }
+
+    fn force_update(&self) -> UpdateBehaviour {
+        UpdateBehaviour::NeedsReset
+    }
+
+    fn connect_modulations(&mut self, mod_matrix: &mut ModMatrix) {
+        self.speed.connect_modulation(mod_matrix);
+        self.radius.connect_modulation(mod_matrix);
+    }
+
+    fn save_preset(&mut self) -> anyhow::Result<()> {
+        // self.presets.save_to_file(self, None)?;
+        Ok(())
     }
 }
 
