@@ -14,6 +14,17 @@ use nannou::prelude::*;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 
+#[macro_export]
+macro_rules! connect_wave_lines_modulations {
+    ($settings:expr, $mod_matrix:expr) => {
+        $settings.amplitude.connect_modulation(&mut $mod_matrix);
+        $settings.frequency.connect_modulation(&mut $mod_matrix);
+        $settings.speed.connect_modulation(&mut $mod_matrix);
+        $settings.thickness.connect_modulation(&mut $mod_matrix);
+        $settings.phase_spread.connect_modulation(&mut $mod_matrix);
+    };
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct WaveLinesSettings {
     pub line_count: ConstantParam<u32>,

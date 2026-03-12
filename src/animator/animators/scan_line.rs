@@ -17,10 +17,17 @@ use serde::{Deserialize, Serialize};
 
 use strum::IntoEnumIterator;
 
+#[macro_export]
+macro_rules! connect_scan_line_modulations {
+    ($settings:expr, $mod_matrix:expr) => {
+        $settings.speed.connect_modulation(&mut $mod_matrix);
+        $settings.width.connect_modulation(&mut $mod_matrix);
+    };
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct ScanLineSettings {
     multi_line_count: ConstantParam<u8>,
-
     mode: ScanLineModes,
     pub speed: ModulatedParam,
     pub width: ModulatedParam,
@@ -29,7 +36,6 @@ pub struct ScanLineSettings {
     height: f32,
     #[serde(skip)]
     begin_pos: f32,
-    //presets: PresetManager<ScanLineSettings>,
 }
 
 impl AnimatorSettings for ScanLineSettings {

@@ -15,6 +15,14 @@ use nannou::prelude::*;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 
+#[macro_export]
+macro_rules! connect_bouncing_balls_modulations {
+    ($settings:expr, $mod_matrix:expr) => {
+        $settings.speed.connect_modulation(&mut $mod_matrix);
+        $settings.radius.connect_modulation(&mut $mod_matrix);
+    };
+}
+
 fn default_rect() -> Rect {
     Rect::from_w_h(800.0, 600.0)
 }

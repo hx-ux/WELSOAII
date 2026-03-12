@@ -16,6 +16,17 @@ use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 
+#[macro_export]
+macro_rules! connect_pulse_bg_modulations {
+    ($settings:expr, $mod_matrix:expr) => {
+        $settings.speed.connect_modulation(&mut $mod_matrix);
+        $settings.limit.connect_modulation(&mut $mod_matrix);
+        $settings
+            .rotation_speed
+            .connect_modulation(&mut $mod_matrix);
+    };
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct PulseBackgroundSettings {
     pub ring_count: ConstantParam<u32>,

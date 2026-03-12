@@ -7,6 +7,8 @@ use crate::{
         animation_type::{AnimationType, UpdateBehaviour},
         animators::{WaveLinesSettings, bouncing_ball, pulse_background, scan_line, wave_lines},
     },
+    connect_bouncing_balls_modulations, connect_pulse_bg_modulations,
+    connect_scan_line_modulations, connect_wave_lines_modulations,
     receiver::ReceiverGrid,
     timecode::TimeCode,
 };
@@ -90,38 +92,10 @@ impl Animator {
         let wave_lines_settings = WaveLinesSettings::new(win_rect);
         let mut mod_matrix = ModMatrix::default();
 
-        bouncing_ball_settings
-            .speed
-            .connect_modulation(&mut mod_matrix);
-        bouncing_ball_settings
-            .radius
-            .connect_modulation(&mut mod_matrix);
-
-        scanline_settings.speed.connect_modulation(&mut mod_matrix);
-        scanline_settings.width.connect_modulation(&mut mod_matrix);
-
-        pulse_settings.speed.connect_modulation(&mut mod_matrix);
-        pulse_settings.limit.connect_modulation(&mut mod_matrix);
-
-        pulse_settings
-            .rotation_speed
-            .connect_modulation(&mut mod_matrix);
-
-        wave_lines_settings
-            .amplitude
-            .connect_modulation(&mut mod_matrix);
-        wave_lines_settings
-            .frequency
-            .connect_modulation(&mut mod_matrix);
-        wave_lines_settings
-            .speed
-            .connect_modulation(&mut mod_matrix);
-        wave_lines_settings
-            .thickness
-            .connect_modulation(&mut mod_matrix);
-        wave_lines_settings
-            .phase_spread
-            .connect_modulation(&mut mod_matrix);
+        connect_bouncing_balls_modulations!(bouncing_ball_settings, &mut mod_matrix);
+        connect_scan_line_modulations!(scanline_settings, mod_matrix);
+        connect_pulse_bg_modulations!(pulse_settings, &mut mod_matrix);
+        connect_wave_lines_modulations!(wave_lines_settings, mod_matrix);
 
         Animator {
             objects: Vec::new(),
