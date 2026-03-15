@@ -1,7 +1,7 @@
 use crate::{
     animator::{
-        AnimatedObject, AnimatorSettings, ObjectShape, UpdateBehaviour,
-        animation_type::AnimationType,
+        animation_type::AnimationType, AnimatedObject, AnimatorSettings, ObjectShape,
+        UpdateBehaviour,
     },
     color::ColorParam,
     parameters::{ConstantParam, ModulatedParam},
@@ -42,7 +42,7 @@ pub struct WaveLinesSettings {
 
 impl AnimatorSettings for WaveLinesSettings {
     fn new(win_rect: &Rect) -> Self {
-        let wave_lines_settings = Self {
+        Self {
             line_count: ConstantParam::new(14, 2, 60, "lines"),
             amplitude: ModulatedParam::new(
                 90.0,
@@ -76,8 +76,7 @@ impl AnimatorSettings for WaveLinesSettings {
             color: ColorParam::default(),
             width: win_rect.w(),
             height: win_rect.h(),
-        };
-        wave_lines_settings
+        }
     }
 
     fn ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour {
@@ -173,7 +172,7 @@ impl AnimatorSettings for WaveLinesSettings {
                 line.amplitude_base = *self.amplitude.value();
                 line.amplitude_current = *self.amplitude.value();
                 line.frequency = *self.frequency.value();
-                line.speed = self.speed.value().clone();
+                line.speed = *self.speed.value();
                 line.thickness = *self.thickness.value();
                 line.phase_spread = *self.phase_spread.value();
                 line.color = self.color.clone().value_mapped(line.index);

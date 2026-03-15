@@ -1,9 +1,9 @@
+use crate::animator::animation_type::AnimationType;
+use crate::animator::animation_type::ScanLineModes;
 use crate::animator::AnimatedObject;
 use crate::animator::AnimatorSettings;
 use crate::animator::ObjectShape;
 use crate::animator::UpdateBehaviour;
-use crate::animator::animation_type::AnimationType;
-use crate::animator::animation_type::ScanLineModes;
 use crate::color::ColorParam;
 use crate::modulator::ModTarget;
 use crate::modulator::Modulator;
@@ -198,7 +198,7 @@ impl AnimatedObject for ScanLine {
     fn update(&mut self, win_rect: &Rect, delta_time: f32, clock: &TimeCode) {
         // Beat-synced speed modulation with snap
         let beat_progress = clock.get_beat_progress();
-        let beat_pulse = ((beat_progress + self.phase_offset) * std::f32::consts::PI * 2.0).sin();
+        let _beat_pulse = ((beat_progress + self.phase_offset) * std::f32::consts::PI * 2.0).sin();
         // let speed_multiplier = 1.0 + (beat_pulse * self.beat_snap);
 
         self.position.x += self.speed * delta_time;

@@ -72,7 +72,7 @@ impl ModulatedParam {
     pub fn value(&self) -> &f32 {
         //&self.value
         if self.modulation_active {
-            if let Some(ghost_val) = self.ghost_value {
+            if let Some(_ghost_val) = self.ghost_value {
                 &self.modulated_value
             } else {
                 &self.value
@@ -87,10 +87,10 @@ impl ModulatedParam {
         let mut changed = false;
         ui.add(Label::new(self.display_text.to_string()));
 
-        let mut modDesc = "U";
+        let mut mod_desc = "U";
 
         if self.modulation_active {
-            modDesc = "M";
+            mod_desc = "M";
         }
 
         ui.horizontal(|ui| {
@@ -107,7 +107,7 @@ impl ModulatedParam {
                 changed = true;
                 self.reset();
             }
-            if ui.button(modDesc).clicked() {
+            if ui.button(mod_desc).clicked() {
                 self.modulation_active = !self.modulation_active;
                 mods.set_enables(self.modulation_active, self.mod_target);
                 changed = true;
@@ -121,8 +121,7 @@ impl ModulatedParam {
                         .clamp_range(0.000..=1.000),
                 );
             }
-        })
-        .inner;
+        });
         changed
     }
 }

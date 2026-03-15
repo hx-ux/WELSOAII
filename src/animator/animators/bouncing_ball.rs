@@ -1,14 +1,13 @@
-use crate::animator::AnimatedObject;
-use crate::animator::AnimatorSettings;
-use crate::animator::ObjectShape;
-use crate::animator::UpdateBehaviour;
-use crate::animator::animation_type::AnimationType;
-use crate::color::ColorParam;
-use crate::modulator::ModTarget;
-use crate::modulator::Modulator;
-use crate::parameters::ConstantParam;
-use crate::parameters::ModulatedParam;
-use crate::timecode::TimeCode;
+use crate::{
+    animator::{
+        animation_type::AnimationType, AnimatedObject, AnimatorSettings, ObjectShape,
+        UpdateBehaviour,
+    },
+    color::ColorParam,
+    modulator::{ModTarget, Modulator},
+    parameters::{ConstantParam, ModulatedParam},
+    timecode::TimeCode,
+};
 
 use anyhow::Ok;
 use nannou::prelude::*;
@@ -71,25 +70,13 @@ impl AnimatorSettings for BouncingBallSettings {
             change_type = UpdateBehaviour::HotUpdate;
         }
 
-        if ui
-            .horizontal(|ui| {
-                let c1 = self.ball_vel_range_x.to_drag(ui);
-                c1
-            })
-            .inner
-        {
+        if ui.horizontal(|ui| self.ball_vel_range_x.to_drag(ui)).inner {
             change_type = UpdateBehaviour::HotUpdate;
         }
         ui.add_space(5.0);
 
         ui.label("Velocity Range (Y-axis)");
-        if ui
-            .horizontal(|ui| {
-                let c2 = self.ball_vel_range_y.to_drag(ui);
-                c2
-            })
-            .inner
-        {
+        if ui.horizontal(|ui| self.ball_vel_range_y.to_drag(ui)).inner {
             change_type = UpdateBehaviour::HotUpdate;
         }
 
@@ -111,10 +98,10 @@ impl AnimatorSettings for BouncingBallSettings {
             let new_obj = Box::new(BouncingBall::new(
                 &self.dimension,
                 self.color.clone().value_mapped(index),
-                self.radius.value().clone(),
+                *self.radius.value(),
                 self.ball_vel_range_x.value,
                 self.ball_vel_range_y.value,
-                self.speed.value().clone(),
+                *self.speed.value(),
                 index,
             ));
             animated_objects.push(new_obj);
@@ -137,10 +124,10 @@ impl AnimatorSettings for BouncingBallSettings {
                 let new_obj = Box::new(BouncingBall::new(
                     &self.dimension,
                     self.color.clone().value_mapped(index),
-                    self.radius.value().clone(),
+                    *self.radius.value(),
                     self.ball_vel_range_x.value,
                     self.ball_vel_range_y.value,
-                    self.speed.value().clone(),
+                    *self.speed.value(),
                     index,
                 ));
                 objects.push(new_obj);
@@ -154,8 +141,8 @@ impl AnimatorSettings for BouncingBallSettings {
         // Update existing balls with new parameters
         for obj in objects.iter_mut() {
             if let Some(ball) = obj.as_any_mut().downcast_mut::<BouncingBall>() {
-                ball.speed = self.speed.value().clone();
-                ball.radius = self.radius.value().clone();
+                ball.speed = *self.speed.value();
+                ball.radius = *self.radius.value();
                 ball.color = self.color.clone().value_mapped(ball.index);
 
                 // Re-randomize velocity within new range
@@ -212,8 +199,8 @@ impl BouncingBall {
         win_rect: &Rect,
         color: Rgba8,
         radius: f32,
-        horizontal_velocity: f32,
-        vertical_velocity: f32,
+        _horizontal_velocity: f32,
+        _vertical_velocity: f32,
         speed: f32,
         index: usize,
     ) -> Self {
@@ -232,7 +219,7 @@ impl BouncingBall {
 }
 
 impl AnimatedObject for BouncingBall {
-    fn update(&mut self, win_rect: &Rect, delta_time: f32, clock: &TimeCode) {
+    fn update(&mut self, win_rect: &Rect, delta_time: f32, _clock: &TimeCode) {
         self.position += self.velocity * delta_time * self.speed;
 
         // Bounce off window edges and clamp position within bounds

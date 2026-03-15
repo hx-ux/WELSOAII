@@ -178,11 +178,10 @@ impl Modulator {
     pub fn set_enables(&mut self, state: bool, target: ModTarget) {
         if let Some(dev) = self.routes.iter_mut().find(|d| d.target == target) {
             dev.enabled = state;
-        } else {
-        }
+        } 
     }
 
-    pub fn ui(&mut self, ui: &mut egui::Ui, animation_type: AnimationType) {
+    pub fn ui(&mut self, ui: &mut egui::Ui, _animation_type: AnimationType) {
         ui.add(egui::Slider::new(&mut self.amount, self.amount_type.range()).text("Depth"));
 
         ui.horizontal(|ui| {

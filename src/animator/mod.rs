@@ -1,7 +1,7 @@
 use crate::{
     animator::{
         animation_type::{AnimationType, UpdateBehaviour},
-        animators::{WaveLinesSettings, bouncing_ball, pulse_background, scan_line, wave_lines},
+        animators::{bouncing_ball, pulse_background, scan_line, WaveLinesSettings},
     },
     connect_bouncing_balls_modulations, connect_pulse_bg_modulations,
     connect_scan_line_modulations, connect_wave_lines_modulations,
@@ -42,8 +42,7 @@ pub trait AnimatedObject {
     fn draw(&self, draw: &Draw);
     // partial obsolete
     fn is_dead(&self) -> bool {
-        let var_name = false;
-        var_name
+        false
     }
     fn shape(&self) -> ObjectShape;
     fn color(&self) -> Rgba8;
@@ -57,7 +56,7 @@ pub trait AnimatorSettings {
     fn ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour;
     fn animation_type(&self) -> AnimationType;
     fn create(&self) -> Vec<Box<dyn AnimatedObject>>;
-    fn set_dimension(&mut self, window_rect: &Rect) {}
+    fn set_dimension(&mut self, _window_rect: &Rect) {}
     // Custom Logic for Hot reloading the animator without resetting
     fn hot_update(&self, objects: &mut Vec<Box<dyn AnimatedObject>>);
     // Rest all parameter values to its definded standards
@@ -143,7 +142,7 @@ impl Animator {
     }
 
     pub fn save_preset(&mut self) {
-        with_current_settings!(self, save_preset);
+        let _ = with_current_settings!(self, save_preset);
     }
 
     pub fn update(&mut self, win_rect: &Rect, delta_time: f32) {

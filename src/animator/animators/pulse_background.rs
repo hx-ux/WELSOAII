@@ -1,9 +1,9 @@
+use crate::animator::animation_type::AnimationType;
+use crate::animator::animation_type::PulseModes;
 use crate::animator::AnimatedObject;
 use crate::animator::AnimatorSettings;
 use crate::animator::ObjectShape;
 use crate::animator::UpdateBehaviour;
-use crate::animator::animation_type::AnimationType;
-use crate::animator::animation_type::PulseModes;
 use crate::color::ColorParam;
 use crate::modulator::ModTarget;
 use crate::modulator::Modulator;
@@ -38,7 +38,7 @@ pub struct PulseBackgroundSettings {
 }
 
 impl AnimatorSettings for PulseBackgroundSettings {
-    fn new(win_rect: &Rect) -> Self {
+    fn new(_win_rect: &Rect) -> Self {
         Self {
             mode: PulseModes::default(),
             speed: ModulatedParam::new(100.0, 1.0, 200.0, "speed", Some(ModTarget::PulseSpeed)),
@@ -102,9 +102,7 @@ impl AnimatorSettings for PulseBackgroundSettings {
     }
 
     fn create(&self) -> Vec<Box<dyn AnimatedObject>> {
-        let mut animated_objects: Vec<Box<dyn AnimatedObject>> = Vec::new();
-
-        animated_objects.push(Box::new(PulseBackground::new(
+        vec![Box::new(PulseBackground::new(
             self.mode,
             self.color.clone().value_mapped(0),
             *self.speed.value(),
@@ -112,20 +110,18 @@ impl AnimatorSettings for PulseBackgroundSettings {
             self.ring_count.value,
             *self.rotation_speed.value(),
             0,
-        )));
-
-        animated_objects
+        ))]
     }
 
-    fn set_dimension(&mut self, window_rect: &Rect) {}
+    fn set_dimension(&mut self, _window_rect: &Rect) {}
 
     fn hot_update(&self, objects: &mut Vec<Box<dyn AnimatedObject>>) {
         for obj in objects.iter_mut() {
             if let Some(pulse_bg) = obj.as_any_mut().downcast_mut::<PulseBackground>() {
                 pulse_bg.color = self.color.clone().value_mapped(pulse_bg.index);
-                pulse_bg.speed = self.speed.value().clone();
+                pulse_bg.speed = *self.speed.value();
                 pulse_bg.mode = self.mode;
-                pulse_bg.limit = self.limit.value().clone();
+                pulse_bg.limit = *self.limit.value();
                 pulse_bg.ring_count = self.ring_count.value as usize;
                 pulse_bg.rotation_speed = *self.rotation_speed.value();
             }
