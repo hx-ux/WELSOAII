@@ -7,8 +7,8 @@ use crate::{
     parameters::{ConstantParam, ModulatedParam},
 };
 
-use crate::modulator::ModMatrix;
 use crate::modulator::ModTarget;
+use crate::modulator::Modulator;
 use crate::timecode::TimeCode;
 use nannou::prelude::*;
 use nannou_egui::egui;
@@ -80,7 +80,7 @@ impl AnimatorSettings for WaveLinesSettings {
         wave_lines_settings
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui, mods: &mut ModMatrix) -> UpdateBehaviour {
+    fn ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour {
         let mut change = UpdateBehaviour::None;
         ui.heading(format!("{}", self.animation_type()));
 
@@ -126,11 +126,11 @@ impl AnimatorSettings for WaveLinesSettings {
                     self.line_count.value,
                     self.width,
                     self.height,
-                    self.amplitude.value,
-                    self.frequency.value,
-                    self.speed.value,
-                    self.thickness.value,
-                    self.phase_spread.value,
+                    *self.amplitude.value(),
+                    *self.frequency.value(),
+                    *self.speed.value(),
+                    *self.thickness.value(),
+                    *self.phase_spread.value(),
                     self.color.clone().value_mapped(idx as usize),
                 )) as Box<dyn AnimatedObject>
             })
@@ -153,11 +153,11 @@ impl AnimatorSettings for WaveLinesSettings {
                     self.line_count.value,
                     self.width,
                     self.height,
-                    self.amplitude.value,
-                    self.frequency.value,
-                    self.speed.value,
-                    self.thickness.value,
-                    self.phase_spread.value,
+                    *self.amplitude.value(),
+                    *self.frequency.value(),
+                    *self.speed.value(),
+                    *self.thickness.value(),
+                    *self.phase_spread.value(),
                     self.color.clone().value_mapped(idx),
                 )));
             }
@@ -170,12 +170,12 @@ impl AnimatorSettings for WaveLinesSettings {
                 line.total_lines = self.line_count.value;
                 line.width = self.width;
                 line.height = self.height;
-                line.amplitude_base = self.amplitude.value;
-                line.amplitude_current = self.amplitude.value;
-                line.frequency = self.frequency.value;
-                line.speed = self.speed.value;
-                line.thickness = self.thickness.value;
-                line.phase_spread = self.phase_spread.value;
+                line.amplitude_base = *self.amplitude.value();
+                line.amplitude_current = *self.amplitude.value();
+                line.frequency = *self.frequency.value();
+                line.speed = self.speed.value().clone();
+                line.thickness = *self.thickness.value();
+                line.phase_spread = *self.phase_spread.value();
                 line.color = self.color.clone().value_mapped(line.index);
             }
         }
@@ -187,16 +187,32 @@ impl AnimatorSettings for WaveLinesSettings {
         UpdateBehaviour::NeedsReset
     }
 
-    fn save_preset(&mut self) -> anyhow::Result<()> {
-        Ok(())
-    }
-
-    fn connect_modulations(&mut self, mod_matrix: &mut ModMatrix) {
+    fn connect_modulations(&mut self, mod_matrix: &mut Modulator) {
         self.amplitude.connect_modulation(mod_matrix);
         self.frequency.connect_modulation(mod_matrix);
         self.speed.connect_modulation(mod_matrix);
         self.thickness.connect_modulation(mod_matrix);
         self.phase_spread.connect_modulation(mod_matrix);
+    }
+
+    fn update_modulations(&mut self, beat_pos: f32, mod_matrix: &Modulator) {
+        self.amplitude.modulate(beat_pos, mod_matrix);
+        self.frequency.modulate(beat_pos, mod_matrix);
+        self.speed.modulate(beat_pos, mod_matrix);
+        self.thickness.modulate(beat_pos, mod_matrix);
+        self.phase_spread.modulate(beat_pos, mod_matrix);
+    }
+
+    fn reset_modulations(&mut self) {
+        self.amplitude.ghost_value = None;
+        self.frequency.ghost_value = None;
+        self.speed.ghost_value = None;
+        self.thickness.ghost_value = None;
+        self.phase_spread.ghost_value = None;
+    }
+
+    fn save_preset(&mut self) -> anyhow::Result<()> {
+        Ok(())
     }
 }
 

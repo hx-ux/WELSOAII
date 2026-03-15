@@ -1,16 +1,17 @@
 use crate::{
-    modulator::{ModMatrix, ModRoute, ModTarget},
-    ui::controls::{single_slider_styled, styled_dual_slider},
+    modulator::{ModRoute, ModTarget, Modulator},
+    ui::controls::styled_dual_slider,
 };
 use nannou_egui::egui::{self, Label};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct ModulatedParam {
-    pub value: f32,
+    value: f32,
+    #[serde(skip_serializing)]
+    pub modulated_value: f32,
     #[serde(skip_serializing)]
     pub default: f32,
-    // #[serde(skip_serializing)]
     pub range: (f32, f32),
     #[serde(skip_serializing)]
     pub display_text: String,
@@ -37,13 +38,14 @@ impl ModulatedParam {
             .unwrap_or(ModTarget::None);
         Self {
             value: default,
+            modulated_value: default,
             default,
             range: (lower, upper),
             display_text: desc.to_string(),
             ghost_value: None,
             modulation_active: false,
             mod_target: target,
-            mod_amount: 0.0,
+            mod_amount: 1.0,
         }
     }
 
@@ -51,13 +53,36 @@ impl ModulatedParam {
         self.value = self.default;
     }
 
-    pub fn connect_modulation(&self, mods: &mut ModMatrix) {
+    pub fn connect_modulation(&self, mods: &mut Modulator) {
         if self.mod_target != ModTarget::None {
             mods.routes.push(ModRoute::new(self.mod_target));
         }
     }
 
-    pub fn to_slider_modulate(&mut self, ui: &mut egui::Ui, mods: &mut ModMatrix) -> bool {
+    pub fn modulate(&mut self, beat_pos: f32, mod_matrix: &Modulator) {
+        if self.modulation_active {
+            let speed = self.value
+                * mod_matrix.calc_modulation(beat_pos, self.mod_target)
+                * self.mod_amount;
+            self.ghost_value = Some(speed);
+            self.modulated_value = speed;
+        }
+    }
+
+    pub fn value(&self) -> &f32 {
+        //&self.value
+        if self.modulation_active {
+            if let Some(ghost_val) = self.ghost_value {
+                &self.modulated_value
+            } else {
+                &self.value
+            }
+        } else {
+            &self.value
+        }
+    }
+
+    pub fn to_slider_modulate(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> bool {
         ui.add_space(Self::SPACE);
         let mut changed = false;
         ui.add(Label::new(self.display_text.to_string()));

@@ -5,8 +5,8 @@ use crate::animator::UpdateBehaviour;
 use crate::animator::animation_type::AnimationType;
 use crate::animator::animation_type::PulseModes;
 use crate::color::ColorParam;
-use crate::modulator::ModMatrix;
 use crate::modulator::ModTarget;
+use crate::modulator::Modulator;
 use crate::parameters::ConstantParam;
 use crate::parameters::ModulatedParam;
 use crate::timecode::TimeCode;
@@ -55,7 +55,7 @@ impl AnimatorSettings for PulseBackgroundSettings {
         }
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui, mods: &mut ModMatrix) -> UpdateBehaviour {
+    fn ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour {
         let mut change_type = UpdateBehaviour::None;
 
         ui.heading(format!("{}", self.animation_type()));
@@ -107,10 +107,10 @@ impl AnimatorSettings for PulseBackgroundSettings {
         animated_objects.push(Box::new(PulseBackground::new(
             self.mode,
             self.color.clone().value_mapped(0),
-            self.speed.value,
-            self.limit.value,
+            *self.speed.value(),
+            *self.limit.value(),
             self.ring_count.value,
-            self.rotation_speed.value,
+            *self.rotation_speed.value(),
             0,
         )));
 
@@ -123,11 +123,11 @@ impl AnimatorSettings for PulseBackgroundSettings {
         for obj in objects.iter_mut() {
             if let Some(pulse_bg) = obj.as_any_mut().downcast_mut::<PulseBackground>() {
                 pulse_bg.color = self.color.clone().value_mapped(pulse_bg.index);
-                pulse_bg.speed = self.speed.value;
+                pulse_bg.speed = self.speed.value().clone();
                 pulse_bg.mode = self.mode;
-                pulse_bg.limit = self.limit.value;
+                pulse_bg.limit = self.limit.value().clone();
                 pulse_bg.ring_count = self.ring_count.value as usize;
-                pulse_bg.rotation_speed = self.rotation_speed.value;
+                pulse_bg.rotation_speed = *self.rotation_speed.value();
             }
         }
     }
@@ -136,7 +136,7 @@ impl AnimatorSettings for PulseBackgroundSettings {
         todo!()
     }
 
-    fn connect_modulations(&mut self, mod_matrix: &mut ModMatrix) {
+    fn connect_modulations(&mut self, mod_matrix: &mut Modulator) {
         self.speed.connect_modulation(mod_matrix);
         self.limit.connect_modulation(mod_matrix);
         self.rotation_speed.connect_modulation(mod_matrix);
@@ -145,6 +145,18 @@ impl AnimatorSettings for PulseBackgroundSettings {
     fn save_preset(&mut self) -> anyhow::Result<()> {
         //self.presets.save_to_file(self, None)?;
         Ok(())
+    }
+
+    fn update_modulations(&mut self, beat_pos: f32, mod_matrix: &Modulator) {
+        self.speed.modulate(beat_pos, mod_matrix);
+        self.limit.modulate(beat_pos, mod_matrix);
+        self.rotation_speed.modulate(beat_pos, mod_matrix);
+    }
+
+    fn reset_modulations(&mut self) {
+        self.speed.ghost_value = None;
+        self.limit.ghost_value = None;
+        self.rotation_speed.ghost_value = None;
     }
 }
 

@@ -5,8 +5,8 @@ use crate::animator::UpdateBehaviour;
 use crate::animator::animation_type::AnimationType;
 use crate::animator::animation_type::ScanLineModes;
 use crate::color::ColorParam;
-use crate::modulator::ModMatrix;
 use crate::modulator::ModTarget;
+use crate::modulator::Modulator;
 use crate::parameters::ConstantParam;
 use crate::parameters::ModulatedParam;
 use crate::timecode::TimeCode;
@@ -51,7 +51,7 @@ impl AnimatorSettings for ScanLineSettings {
         }
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui, mods: &mut ModMatrix) -> UpdateBehaviour {
+    fn ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour {
         let mut change_type = UpdateBehaviour::None;
 
         ui.heading(format!("{}", self.animation_type()));
@@ -103,9 +103,9 @@ impl AnimatorSettings for ScanLineSettings {
         for index in 0..self.multi_line_count.value {
             animated_objects.push(Box::new(ScanLine::new(
                 self.mode,
-                self.speed.value,
+                *self.speed.value(),
                 self.color.clone().value_mapped(index as usize),
-                self.width.value,
+                *self.width.value(),
                 self.height,
                 self.begin_pos,
                 index as usize,
@@ -124,25 +124,35 @@ impl AnimatorSettings for ScanLineSettings {
         for obj in objects.iter_mut() {
             if let Some(scan_line) = obj.as_any_mut().downcast_mut::<ScanLine>() {
                 scan_line.color = self.color.clone().value_mapped(scan_line.index);
-                scan_line.width = self.width.value;
+                scan_line.width = *self.width.value();
                 scan_line.mode = self.mode;
                 scan_line.height = self.height;
                 // Update speed, preserving direction
                 let direction = scan_line.speed.signum();
-                scan_line.speed = self.speed.value.abs() * direction;
+                scan_line.speed = self.speed.value().abs() * direction;
             }
         }
+    }
+
+    fn reset(&mut self) {}
+
+    fn connect_modulations(&mut self, mod_matrix: &mut Modulator) {
+        self.speed.connect_modulation(mod_matrix);
+        self.width.connect_modulation(mod_matrix);
     }
 
     fn save_preset(&mut self) -> anyhow::Result<()> {
         Ok(())
     }
 
-    fn reset(&mut self) {}
+    fn update_modulations(&mut self, beat_pos: f32, mod_matrix: &Modulator) {
+        self.speed.modulate(beat_pos, mod_matrix);
+        self.width.modulate(beat_pos, mod_matrix);
+    }
 
-    fn connect_modulations(&mut self, mod_matrix: &mut ModMatrix) {
-        self.speed.connect_modulation(mod_matrix);
-        self.width.connect_modulation(mod_matrix);
+    fn reset_modulations(&mut self) {
+        self.speed.ghost_value = None;
+        self.width.ghost_value = None;
     }
 }
 

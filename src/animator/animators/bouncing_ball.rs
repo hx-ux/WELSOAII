@@ -4,8 +4,8 @@ use crate::animator::ObjectShape;
 use crate::animator::UpdateBehaviour;
 use crate::animator::animation_type::AnimationType;
 use crate::color::ColorParam;
-use crate::modulator::ModMatrix;
 use crate::modulator::ModTarget;
+use crate::modulator::Modulator;
 use crate::parameters::ConstantParam;
 use crate::parameters::ModulatedParam;
 use crate::timecode::TimeCode;
@@ -54,7 +54,7 @@ impl AnimatorSettings for BouncingBallSettings {
         }
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui, mods: &mut ModMatrix) -> UpdateBehaviour {
+    fn ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour {
         let mut change_type = UpdateBehaviour::None;
 
         ui.heading(format!("{}", self.animation_type()));
@@ -111,10 +111,10 @@ impl AnimatorSettings for BouncingBallSettings {
             let new_obj = Box::new(BouncingBall::new(
                 &self.dimension,
                 self.color.clone().value_mapped(index),
-                self.radius.value,
+                self.radius.value().clone(),
                 self.ball_vel_range_x.value,
                 self.ball_vel_range_y.value,
-                self.speed.value,
+                self.speed.value().clone(),
                 index,
             ));
             animated_objects.push(new_obj);
@@ -137,10 +137,10 @@ impl AnimatorSettings for BouncingBallSettings {
                 let new_obj = Box::new(BouncingBall::new(
                     &self.dimension,
                     self.color.clone().value_mapped(index),
-                    self.radius.value,
+                    self.radius.value().clone(),
                     self.ball_vel_range_x.value,
                     self.ball_vel_range_y.value,
-                    self.speed.value,
+                    self.speed.value().clone(),
                     index,
                 ));
                 objects.push(new_obj);
@@ -154,15 +154,15 @@ impl AnimatorSettings for BouncingBallSettings {
         // Update existing balls with new parameters
         for obj in objects.iter_mut() {
             if let Some(ball) = obj.as_any_mut().downcast_mut::<BouncingBall>() {
-                ball.speed = self.speed.value;
-                ball.radius = self.radius.value;
+                ball.speed = self.speed.value().clone();
+                ball.radius = self.radius.value().clone();
                 ball.color = self.color.clone().value_mapped(ball.index);
 
                 // Re-randomize velocity within new range
-                // ball.velocity = vec2(
-                //     random_range(self.ball_vel_range_x.lower, self.ball_vel_range_x.upper),
-                //     random_range(self.ball_vel_range_y.lower, self.ball_vel_range_y.upper),
-                // );
+                //  ball.velocity = vec2(
+                //      random_range(self.ball_vel_range_x.lower, self.ball_vel_range_x.upper),
+                //      random_range(self.ball_vel_range_y.lower, self.ball_vel_range_y.upper),
+                //  );
             }
         }
     }
@@ -177,7 +177,7 @@ impl AnimatorSettings for BouncingBallSettings {
         UpdateBehaviour::NeedsReset
     }
 
-    fn connect_modulations(&mut self, mod_matrix: &mut ModMatrix) {
+    fn connect_modulations(&mut self, mod_matrix: &mut Modulator) {
         self.speed.connect_modulation(mod_matrix);
         self.radius.connect_modulation(mod_matrix);
     }
@@ -186,9 +186,17 @@ impl AnimatorSettings for BouncingBallSettings {
         // self.presets.save_to_file(self, None)?;
         Ok(())
     }
-}
 
-impl BouncingBallSettings {}
+    fn update_modulations(&mut self, beat_pos: f32, mod_matrix: &Modulator) {
+        self.speed.modulate(beat_pos, mod_matrix);
+        self.radius.modulate(beat_pos, mod_matrix);
+    }
+
+    fn reset_modulations(&mut self) {
+        self.speed.ghost_value = None;
+        self.radius.ghost_value = None;
+    }
+}
 
 pub struct BouncingBall {
     pub speed: f32,

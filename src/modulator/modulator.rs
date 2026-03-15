@@ -138,8 +138,9 @@ impl Default for ModRoute {
     }
 }
 
+// Actuaal Modulator, which creates the values
 #[derive(Clone, Serialize, Deserialize)]
-pub struct ModMatrix {
+pub struct Modulator {
     pub routes: Vec<ModRoute>,
 
     /// ±1.0 equals ±100% around the base value.
@@ -154,7 +155,7 @@ pub struct ModMatrix {
     pub mod_route_placeholder: ModRoute,
 }
 
-impl Default for ModMatrix {
+impl Default for Modulator {
     fn default() -> Self {
         Self {
             routes: Default::default(),
@@ -169,7 +170,7 @@ impl Default for ModMatrix {
     }
 }
 
-impl ModMatrix {
+impl Modulator {
     pub fn has_target(&self, target: ModTarget) -> bool {
         self.routes.iter().any(|r| r.enabled && r.target == target)
     }
@@ -210,27 +211,27 @@ impl ModMatrix {
                 }
             });
 
-        let mut remove_idx: Option<usize> = None;
+        // show all linked params to one Modulator
+        //let mut remove_idx: Option<usize> = None;
 
-        for (i, route) in self
-            .routes
-            .iter_mut()
-            .enumerate()
-            .filter(|(_, route)| route.target.for_animation(animation_type))
-        {
-            ui.separator();
-            ui.horizontal(|ui| {
-                ui.checkbox(&mut route.enabled, format!("{}", route.target));
-                ui.add(egui::Slider::new(&mut route.amount, 0.0..=1.0).text("Depth"));
-            });
-        }
-        if let Some(idx) = remove_idx {
-            self.routes.remove(idx);
-        }
+        //for (i, route) in self.routes.iter_mut().enumerate()
+        //// .filter(|(_, route)| route.target.for_animation(animation_type))
+        //{
+        //    ui.horizontal(|ui| {
+        //        if route.enabled {
+        //            ui.label(format!("{}", route.target));
+        //            //ui.checkbox(&mut route.enabled, format!("{}", route.target));
+        //            // ui.add(egui::Slider::new(&mut route.amount, 0.0..=1.0).text("Depth"));
+        //            //
+        //        }
+        //    });
+        //}
+        //if let Some(idx) = remove_idx {
+        //    self.routes.remove(idx);
+        //}
     }
 
     pub fn calc_modulation(&self, beat_pos: f32, target: ModTarget) -> f32 {
-        
         if !self.enabled {
             return 1.0;
         }

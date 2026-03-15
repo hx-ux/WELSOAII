@@ -116,6 +116,10 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
             });
             ui.separator();
 
+            // always set hot update
+            // // idk if this a good idea
+            _model.animator.behaviour_hot_update();
+
             ui.collapsing("Animator", |ui| match _model.animator.ui(ui) {
                 UpdateBehaviour::NeedsReset => _model.animator.reset(&win_rect),
                 UpdateBehaviour::HotUpdate => _model.animator.behaviour_hot_update(),
