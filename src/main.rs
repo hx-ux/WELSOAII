@@ -1,8 +1,12 @@
+// External crate imports
 extern crate nannou;
 use nannou::prelude::*;
 use nannou_egui::{self, Egui, egui};
+
+// Module imports
 mod animator;
 mod color;
+mod common;
 mod modulator;
 mod parameters;
 mod presets;
@@ -10,12 +14,15 @@ mod receiver;
 mod timecode;
 mod ui;
 mod utils;
-use animator::Animator;
-use receiver::{LayoutMode, ReceiverGrid};
-pub use utils::AppMode;
-use utils::GlobalSettings;
 
+// Re-exports for public API
+pub use utils::AppMode;
+
+// Core component imports
+use crate::animator::Animator;
 use crate::animator::animation_type::UpdateBehaviour;
+use crate::receiver::{LayoutMode, ReceiverGrid};
+use crate::utils::GlobalSettings;
 
 fn main() {
     nannou::app(model).update(update).run();
@@ -25,10 +32,6 @@ struct Model {
     animator: Animator,
     settings_egui: Egui,
     global_settings: GlobalSettings,
-}
-
-fn settings_window_event(app: &App, model: &mut Model, event: &nannou::winit::event::WindowEvent) {
-    model.settings_egui.handle_raw_event(event);
 }
 
 fn model(app: &App) -> Model {
@@ -51,7 +54,7 @@ fn model(app: &App) -> Model {
 
     let window = app.window(view_window_id).unwrap();
     let settings_egui = Egui::from_window(&window);
-    let win_rect: Rect = app.window_rect();
+    let win_rect = app.window_rect();
 
     let receiver_grid = ReceiverGrid::new(
         Rect::from_x_y_w_h(0.0, 0.0, 400.0, 300.0),
@@ -134,9 +137,14 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
         .update(&win_rect, _app.duration.since_prev_update.as_secs_f32());
 }
 
+fn settings_window_event(_app: &App, model: &mut Model, event: &nannou::winit::event::WindowEvent) {
+    model.settings_egui.handle_raw_event(event);
+}
+
 fn event(_app: &App, _model: &mut Model, event: WindowEvent) {
     let receiver = &mut _model.animator.grid;
     let win_rect = _app.window_rect();
+
     match event {
         KeyPressed(_key) => match _key {
             Key::Up => {
