@@ -1,9 +1,10 @@
 use nannou_egui::egui::{self, FontFamily, FontId, TextStyle};
 
 pub fn apply_custom_style(ctx: &egui::Context, opacity: u8) {
-    let mut style = egui::Style::default();
-
-    style.visuals = egui::Visuals::dark();
+    let mut style = egui::Style {
+        visuals: egui::Visuals::dark(),
+        ..Default::default()
+    };
     style.visuals.window_fill = egui::Color32::from_rgba_premultiplied(12, 14, 18, opacity);
     style.visuals.panel_fill = egui::Color32::from_rgba_premultiplied(12, 14, 18, opacity);
     style.visuals.window_stroke.color = egui::Color32::from_rgb(44, 48, 58);

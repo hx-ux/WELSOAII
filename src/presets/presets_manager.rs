@@ -1,5 +1,5 @@
 use crate::{
-    animator::{UpdateBehaviour, animation_type::AnimationType},
+    animator::animation_type::{AnimationType, UpdateBehaviour},
     utils::PathManager,
 };
 
@@ -38,7 +38,7 @@ pub struct PresetManager<T> {
     pub presets: Vec<Preset<T>>,
     selected_preset_idx: usize,
     pub set_filename: Option<String>,
-    presetMode: PresetMode,
+    preset_mode: PresetMode,
     desc: String,
 }
 impl<T> PresetManager<T> {
@@ -49,7 +49,7 @@ impl<T> PresetManager<T> {
             // presets: Self::load_all_presets(&animation_type.clone()).unwrap_or_default(),
             selected_preset_idx: 0,
             set_filename: None,
-            presetMode: PresetMode::Animator,
+            preset_mode: PresetMode::Animator,
             desc: String::default(),
         }
     }
@@ -60,7 +60,7 @@ impl<T> PresetManager<T> {
             presets: Vec::new(),
             selected_preset_idx: 0,
             set_filename: None,
-            presetMode: preset_mode,
+            preset_mode,
             desc,
         }
     }
@@ -70,7 +70,7 @@ impl<T> PresetManager<T> {
         ui.separator();
         ui.add_space(5.0);
 
-        let mut update_behaviour = (false, UpdateBehaviour::None);
+        let _update_behaviour = (false, UpdateBehaviour::None);
         ui.collapsing("Preset Management", |ui| {
             if ui.button("Save As New Preset").clicked() {
                 changed = true;
@@ -108,7 +108,7 @@ impl<T> PresetManager<T> {
         if let Some(name) = custom_file_name {
             return format!("{}.json", name);
         }
-        match self.presetMode {
+        match self.preset_mode {
             PresetMode::Grid => format!("grid_{}.json", self.desc),
             PresetMode::Settings => "settings.json".to_string(),
             PresetMode::Animator => {
@@ -126,10 +126,10 @@ impl<T> PresetManager<T> {
     where
         T: Serialize,
     {
-        match self.presetMode {
+        match self.preset_mode {
             PresetMode::Grid => {
                 let path = PathManager::get_devices_folder()
-                    .join(format!("{}", self.generate_filename(custom_file_name)));
+                    .join(&self.generate_filename(custom_file_name));
 
                 nannou::io::save_to_json(path, data)?;
             }
@@ -137,7 +137,7 @@ impl<T> PresetManager<T> {
             PresetMode::Animator => match self.animation_type {
                 Some(atype) => {
                     let path = PathManager::get_preset_folder(&atype)
-                        .join(format!("{}", self.generate_filename(custom_file_name)));
+                        .join(&self.generate_filename(custom_file_name));
                     nannou::io::save_to_json(path, data)?;
                 }
                 None => return Err(anyhow::anyhow!("Missing attribute:")),
@@ -150,10 +150,7 @@ impl<T> PresetManager<T> {
 
     pub fn get_preset_path(&self) -> Option<PathBuf> {
         let z = self.set_presets();
-        match z {
-            Ok(j) => Some(j),
-            Err(_) => None,
-        }
+        z.ok()
     }
 
     pub fn set_presets(&self) -> Result<PathBuf, anyhow::Error> {
@@ -169,14 +166,11 @@ impl<T> PresetManager<T> {
     }
 
     fn update_presets(&mut self) {
-        match self.load_all_presets() {
-            Ok(p) => self.presets = p,
-            Err(_) => {}
-        }
+        if let Ok(p) = self.load_all_presets() { self.presets = p }
     }
 
     fn load_all_presets(&self) -> Result<Vec<Preset<T>>, anyhow::Error> {
-        match self.presetMode {
+        match self.preset_mode {
             PresetMode::Animator => match self.animation_type {
                 Some(atype) => {
                     let path = PathManager::get_preset_folder(&atype);
@@ -185,22 +179,21 @@ impl<T> PresetManager<T> {
                     if path.exists() {
                         for entry in fs::read_dir(path)? {
                             let entry = entry?;
-                            if entry.path().extension().and_then(|s| s.to_str()) == Some("json") {
-                                if let Some(name) = entry.file_name().to_str() {
+                            if entry.path().extension().and_then(|s| s.to_str()) == Some("json")
+                                && let Some(name) = entry.file_name().to_str() {
                                     entries.push(Preset::new(name.to_string(), entry.path()));
                                 }
-                            }
                         }
                     }
                     entries.reverse(); // Most recent first
                     Ok(entries)
                 }
                 None => {
-                    return Err(anyhow::anyhow!("Cant find type"));
+                    Err(anyhow::anyhow!("Cant find type"))
                 }
             },
             PresetMode::Settings | PresetMode::Grid => {
-                return Err(anyhow::anyhow!("Nothing"));
+                Err(anyhow::anyhow!("Nothing"))
             }
         }
     }
@@ -229,7 +222,7 @@ impl<T> Default for PresetManager<T> {
             presets: Vec::new(),
             selected_preset_idx: 0,
             set_filename: None,
-            presetMode: PresetMode::Animator,
+            preset_mode: PresetMode::Animator,
             desc: String::default(),
         }
     }

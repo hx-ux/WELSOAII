@@ -1,4 +1,4 @@
-
-/target
+hidden/
+target/
 .DS_Store
 notes.md

@@ -1,7 +1,8 @@
-// use nannou::{ draw::background::new};
 use nannou_egui::egui;
 use rusty_link::{AblLink, SessionState};
 use serde::{Deserialize, Serialize};
+
+use crate::parameters::ConstantParam;
 
 /// Currently read only
 pub struct AblLinkState {
@@ -33,7 +34,7 @@ impl Default for AblLinkState {
 /// Master Clock for syncing all effects
 #[derive(Serialize, Deserialize, Default)]
 pub struct TimeCode {
-    pub tempo: f32,
+    pub tempo: ConstantParam<f32>,
     #[serde(skip)]
     pub current_time: f32,
     #[serde(skip)]
@@ -52,7 +53,13 @@ pub struct TimeCode {
 impl TimeCode {
     pub fn new() -> Self {
         Self {
-            tempo: 120.0,
+            tempo: ConstantParam {
+                value: 120.0,
+                default: 120.0,
+                lower: 40.0,
+                upper: 240.0,
+                display_text: "tempo".to_string(),
+            },
             current_time: 0.0,
             total_beats: 0.0,
             is_running: true,
@@ -74,7 +81,7 @@ impl TimeCode {
     }
 
     pub fn set_bpm(&mut self, bpm: f32) {
-        self.tempo = bpm.max(40.0).min(300.0);
+        self.tempo.value = bpm;
     }
 
     pub fn start(&mut self) {
@@ -98,7 +105,7 @@ impl TimeCode {
                 self.update_from_link();
             } else {
                 self.current_time += delta_time;
-                self.total_beats += (self.tempo / 60.0) * delta_time;
+                self.total_beats += (self.tempo.value / 60.0) * delta_time;
             }
             self.delta_time = (self.current_time - self.prev_time).max(0.0);
             self.prev_time = self.current_time;
@@ -118,8 +125,8 @@ impl TimeCode {
             .beat_at_time(time, self.abl_sync_state.quantum);
 
         self.total_beats = beats as f32;
-        self.tempo = self.abl_sync_state.session_state.tempo() as f32;
-        self.current_time = (self.total_beats * 60.0) / self.tempo;
+        self.tempo.value = self.abl_sync_state.session_state.tempo() as f32;
+        self.current_time = (self.total_beats * 60.0) / self.tempo.value;
     }
 
     pub fn get_time(&self) -> f32 {
@@ -170,20 +177,11 @@ impl TimeCode {
             }
 
             ui.label("BPM:");
+
             if self.sync_active {
-                ui.label(format!("{:.1}", self.tempo));
+                ui.label(format!("{:.1}", self.tempo.value));
             } else {
-                let mut bpm = self.tempo.round() as i32;
-                if ui
-                    .add(
-                        egui::DragValue::new(&mut bpm)
-                            .speed(1)
-                            .clamp_range(40..=300),
-                    )
-                    .changed()
-                {
-                    self.set_bpm(bpm as f32);
-                }
+                self.tempo.to_drag(ui);
             }
 
             for i in 1..=4 {

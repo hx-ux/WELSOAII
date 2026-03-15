@@ -1,30 +1,24 @@
-extern crate nannou;
-
-use anyhow::Result;
-use strum::IntoEnumIterator;
-
 use crate::{
     animator::{
-        animation_type::AnimationType,
-        animators::{WaveLinesSettings, bouncing_ball, pulse_background, scan_line, wave_lines},
+        animation_type::{AnimationType, UpdateBehaviour},
+        animators::{bouncing_ball, pulse_background, scan_line, WaveLinesSettings},
     },
+    connect_bouncing_balls_modulations, connect_pulse_bg_modulations,
+    connect_scan_line_modulations, connect_wave_lines_modulations,
     receiver::ReceiverGrid,
+    timecode::TimeCode,
 };
+use anyhow::Result;
 use nannou::prelude::*;
 use nannou_egui::egui::{self};
-
+use strum::IntoEnumIterator;
 pub mod animation_type;
-pub mod animator_structs;
 mod animators;
-pub mod timecode;
-
-use crate::modulator::ModMatrix;
-use crate::modulator::ModTarget;
+use crate::modulator::Modulator;
 
 use bouncing_ball::BouncingBallSettings;
 use pulse_background::PulseBackgroundSettings;
 use scan_line::ScanLineSettings;
-use timecode::TimeCode;
 
 macro_rules! with_current_settings {
     ($self:expr, $method:ident $(, $args:expr)*) => {
@@ -35,23 +29,6 @@ macro_rules! with_current_settings {
             AnimationType::WaveLines => $self.wave_lines_settings.$method($($args),*),
         }
     };
-}
-
-#[derive(Debug, PartialEq)]
-// Defines, how the animators behave, if an Param is changed
-pub enum UpdateBehaviour {
-    None,
-    // Resets the current animator and its object.
-    // Mainly used for switching between Animators
-    // Does call Animator::new()
-    NeedsReset,
-    // Hot updates, which affect the animator in the next frame(s)
-    // Does not call Animator::new()
-    HotUpdate,
-    //
-    LoadPreset,
-    //
-    SavePresets,
 }
 
 // An animated object, which every animator does emit
@@ -76,10 +53,10 @@ pub trait AnimatedObject {
 
 pub trait AnimatorSettings {
     fn new(win_rect: &Rect) -> Self;
-    fn ui(&mut self, ui: &mut egui::Ui, mods: &mut ModMatrix) -> UpdateBehaviour;
+    fn ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour;
     fn animation_type(&self) -> AnimationType;
     fn create(&self) -> Vec<Box<dyn AnimatedObject>>;
-    fn set_dimension(&mut self, window_rect: &Rect) {}
+    fn set_dimension(&mut self, _window_rect: &Rect) {}
     // Custom Logic for Hot reloading the animator without resetting
     fn hot_update(&self, objects: &mut Vec<Box<dyn AnimatedObject>>);
     // Rest all parameter values to its definded standards
@@ -87,6 +64,10 @@ pub trait AnimatorSettings {
     fn force_update(&self) -> UpdateBehaviour {
         UpdateBehaviour::NeedsReset
     }
+
+    fn connect_modulations(&mut self, mod_matrix: &mut Modulator);
+    fn update_modulations(&mut self, beat_pos: f32, mod_matrix: &Modulator);
+    fn reset_modulations(&mut self);
     fn save_preset(&mut self) -> Result<()>;
 }
 
@@ -95,7 +76,7 @@ pub struct Animator {
     pub grid: ReceiverGrid,
     pub animation_type: AnimationType,
     pub clock: TimeCode,
-    pub mod_matrix: ModMatrix,
+    pub mod_matrix: Modulator,
     bouncing_ball_settings: BouncingBallSettings,
     scanline_settings: ScanLineSettings,
     pulse_settings: PulseBackgroundSettings,
@@ -108,47 +89,17 @@ impl Animator {
         let scanline_settings = ScanLineSettings::new(win_rect);
         let pulse_settings = PulseBackgroundSettings::new(win_rect);
         let wave_lines_settings = WaveLinesSettings::new(win_rect);
-        let mut mod_matrix = ModMatrix::default();
+        let mut mod_matrix = Modulator::default();
 
-        bouncing_ball_settings
-            .speed
-            .connect_modulation(&mut mod_matrix);
-        bouncing_ball_settings
-            .radius
-            .connect_modulation(&mut mod_matrix);
-
-        scanline_settings.speed.connect_modulation(&mut mod_matrix);
-        scanline_settings.width.connect_modulation(&mut mod_matrix);
-
-        pulse_settings.speed.connect_modulation(&mut mod_matrix);
-        pulse_settings.limit.connect_modulation(&mut mod_matrix);
-        pulse_settings
-            .ring_count
-            .connect_modulation(&mut mod_matrix);
-        pulse_settings
-            .rotation_speed
-            .connect_modulation(&mut mod_matrix);
-
-        wave_lines_settings
-            .amplitude
-            .connect_modulation(&mut mod_matrix);
-        wave_lines_settings
-            .frequency
-            .connect_modulation(&mut mod_matrix);
-        wave_lines_settings
-            .speed
-            .connect_modulation(&mut mod_matrix);
-        wave_lines_settings
-            .thickness
-            .connect_modulation(&mut mod_matrix);
-        wave_lines_settings
-            .phase_spread
-            .connect_modulation(&mut mod_matrix);
+        connect_bouncing_balls_modulations!(bouncing_ball_settings, &mut mod_matrix);
+        connect_scan_line_modulations!(scanline_settings, mod_matrix);
+        connect_pulse_bg_modulations!(pulse_settings, &mut mod_matrix);
+        connect_wave_lines_modulations!(wave_lines_settings, mod_matrix);
 
         Animator {
             objects: Vec::new(),
             animation_type: AnimationType::BouncingBalls,
-            clock: timecode::TimeCode::new(),
+            clock: TimeCode::new(),
             mod_matrix,
             grid,
             bouncing_ball_settings,
@@ -191,7 +142,7 @@ impl Animator {
     }
 
     pub fn save_preset(&mut self) {
-        with_current_settings!(self, save_preset);
+        let _ = with_current_settings!(self, save_preset);
     }
 
     pub fn update(&mut self, win_rect: &Rect, delta_time: f32) {
@@ -286,185 +237,27 @@ impl Animator {
     }
 
     fn clear_mod_ghosts(&mut self) {
-        self.bouncing_ball_settings.speed.ghost_value = None;
-        self.bouncing_ball_settings.radius.ghost_value = None;
-
-        self.scanline_settings.speed.ghost_value = None;
-        self.scanline_settings.width.ghost_value = None;
-
-        self.pulse_settings.speed.ghost_value = None;
-        self.pulse_settings.limit.ghost_value = None;
-        self.pulse_settings.ring_count.ghost_value = None;
-        self.pulse_settings.rotation_speed.ghost_value = None;
-
-        self.wave_lines_settings.amplitude.ghost_value = None;
-        self.wave_lines_settings.frequency.ghost_value = None;
-        self.wave_lines_settings.speed.ghost_value = None;
-        self.wave_lines_settings.thickness.ghost_value = None;
-        self.wave_lines_settings.phase_spread.ghost_value = None;
+        self.bouncing_ball_settings.reset_modulations();
+        self.scanline_settings.reset_modulations();
+        self.pulse_settings.reset_modulations();
+        self.wave_lines_settings.reset_modulations();
     }
 
     fn apply_modulations(&mut self) {
         self.clear_mod_ghosts();
-
         if self.mod_matrix.routes.is_empty() || !self.mod_matrix.enabled {
             return;
         }
         let beat_pos = self.clock.get_beats();
 
-        match self.animation_type {
-            AnimationType::BouncingBalls => {
-                let speed = self.bouncing_ball_settings.speed.value
-                    * self
-                        .mod_matrix
-                        .calc_modulation(beat_pos, ModTarget::BouncingSpeed);
-
-                let radius = self.bouncing_ball_settings.radius.value
-                    * self
-                        .mod_matrix
-                        .calc_modulation(beat_pos, ModTarget::BouncingRadius);
-
-                for obj in self.objects.iter_mut() {
-                    if let Some(ball) = obj
-                        .as_any_mut()
-                        .downcast_mut::<bouncing_ball::BouncingBall>()
-                    {
-                        ball.speed = speed;
-                        ball.radius = radius.max(0.5);
-                    }
-                }
-
-                if self.mod_matrix.has_target(ModTarget::BouncingSpeed) {
-                    self.bouncing_ball_settings.speed.ghost_value = Some(speed);
-                }
-                if self.mod_matrix.has_target(ModTarget::BouncingRadius) {
-                    self.bouncing_ball_settings.radius.ghost_value = Some(radius);
-                }
-            }
-            AnimationType::ScanLine => {
-                let speed = self.scanline_settings.speed.value
-                    * self
-                        .mod_matrix
-                        .calc_modulation(beat_pos, ModTarget::ScanSpeed);
-                let width = self.scanline_settings.width.value
-                    * self
-                        .mod_matrix
-                        .calc_modulation(beat_pos, ModTarget::ScanWidth);
-
-                for obj in self.objects.iter_mut() {
-                    if let Some(scan_line) = obj.as_any_mut().downcast_mut::<scan_line::ScanLine>()
-                    {
-                        let current_direction = if scan_line.speed == 0.0 {
-                            1.0
-                        } else {
-                            scan_line.speed.signum()
-                        };
-                        scan_line.speed = speed.abs() * current_direction;
-                        scan_line.width = width.max(1.0);
-                    }
-                }
-
-                if self.mod_matrix.has_target(ModTarget::ScanSpeed) {
-                    self.scanline_settings.speed.ghost_value = Some(speed);
-                }
-                if self.mod_matrix.has_target(ModTarget::ScanWidth) {
-                    self.scanline_settings.width.ghost_value = Some(width);
-                }
-            }
-            AnimationType::PulseBackground => {
-                let speed = self.pulse_settings.speed.value
-                    * self
-                        .mod_matrix
-                        .calc_modulation(beat_pos, ModTarget::PulseSpeed);
-                let limit = self.pulse_settings.limit.value
-                    * self
-                        .mod_matrix
-                        .calc_modulation(beat_pos, ModTarget::PulseLimit);
-                let ring_count = (self.pulse_settings.ring_count.value as f32
-                    * self
-                        .mod_matrix
-                        .calc_modulation(beat_pos, ModTarget::PulseRingCount))
-                .round()
-                .clamp(1.0, 32.0) as usize;
-                let rotation_speed = self.pulse_settings.rotation_speed.value
-                    * self
-                        .mod_matrix
-                        .calc_modulation(beat_pos, ModTarget::PulseRotation);
-
-                for obj in self.objects.iter_mut() {
-                    if let Some(pulse) = obj
-                        .as_any_mut()
-                        .downcast_mut::<pulse_background::PulseBackground>()
-                    {
-                        pulse.speed = speed.max(0.0);
-                        pulse.limit = limit.clamp(0.01, 1.0);
-                        pulse.ring_count = ring_count;
-                        pulse.rotation_speed = rotation_speed;
-                    }
-                }
-
-                if self.mod_matrix.has_target(ModTarget::PulseSpeed) {
-                    self.pulse_settings.speed.ghost_value = Some(speed);
-                }
-                if self.mod_matrix.has_target(ModTarget::PulseLimit) {
-                    self.pulse_settings.limit.ghost_value = Some(limit);
-                }
-                if self.mod_matrix.has_target(ModTarget::PulseRingCount) {
-                    self.pulse_settings.ring_count.ghost_value = Some(ring_count as u32);
-                }
-                if self.mod_matrix.has_target(ModTarget::PulseRotation) {
-                    self.pulse_settings.rotation_speed.ghost_value = Some(rotation_speed);
-                }
-            }
-            AnimationType::WaveLines => {
-                let amplitude = self.wave_lines_settings.amplitude.value
-                    * self
-                        .mod_matrix
-                        .calc_modulation(beat_pos, ModTarget::WaveAmplitude);
-                let frequency = self.wave_lines_settings.frequency.value
-                    * self
-                        .mod_matrix
-                        .calc_modulation(beat_pos, ModTarget::WaveFrequency);
-                let speed = self.wave_lines_settings.speed.value
-                    * self
-                        .mod_matrix
-                        .calc_modulation(beat_pos, ModTarget::WaveSpeed);
-                let thickness = self.wave_lines_settings.thickness.value
-                    * self
-                        .mod_matrix
-                        .calc_modulation(beat_pos, ModTarget::WaveThickness);
-                let phase_spread = self.wave_lines_settings.phase_spread.value
-                    * self
-                        .mod_matrix
-                        .calc_modulation(beat_pos, ModTarget::WavePhaseSpread);
-
-                for obj in self.objects.iter_mut() {
-                    if let Some(line) = obj.as_any_mut().downcast_mut::<wave_lines::WaveLine>() {
-                        line.amplitude_base = amplitude.max(0.0);
-                        line.frequency = frequency.max(0.0001);
-                        line.speed = speed.max(0.0);
-                        line.thickness = thickness.max(0.5);
-                        line.phase_spread = phase_spread;
-                    }
-                }
-
-                if self.mod_matrix.has_target(ModTarget::WaveAmplitude) {
-                    self.wave_lines_settings.amplitude.ghost_value = Some(amplitude);
-                }
-                if self.mod_matrix.has_target(ModTarget::WaveFrequency) {
-                    self.wave_lines_settings.frequency.ghost_value = Some(frequency);
-                }
-                if self.mod_matrix.has_target(ModTarget::WaveSpeed) {
-                    self.wave_lines_settings.speed.ghost_value = Some(speed);
-                }
-                if self.mod_matrix.has_target(ModTarget::WaveThickness) {
-                    self.wave_lines_settings.thickness.ghost_value = Some(thickness);
-                }
-                if self.mod_matrix.has_target(ModTarget::WavePhaseSpread) {
-                    self.wave_lines_settings.phase_spread.ghost_value = Some(phase_spread);
-                }
-            }
-        }
+        self.bouncing_ball_settings
+            .update_modulations(beat_pos, &self.mod_matrix);
+        self.scanline_settings
+            .update_modulations(beat_pos, &self.mod_matrix);
+        self.pulse_settings
+            .update_modulations(beat_pos, &self.mod_matrix);
+        self.wave_lines_settings
+            .update_modulations(beat_pos, &self.mod_matrix);
     }
 
     pub fn draw_grid(&self, draw: &Draw) {

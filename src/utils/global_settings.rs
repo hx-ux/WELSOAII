@@ -1,6 +1,5 @@
-use crate::animator::animation_type::AnimationType;
-use crate::animator::animator_structs::AnimationParam;
 use crate::utils::PathManager;
+use crate::{animator::animation_type::AnimationType, parameters::ConstantParam};
 use anyhow::Result;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
@@ -20,7 +19,7 @@ pub struct GlobalSettings {
     pub framerate: f64,
     pub view_window_size: (u32, u32),
     pub app_mode: AppMode,
-    pub window_opacity: AnimationParam<u8>,
+    pub window_opacity: ConstantParam<u8>,
 }
 
 impl GlobalSettings {
@@ -33,7 +32,7 @@ impl GlobalSettings {
             framerate: 60.0,
             view_window_size: (1000, 1000),
             app_mode: AppMode::Edit,
-            window_opacity: AnimationParam::new(200, 1, 255, "opacity"),
+            window_opacity: ConstantParam::new(200, 1, 255, "opacity"),
         }
     }
 

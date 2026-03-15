@@ -1,75 +1,85 @@
 use crate::{
     animator::{
-        AnimatedObject, AnimatorSettings, ObjectShape, UpdateBehaviour,
-        animation_type::AnimationType, animator_structs::AnimationParam,
+        animation_type::AnimationType, AnimatedObject, AnimatorSettings, ObjectShape,
+        UpdateBehaviour,
     },
     color::ColorParam,
+    parameters::{ConstantParam, ModulatedParam},
 };
 
-use crate::modulator::ModMatrix;
 use crate::modulator::ModTarget;
+use crate::modulator::Modulator;
+use crate::timecode::TimeCode;
 use nannou::prelude::*;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 
+#[macro_export]
+macro_rules! connect_wave_lines_modulations {
+    ($settings:expr, $mod_matrix:expr) => {
+        $settings.amplitude.connect_modulation(&mut $mod_matrix);
+        $settings.frequency.connect_modulation(&mut $mod_matrix);
+        $settings.speed.connect_modulation(&mut $mod_matrix);
+        $settings.thickness.connect_modulation(&mut $mod_matrix);
+        $settings.phase_spread.connect_modulation(&mut $mod_matrix);
+    };
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct WaveLinesSettings {
-    pub line_count: AnimationParam<u32>,
-    pub amplitude: AnimationParam<f32>,
-    pub frequency: AnimationParam<f32>,
-    pub speed: AnimationParam<f32>,
-    pub thickness: AnimationParam<f32>,
-    pub phase_spread: AnimationParam<f32>,
+    pub line_count: ConstantParam<u32>,
+    pub amplitude: ModulatedParam,
+    pub frequency: ModulatedParam,
+    pub speed: ModulatedParam,
+    pub thickness: ModulatedParam,
+    pub phase_spread: ModulatedParam,
     color: ColorParam,
     #[serde(skip)]
     width: f32,
     #[serde(skip)]
     height: f32,
-    //presets: PresetManager<WaveLinesSettings>,
 }
 
 impl AnimatorSettings for WaveLinesSettings {
     fn new(win_rect: &Rect) -> Self {
-        let wave_lines_settings = Self {
-            line_count: AnimationParam::new(14, 2, 60, "lines"),
-            amplitude: AnimationParam::new_modulate(
+        Self {
+            line_count: ConstantParam::new(14, 2, 60, "lines"),
+            amplitude: ModulatedParam::new(
                 90.0,
                 5.0,
                 260.0,
                 "amplitude",
-                ModTarget::WaveAmplitude,
+                Some(ModTarget::WaveAmplitude),
             ),
-            frequency: AnimationParam::new_modulate(
+            frequency: ModulatedParam::new(
                 0.018,
                 0.003,
                 0.08,
                 "frequency",
-                ModTarget::WaveFrequency,
+                Some(ModTarget::WaveFrequency),
             ),
-            speed: AnimationParam::new_modulate(1.5, 0.1, 6.0, "speed", ModTarget::WaveSpeed),
-            thickness: AnimationParam::new_modulate(
+            speed: ModulatedParam::new(1.5, 0.1, 6.0, "speed", Some(ModTarget::WaveSpeed)),
+            thickness: ModulatedParam::new(
                 4.0,
                 1.0,
                 14.0,
                 "thickness",
-                ModTarget::WaveThickness,
+                Some(ModTarget::WaveThickness),
             ),
-            phase_spread: AnimationParam::new_modulate(
+            phase_spread: ModulatedParam::new(
                 0.0,
                 -2.0,
                 2.0,
                 "phase spread",
-                ModTarget::WavePhaseSpread,
+                Some(ModTarget::WavePhaseSpread),
             ),
             color: ColorParam::default(),
             width: win_rect.w(),
             height: win_rect.h(),
-            //presets: PresetManager::new_animator(AnimationType::WaveLines),
-        };
-        wave_lines_settings
+        }
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui, mods: &mut ModMatrix) -> UpdateBehaviour {
+    fn ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour {
         let mut change = UpdateBehaviour::None;
         ui.heading(format!("{}", self.animation_type()));
 
@@ -115,11 +125,11 @@ impl AnimatorSettings for WaveLinesSettings {
                     self.line_count.value,
                     self.width,
                     self.height,
-                    self.amplitude.value,
-                    self.frequency.value,
-                    self.speed.value,
-                    self.thickness.value,
-                    self.phase_spread.value,
+                    *self.amplitude.value(),
+                    *self.frequency.value(),
+                    *self.speed.value(),
+                    *self.thickness.value(),
+                    *self.phase_spread.value(),
                     self.color.clone().value_mapped(idx as usize),
                 )) as Box<dyn AnimatedObject>
             })
@@ -142,11 +152,11 @@ impl AnimatorSettings for WaveLinesSettings {
                     self.line_count.value,
                     self.width,
                     self.height,
-                    self.amplitude.value,
-                    self.frequency.value,
-                    self.speed.value,
-                    self.thickness.value,
-                    self.phase_spread.value,
+                    *self.amplitude.value(),
+                    *self.frequency.value(),
+                    *self.speed.value(),
+                    *self.thickness.value(),
+                    *self.phase_spread.value(),
                     self.color.clone().value_mapped(idx),
                 )));
             }
@@ -159,22 +169,50 @@ impl AnimatorSettings for WaveLinesSettings {
                 line.total_lines = self.line_count.value;
                 line.width = self.width;
                 line.height = self.height;
-                line.amplitude_base = self.amplitude.value;
-                line.amplitude_current = self.amplitude.value;
-                line.frequency = self.frequency.value;
-                line.speed = self.speed.value;
-                line.thickness = self.thickness.value;
-                line.phase_spread = self.phase_spread.value;
+                line.amplitude_base = *self.amplitude.value();
+                line.amplitude_current = *self.amplitude.value();
+                line.frequency = *self.frequency.value();
+                line.speed = *self.speed.value();
+                line.thickness = *self.thickness.value();
+                line.phase_spread = *self.phase_spread.value();
                 line.color = self.color.clone().value_mapped(line.index);
             }
         }
     }
 
+    fn reset(&mut self) {}
+
+    fn force_update(&self) -> UpdateBehaviour {
+        UpdateBehaviour::NeedsReset
+    }
+
+    fn connect_modulations(&mut self, mod_matrix: &mut Modulator) {
+        self.amplitude.connect_modulation(mod_matrix);
+        self.frequency.connect_modulation(mod_matrix);
+        self.speed.connect_modulation(mod_matrix);
+        self.thickness.connect_modulation(mod_matrix);
+        self.phase_spread.connect_modulation(mod_matrix);
+    }
+
+    fn update_modulations(&mut self, beat_pos: f32, mod_matrix: &Modulator) {
+        self.amplitude.modulate(beat_pos, mod_matrix);
+        self.frequency.modulate(beat_pos, mod_matrix);
+        self.speed.modulate(beat_pos, mod_matrix);
+        self.thickness.modulate(beat_pos, mod_matrix);
+        self.phase_spread.modulate(beat_pos, mod_matrix);
+    }
+
+    fn reset_modulations(&mut self) {
+        self.amplitude.ghost_value = None;
+        self.frequency.ghost_value = None;
+        self.speed.ghost_value = None;
+        self.thickness.ghost_value = None;
+        self.phase_spread.ghost_value = None;
+    }
+
     fn save_preset(&mut self) -> anyhow::Result<()> {
         Ok(())
     }
-
-    fn reset(&mut self) {}
 }
 
 impl WaveLinesSettings {}
@@ -233,12 +271,7 @@ impl WaveLine {
 }
 
 impl AnimatedObject for WaveLine {
-    fn update(
-        &mut self,
-        win_rect: &Rect,
-        delta_time: f32,
-        clock: &crate::animator::timecode::TimeCode,
-    ) {
+    fn update(&mut self, win_rect: &Rect, delta_time: f32, clock: &TimeCode) {
         self.width = win_rect.w();
         self.height = win_rect.h();
         let beat = clock.get_beat_progress();

@@ -65,7 +65,7 @@ impl ColorParam {
 
             ColorMode::Palette => {
                 let _ = egui::ComboBox::from_label("Palette")
-                    .selected_text(format!("{}", format!("{}", self.palette)))
+                    .selected_text(format!("{}", self.palette).to_string())
                     .show_ui(ui, |ui| {
                         for option in ColorPalette::iter() {
                             changed |= ui

@@ -29,8 +29,8 @@ impl PathManager {
         doc_dir
     }
     pub fn get_preset_folder(animation_type: &AnimationType) -> PathBuf {
-        let path = Self::get_preset_path().join(format!("{}", animation_type));
-        path
+        
+        Self::get_preset_path().join(format!("{}", animation_type))
     }
 
     pub fn get_devices_folder() -> PathBuf {

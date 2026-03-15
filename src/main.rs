@@ -4,15 +4,18 @@ use nannou_egui::{self, Egui, egui};
 mod animator;
 mod color;
 mod modulator;
+mod parameters;
 mod presets;
 mod receiver;
+mod timecode;
 mod ui;
 mod utils;
 use animator::Animator;
-use animator::UpdateBehaviour;
 use receiver::{LayoutMode, ReceiverGrid};
 pub use utils::AppMode;
 use utils::GlobalSettings;
+
+use crate::animator::animation_type::UpdateBehaviour;
 
 fn main() {
     nannou::app(model).update(update).run();
@@ -77,7 +80,7 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
     egui.set_elapsed_time(_update.since_start);
 
     let ctx = egui.begin_frame();
-    crate::ui::style::apply_custom_style(&ctx, _model.global_settings.window_opacity.value);
+    crate::ui::style::apply_custom_style(&ctx, _model.global_settings.window_opacity.value as u8);
 
     // Modular Windows with this
     // egui::Window::new("Global Settings").show(&ctx, |ui| {
@@ -112,6 +115,10 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
                     .ui(ui, _model.animator.animation_type);
             });
             ui.separator();
+
+            // always set hot update
+            // // idk if this a good idea
+            _model.animator.behaviour_hot_update();
 
             ui.collapsing("Animator", |ui| match _model.animator.ui(ui) {
                 UpdateBehaviour::NeedsReset => _model.animator.reset(&win_rect),

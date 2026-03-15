@@ -1,52 +1,57 @@
+use crate::animator::animation_type::AnimationType;
+use crate::animator::animation_type::ScanLineModes;
 use crate::animator::AnimatedObject;
 use crate::animator::AnimatorSettings;
 use crate::animator::ObjectShape;
 use crate::animator::UpdateBehaviour;
-use crate::animator::animation_type::AnimationType;
-use crate::animator::animation_type::PulseModes;
-use crate::animator::animation_type::ScanLineModes;
-use crate::animator::animator_structs::AnimationParam;
-use crate::modulator::ModMatrix;
-use crate::modulator::ModTarget;
-//use crate::animator::presets_manager::PresetManager;
 use crate::color::ColorParam;
+use crate::modulator::ModTarget;
+use crate::modulator::Modulator;
+use crate::parameters::ConstantParam;
+use crate::parameters::ModulatedParam;
+use crate::timecode::TimeCode;
 use anyhow::Ok;
 use nannou::prelude::*;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 
-use nannou::prelude::*;
 use strum::IntoEnumIterator;
+
+#[macro_export]
+macro_rules! connect_scan_line_modulations {
+    ($settings:expr, $mod_matrix:expr) => {
+        $settings.speed.connect_modulation(&mut $mod_matrix);
+        $settings.width.connect_modulation(&mut $mod_matrix);
+    };
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct ScanLineSettings {
+    multi_line_count: ConstantParam<u8>,
     mode: ScanLineModes,
-    pub speed: AnimationParam<f32>,
-    pub width: AnimationParam<f32>,
+    pub speed: ModulatedParam,
+    pub width: ModulatedParam,
     color: ColorParam,
-    multi_line_count: AnimationParam<u32>,
     #[serde(skip)]
     height: f32,
     #[serde(skip)]
     begin_pos: f32,
-    //presets: PresetManager<ScanLineSettings>,
 }
 
 impl AnimatorSettings for ScanLineSettings {
     fn new(win_rect: &Rect) -> Self {
         Self {
+            multi_line_count: ConstantParam::new(1, 1, 10, "line_count"),
             mode: ScanLineModes::default(),
-            speed: AnimationParam::new_modulate(300.0, 0.0, 1000.0, "speed", ModTarget::ScanSpeed),
-            width: AnimationParam::new_modulate(20.0, 5.0, 100.0, "width", ModTarget::ScanWidth),
+            speed: ModulatedParam::new(300.0, 0.0, 1000.0, "speed", Some(ModTarget::ScanSpeed)),
+            width: ModulatedParam::new(20.0, 5.0, 100.0, "width", Some(ModTarget::ScanWidth)),
             color: ColorParam::default(),
-            multi_line_count: AnimationParam::new(1, 1, 10, "line_count"),
             height: win_rect.h(),
             begin_pos: win_rect.left(),
-            //presets: PresetManager::new_animator(AnimationType::ScanLine),
         }
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui, mods: &mut ModMatrix) -> UpdateBehaviour {
+    fn ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour {
         let mut change_type = UpdateBehaviour::None;
 
         ui.heading(format!("{}", self.animation_type()));
@@ -98,9 +103,9 @@ impl AnimatorSettings for ScanLineSettings {
         for index in 0..self.multi_line_count.value {
             animated_objects.push(Box::new(ScanLine::new(
                 self.mode,
-                self.speed.value,
+                *self.speed.value(),
                 self.color.clone().value_mapped(index as usize),
-                self.width.value,
+                *self.width.value(),
                 self.height,
                 self.begin_pos,
                 index as usize,
@@ -119,22 +124,36 @@ impl AnimatorSettings for ScanLineSettings {
         for obj in objects.iter_mut() {
             if let Some(scan_line) = obj.as_any_mut().downcast_mut::<ScanLine>() {
                 scan_line.color = self.color.clone().value_mapped(scan_line.index);
-                scan_line.width = self.width.value;
+                scan_line.width = *self.width.value();
                 scan_line.mode = self.mode;
                 scan_line.height = self.height;
                 // Update speed, preserving direction
                 let direction = scan_line.speed.signum();
-                scan_line.speed = self.speed.value.abs() * direction;
+                scan_line.speed = self.speed.value().abs() * direction;
             }
         }
     }
 
+    fn reset(&mut self) {}
+
+    fn connect_modulations(&mut self, mod_matrix: &mut Modulator) {
+        self.speed.connect_modulation(mod_matrix);
+        self.width.connect_modulation(mod_matrix);
+    }
+
     fn save_preset(&mut self) -> anyhow::Result<()> {
-        //  self.presets.save_to_file(self, None)?;
         Ok(())
     }
 
-    fn reset(&mut self) {}
+    fn update_modulations(&mut self, beat_pos: f32, mod_matrix: &Modulator) {
+        self.speed.modulate(beat_pos, mod_matrix);
+        self.width.modulate(beat_pos, mod_matrix);
+    }
+
+    fn reset_modulations(&mut self) {
+        self.speed.ghost_value = None;
+        self.width.ghost_value = None;
+    }
 }
 
 pub struct ScanLine {
@@ -145,7 +164,6 @@ pub struct ScanLine {
     height: f32,
     pub width: f32,
     index: usize,
-    // pub beat_snap: f32,
     phase_offset: f32,
 }
 
@@ -177,15 +195,10 @@ impl ScanLine {
 }
 
 impl AnimatedObject for ScanLine {
-    fn update(
-        &mut self,
-        win_rect: &Rect,
-        delta_time: f32,
-        clock: &crate::animator::timecode::TimeCode,
-    ) {
+    fn update(&mut self, win_rect: &Rect, delta_time: f32, clock: &TimeCode) {
         // Beat-synced speed modulation with snap
         let beat_progress = clock.get_beat_progress();
-        let beat_pulse = ((beat_progress + self.phase_offset) * std::f32::consts::PI * 2.0).sin();
+        let _beat_pulse = ((beat_progress + self.phase_offset) * std::f32::consts::PI * 2.0).sin();
         // let speed_multiplier = 1.0 + (beat_pulse * self.beat_snap);
 
         self.position.x += self.speed * delta_time;

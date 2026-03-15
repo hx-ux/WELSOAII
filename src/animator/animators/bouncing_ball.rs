@@ -1,19 +1,26 @@
-use crate::animator::AnimatedObject;
-use crate::animator::AnimatorSettings;
-use crate::animator::ObjectShape;
-use crate::animator::UpdateBehaviour;
-use crate::animator::animation_type::AnimationType;
-use crate::animator::animator_structs::AnimationParam;
-use crate::animator::animator_structs::RangeHolder;
-use crate::animator::timecode::TimeCode;
-use crate::color::ColorParam;
-use crate::modulator::ModMatrix;
-use crate::modulator::ModTarget;
+use crate::{
+    animator::{
+        animation_type::AnimationType, AnimatedObject, AnimatorSettings, ObjectShape,
+        UpdateBehaviour,
+    },
+    color::ColorParam,
+    modulator::{ModTarget, Modulator},
+    parameters::{ConstantParam, ModulatedParam},
+    timecode::TimeCode,
+};
 
 use anyhow::Ok;
 use nannou::prelude::*;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
+
+#[macro_export]
+macro_rules! connect_bouncing_balls_modulations {
+    ($settings:expr, $mod_matrix:expr) => {
+        $settings.speed.connect_modulation(&mut $mod_matrix);
+        $settings.radius.connect_modulation(&mut $mod_matrix);
+    };
+}
 
 fn default_rect() -> Rect {
     Rect::from_w_h(800.0, 600.0)
@@ -21,11 +28,11 @@ fn default_rect() -> Rect {
 
 #[derive(Serialize, Deserialize)]
 pub struct BouncingBallSettings {
-    pub ball_count: AnimationParam<u32>,
-    pub speed: AnimationParam<f32>,
-    pub radius: AnimationParam<f32>,
-    ball_vel_range_x: RangeHolder<f32>,
-    ball_vel_range_y: RangeHolder<f32>,
+    pub ball_count: ConstantParam<u32>,
+    pub speed: ModulatedParam,
+    pub radius: ModulatedParam,
+    ball_vel_range_x: ConstantParam<f32>,
+    ball_vel_range_y: ConstantParam<f32>,
     #[serde(skip)]
     #[serde(default = "default_rect")]
     dimension: Rect,
@@ -36,29 +43,22 @@ pub struct BouncingBallSettings {
 impl AnimatorSettings for BouncingBallSettings {
     fn new(win_rect: &Rect) -> Self {
         Self {
-            ball_count: AnimationParam::new(20, 1, 400, "Ball Count"),
-            speed: AnimationParam::new_modulate(1.0, 1.0, 5.0, "Speed", ModTarget::BouncingSpeed),
+            ball_count: ConstantParam::new(20, 1, 400, "Ball Count"),
+            speed: ModulatedParam::new(1.0, 1.0, 5.0, "Speed", Some(ModTarget::BouncingSpeed)),
             dimension: *win_rect,
-            radius: AnimationParam::new_modulate(
-                10.0,
-                6.0,
-                30.0,
-                "radius",
-                ModTarget::BouncingRadius,
-            ),
-            ball_vel_range_x: RangeHolder::new(-100.0, 100.0),
-            ball_vel_range_y: RangeHolder::new(-100.0, 100.0),
+            radius: ModulatedParam::new(10.0, 6.0, 30.0, "radius", Some(ModTarget::BouncingRadius)),
+            ball_vel_range_x: ConstantParam::new(0.0, -100.0, 100.0, "Range X"),
+            ball_vel_range_y: ConstantParam::new(0.0, -100.0, 100.0, "Range Y"),
             color: ColorParam::default(),
-            //presets: PresetManager::new_animator(AnimationType::BouncingBalls),
         }
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui, mods: &mut ModMatrix) -> UpdateBehaviour {
+    fn ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour {
         let mut change_type = UpdateBehaviour::None;
 
         ui.heading(format!("{}", self.animation_type()));
 
-        if self.ball_count.to_slider_modulate(ui, mods) {
+        if self.ball_count.to_slider(ui) {
             change_type = UpdateBehaviour::HotUpdate;
         }
 
@@ -70,54 +70,13 @@ impl AnimatorSettings for BouncingBallSettings {
             change_type = UpdateBehaviour::HotUpdate;
         }
 
-        if ui
-            .horizontal(|ui| {
-                let c1 = ui
-                    .add(egui::DragValue::new(&mut self.ball_vel_range_x.lower).speed(1.0))
-                    .changed();
-                let c2 = ui
-                    .add(egui::DragValue::new(&mut self.ball_vel_range_x.upper).speed(1.0))
-                    .changed();
-
-                // Ensure lower <= upper
-                if self.ball_vel_range_x.lower > self.ball_vel_range_x.upper {
-                    std::mem::swap(
-                        &mut self.ball_vel_range_x.lower,
-                        &mut self.ball_vel_range_x.upper,
-                    );
-                }
-                let _ = ui.label("Random Range");
-                c1 || c2
-            })
-            .inner
-        {
+        if ui.horizontal(|ui| self.ball_vel_range_x.to_drag(ui)).inner {
             change_type = UpdateBehaviour::HotUpdate;
         }
         ui.add_space(5.0);
 
         ui.label("Velocity Range (Y-axis)");
-        if ui
-            .horizontal(|ui| {
-                let c1 = ui
-                    .add(egui::DragValue::new(&mut self.ball_vel_range_y.lower).speed(1.0))
-                    .changed();
-                let c2 = ui
-                    .add(egui::DragValue::new(&mut self.ball_vel_range_y.upper).speed(1.0))
-                    .changed();
-
-                // Ensure lower <= upper
-                if self.ball_vel_range_y.lower > self.ball_vel_range_y.upper {
-                    std::mem::swap(
-                        &mut self.ball_vel_range_y.lower,
-                        &mut self.ball_vel_range_y.upper,
-                    );
-                }
-
-                let _ = ui.label("Random Range");
-                c1 || c2
-            })
-            .inner
-        {
+        if ui.horizontal(|ui| self.ball_vel_range_y.to_drag(ui)).inner {
             change_type = UpdateBehaviour::HotUpdate;
         }
 
@@ -139,10 +98,10 @@ impl AnimatorSettings for BouncingBallSettings {
             let new_obj = Box::new(BouncingBall::new(
                 &self.dimension,
                 self.color.clone().value_mapped(index),
-                self.radius.value,
-                &self.ball_vel_range_x,
-                &self.ball_vel_range_y,
-                self.speed.value,
+                *self.radius.value(),
+                self.ball_vel_range_x.value,
+                self.ball_vel_range_y.value,
+                *self.speed.value(),
                 index,
             ));
             animated_objects.push(new_obj);
@@ -165,10 +124,10 @@ impl AnimatorSettings for BouncingBallSettings {
                 let new_obj = Box::new(BouncingBall::new(
                     &self.dimension,
                     self.color.clone().value_mapped(index),
-                    self.radius.value,
-                    &self.ball_vel_range_x,
-                    &self.ball_vel_range_y,
-                    self.speed.value,
+                    *self.radius.value(),
+                    self.ball_vel_range_x.value,
+                    self.ball_vel_range_y.value,
+                    *self.speed.value(),
                     index,
                 ));
                 objects.push(new_obj);
@@ -182,22 +141,17 @@ impl AnimatorSettings for BouncingBallSettings {
         // Update existing balls with new parameters
         for obj in objects.iter_mut() {
             if let Some(ball) = obj.as_any_mut().downcast_mut::<BouncingBall>() {
-                ball.speed = self.speed.value;
-                ball.radius = self.radius.value;
+                ball.speed = *self.speed.value();
+                ball.radius = *self.radius.value();
                 ball.color = self.color.clone().value_mapped(ball.index);
 
                 // Re-randomize velocity within new range
-                // ball.velocity = vec2(
-                //     random_range(self.ball_vel_range_x.lower, self.ball_vel_range_x.upper),
-                //     random_range(self.ball_vel_range_y.lower, self.ball_vel_range_y.upper),
-                // );
+                //  ball.velocity = vec2(
+                //      random_range(self.ball_vel_range_x.lower, self.ball_vel_range_x.upper),
+                //      random_range(self.ball_vel_range_y.lower, self.ball_vel_range_y.upper),
+                //  );
             }
         }
-    }
-
-    fn save_preset(&mut self) -> anyhow::Result<()> {
-        // self.presets.save_to_file(self, None)?;
-        Ok(())
     }
 
     fn reset(&mut self) {
@@ -205,9 +159,31 @@ impl AnimatorSettings for BouncingBallSettings {
         self.speed.reset();
         self.radius.reset();
     }
-}
 
-impl BouncingBallSettings {}
+    fn force_update(&self) -> UpdateBehaviour {
+        UpdateBehaviour::NeedsReset
+    }
+
+    fn connect_modulations(&mut self, mod_matrix: &mut Modulator) {
+        self.speed.connect_modulation(mod_matrix);
+        self.radius.connect_modulation(mod_matrix);
+    }
+
+    fn save_preset(&mut self) -> anyhow::Result<()> {
+        // self.presets.save_to_file(self, None)?;
+        Ok(())
+    }
+
+    fn update_modulations(&mut self, beat_pos: f32, mod_matrix: &Modulator) {
+        self.speed.modulate(beat_pos, mod_matrix);
+        self.radius.modulate(beat_pos, mod_matrix);
+    }
+
+    fn reset_modulations(&mut self) {
+        self.speed.ghost_value = None;
+        self.radius.ghost_value = None;
+    }
+}
 
 pub struct BouncingBall {
     pub speed: f32,
@@ -223,8 +199,8 @@ impl BouncingBall {
         win_rect: &Rect,
         color: Rgba8,
         radius: f32,
-        horizontal_velocity: &RangeHolder<f32>,
-        vertical_velocity: &RangeHolder<f32>,
+        _horizontal_velocity: f32,
+        _vertical_velocity: f32,
         speed: f32,
         index: usize,
     ) -> Self {
@@ -233,10 +209,7 @@ impl BouncingBall {
                 random_range(win_rect.left() + radius, win_rect.right() - radius),
                 random_range(win_rect.bottom() + radius, win_rect.top() - radius),
             ),
-            velocity: vec2(
-                random_range(horizontal_velocity.lower, horizontal_velocity.upper),
-                random_range(vertical_velocity.lower, vertical_velocity.upper),
-            ),
+            velocity: vec2(random_range(-100.0, 100.0), random_range(-100.0, 100.0)),
             radius,
             color,
             speed,
@@ -246,7 +219,7 @@ impl BouncingBall {
 }
 
 impl AnimatedObject for BouncingBall {
-    fn update(&mut self, win_rect: &Rect, delta_time: f32, clock: &TimeCode) {
+    fn update(&mut self, win_rect: &Rect, delta_time: f32, _clock: &TimeCode) {
         self.position += self.velocity * delta_time * self.speed;
 
         // Bounce off window edges and clamp position within bounds
