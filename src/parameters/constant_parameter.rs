@@ -8,7 +8,9 @@ pub struct ConstantParam<T> {
     pub default: T,
     pub lower: T,
     pub upper: T,
+    #[serde(skip_serializing)]
     pub display_text: String,
+    pub identifier: String,
 }
 
 impl<T> ConstantParam<T> {
@@ -36,7 +38,7 @@ impl<T> ConstantParam<T> {
         changed
     }
 
-    pub fn new(default: T, lower: T, upper: T, desc: &str) -> Self
+    pub fn new(default: T, lower: T, upper: T, display_text: &str, identifier: &str) -> Self
     where
         T: Clone,
     {
@@ -45,7 +47,8 @@ impl<T> ConstantParam<T> {
             default: default,
             lower,
             upper,
-            display_text: desc.to_string(),
+            display_text: display_text.to_string(),
+            identifier: identifier.to_string(),
         }
     }
 
@@ -68,9 +71,9 @@ impl<T> ConstantParam<T> {
             }
         })
         .inner;
-
         changed
     }
+
     pub fn reset(&mut self)
     where
         T: Clone,

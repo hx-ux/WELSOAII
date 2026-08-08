@@ -1,13 +1,12 @@
 use crate::{
     animator::{
-        animation_type::AnimationType, AnimatedObject, AnimatorSettings, ObjectShape,
-        UpdateBehaviour,
+        AnimatedObject, AnimatorSettings, ObjectShape, UpdateBehaviour,
+        animation_type::AnimationType,
     },
     color::ColorParam,
     parameters::{ConstantParam, ModulatedParam},
 };
 
-use crate::modulator::ModTarget;
 use crate::modulator::Modulator;
 use crate::timecode::TimeCode;
 use nannou::prelude::*;
@@ -32,36 +31,19 @@ pub struct WaveLinesSettings {
 impl WaveLinesSettings {
     pub fn new(win_rect: &Rect) -> Self {
         Self {
-            line_count: ConstantParam::new(14, 2, 60, "lines"),
-            amplitude: ModulatedParam::new(
-                90.0,
-                5.0,
-                260.0,
-                "amplitude",
-                Some(ModTarget::new("Wave Amplitude")),
+            line_count: ConstantParam::new(
+                14,
+                2,
+                60,
+                "
+                Lines",
+                "lines",
             ),
-            frequency: ModulatedParam::new(
-                0.018,
-                0.003,
-                0.08,
-                "frequency",
-                Some(ModTarget::new("Wave Frequency")),
-            ),
-            speed: ModulatedParam::new(1.5, 0.1, 6.0, "speed", Some(ModTarget::new("Wave Speed"))),
-            thickness: ModulatedParam::new(
-                4.0,
-                1.0,
-                14.0,
-                "thickness",
-                Some(ModTarget::new("Wave Thickness")),
-            ),
-            phase_spread: ModulatedParam::new(
-                0.0,
-                -2.0,
-                2.0,
-                "phase spread",
-                Some(ModTarget::new("Wave Spread")),
-            ),
+            amplitude: ModulatedParam::new(90.0, 5.0, 260.0, "amplitude", "wave_amplitude"),
+            frequency: ModulatedParam::new(0.018, 0.003, 0.08, "frequency", "wave_frequency"),
+            speed: ModulatedParam::new(1.5, 0.1, 6.0, "speed", "wave_speed"),
+            thickness: ModulatedParam::new(4.0, 1.0, 14.0, "thickness", "wave_thickness"),
+            phase_spread: ModulatedParam::new(0.0, -2.0, 2.0, "phase spread", "wave_spread"),
             color: ColorParam::default(),
             width: win_rect.w(),
             height: win_rect.h(),
@@ -70,7 +52,6 @@ impl WaveLinesSettings {
 }
 
 impl AnimatorSettings for WaveLinesSettings {
-
     fn modulated_params_mut(&mut self) -> Vec<&mut ModulatedParam> {
         vec![
             &mut self.amplitude,

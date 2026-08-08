@@ -11,7 +11,7 @@ pub struct ModulatedParam {
     #[serde(skip_serializing)]
     pub modulated_value: f32,
     #[serde(skip_serializing)]
-    pub default: f32,
+    pub default_value: f32,
     pub range: (f32, f32),
     #[serde(skip_serializing)]
     pub display_text: String,
@@ -19,7 +19,10 @@ pub struct ModulatedParam {
     pub modulation_active: bool,
     #[serde(skip_serializing)]
     pub ghost_value: Option<f32>,
+    #[serde(skip_serializing)]
     pub mod_target: ModTarget,
+    // unique id for routing and persistence
+    pub identifier: String,
     #[serde(skip_serializing)]
     pub mod_amount: f32,
 }
@@ -27,30 +30,28 @@ pub struct ModulatedParam {
 impl ModulatedParam {
     const SPACE: f32 = 5.0;
     pub fn new(
-        default: f32,
+        default_value: f32,
         lower: f32,
         upper: f32,
-        desc: &str,
-        mod_target: Option<ModTarget>,
+        display_text: &str,
+        identifier: &str,
     ) -> Self {
-        let target = mod_target
-            .filter(|t| !t.is_none())
-            .unwrap_or_else(ModTarget::none);
         Self {
-            value: default,
-            modulated_value: default,
-            default,
+            value: default_value,
+            modulated_value: default_value,
+            default_value,
             range: (lower, upper),
-            display_text: desc.to_string(),
+            display_text: display_text.to_string(),
             ghost_value: None,
             modulation_active: false,
-            mod_target: target,
+            mod_target: ModTarget(identifier.clone().to_string()),
             mod_amount: 1.0,
+            identifier: identifier.clone().to_string(),
         }
     }
 
     pub fn reset(&mut self) {
-        self.value = self.default;
+        self.value = self.default_value;
     }
 
     pub fn connect_modulation(&self, mods: &mut Modulator) {

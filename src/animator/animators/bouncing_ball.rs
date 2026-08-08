@@ -1,10 +1,10 @@
 use crate::{
     animator::{
-        animation_type::AnimationType, AnimatedObject, AnimatorSettings, ObjectShape,
-        UpdateBehaviour,
+        AnimatedObject, AnimatorSettings, ObjectShape, UpdateBehaviour,
+        animation_type::AnimationType,
     },
     color::ColorParam,
-    modulator::{ModTarget, Modulator},
+    modulator::Modulator,
     parameters::{ConstantParam, ModulatedParam},
     timecode::TimeCode,
 };
@@ -34,19 +34,18 @@ pub struct BouncingBallSettings {
 impl BouncingBallSettings {
     pub fn new(win_rect: &Rect) -> Self {
         Self {
-            ball_count: ConstantParam::new(20, 1, 400, "Ball Count"),
-            speed: ModulatedParam::new(1.0, 1.0, 5.0, "Speed", Some(ModTarget::new("Bounce Speed"))),
+            ball_count: ConstantParam::new(20, 1, 400, "Ball Count", "ball_count"),
+            speed: ModulatedParam::new(1.0, 1.0, 5.0, "Speed", "bounce_speed"),
             dimension: *win_rect,
-            radius: ModulatedParam::new(10.0, 6.0, 30.0, "radius", Some(ModTarget::new("Bounce Radius"))),
-            ball_vel_range_x: ConstantParam::new(0.0, -100.0, 100.0, "Range X"),
-            ball_vel_range_y: ConstantParam::new(0.0, -100.0, 100.0, "Range Y"),
+            radius: ModulatedParam::new(10.0, 6.0, 30.0, "Radius", "bounce_radius"),
+            ball_vel_range_x: ConstantParam::new(0.0, -100.0, 100.0, "Range X", "range_x"),
+            ball_vel_range_y: ConstantParam::new(0.0, -100.0, 100.0, "Range Y", "range_Y"),
             color: ColorParam::default(),
         }
     }
 }
 
 impl AnimatorSettings for BouncingBallSettings {
-
     fn modulated_params_mut(&mut self) -> Vec<&mut ModulatedParam> {
         vec![&mut self.speed, &mut self.radius]
     }

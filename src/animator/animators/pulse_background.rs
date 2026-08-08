@@ -1,15 +1,13 @@
-use crate::animator::animation_type::AnimationType;
-use crate::animator::animation_type::PulseModes;
-use crate::animator::AnimatedObject;
-use crate::animator::AnimatorSettings;
-use crate::animator::ObjectShape;
-use crate::animator::UpdateBehaviour;
-use crate::color::ColorParam;
-use crate::modulator::ModTarget;
-use crate::modulator::Modulator;
-use crate::parameters::ConstantParam;
-use crate::parameters::ModulatedParam;
-use crate::timecode::TimeCode;
+use crate::{
+    animator::{
+        AnimatedObject, AnimatorSettings, ObjectShape, UpdateBehaviour,
+        animation_type::{AnimationType, PulseModes},
+    },
+    color::ColorParam,
+    modulator::ModTarget,
+};
+use crate::{modulator::Modulator, parameters::ConstantParam};
+use crate::{parameters::ModulatedParam, timecode::TimeCode};
 use anyhow::Ok;
 use nannou::prelude::*;
 use nannou_egui::egui;
@@ -30,23 +28,16 @@ impl PulseBackgroundSettings {
     pub fn new(_win_rect: &Rect) -> Self {
         Self {
             mode: PulseModes::default(),
-            speed: ModulatedParam::new(100.0, 1.0, 200.0, "speed", Some(ModTarget::new("Pulse Speed"))),
+            speed: ModulatedParam::new(100.0, 1.0, 200.0, "Speed", "pulse_speed"),
             color: ColorParam::default(),
-            limit: ModulatedParam::new(0.8, 0.1, 1.0, "limit", Some(ModTarget::new("Pulse Limit"))),
-            ring_count: ConstantParam::new(3, 1, 10, "ring_count"),
-            rotation_speed: ModulatedParam::new(
-                0.5,
-                0.0,
-                3.0,
-                "rotation",
-                Some(ModTarget::new("Pulse Rotation")),
-            ),
+            limit: ModulatedParam::new(0.8, 0.1, 1.0, "Limit", "pulse_limit"),
+            ring_count: ConstantParam::new(3, 1, 10, "Ring Count", "ring_count"),
+            rotation_speed: ModulatedParam::new(0.5, 0.0, 3.0, "Rotation", "pulse_rotation"),
         }
     }
 }
 
 impl AnimatorSettings for PulseBackgroundSettings {
-
     fn modulated_params_mut(&mut self) -> Vec<&mut ModulatedParam> {
         vec![&mut self.speed, &mut self.limit, &mut self.rotation_speed]
     }

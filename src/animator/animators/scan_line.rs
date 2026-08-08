@@ -1,9 +1,9 @@
-use crate::animator::animation_type::AnimationType;
-use crate::animator::animation_type::ScanLineModes;
 use crate::animator::AnimatedObject;
 use crate::animator::AnimatorSettings;
 use crate::animator::ObjectShape;
 use crate::animator::UpdateBehaviour;
+use crate::animator::animation_type::AnimationType;
+use crate::animator::animation_type::ScanLineModes;
 use crate::color::ColorParam;
 use crate::modulator::ModTarget;
 use crate::modulator::Modulator;
@@ -33,10 +33,10 @@ pub struct ScanLineSettings {
 impl ScanLineSettings {
     pub fn new(win_rect: &Rect) -> Self {
         Self {
-            multi_line_count: ConstantParam::new(1, 1, 10, "line_count"),
+            multi_line_count: ConstantParam::new(1, 1, 10, "Line Count", "line_count"),
             mode: ScanLineModes::default(),
-            speed: ModulatedParam::new(300.0, 0.0, 1000.0, "speed", Some(ModTarget::new("Scan Speed"))),
-            width: ModulatedParam::new(20.0, 5.0, 100.0, "width", Some(ModTarget::new("Scan Width"))),
+            speed: ModulatedParam::new(300.0, 0.0, 1000.0, "Speed", "scan_speed"),
+            width: ModulatedParam::new(20.0, 5.0, 100.0, "Width", "scan_width"),
             color: ColorParam::default(),
             height: win_rect.h(),
             begin_pos: win_rect.left(),
@@ -45,7 +45,6 @@ impl ScanLineSettings {
 }
 
 impl AnimatorSettings for ScanLineSettings {
-
     fn modulated_params_mut(&mut self) -> Vec<&mut ModulatedParam> {
         vec![&mut self.speed, &mut self.width]
     }
