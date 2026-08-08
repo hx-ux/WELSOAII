@@ -199,13 +199,15 @@ impl TimeCode {
             ui.label(format!("Total Beats: {:.0}", self.total_beats));
         });
 
-        let enabled = if self.sync_active {
-            "Disconnect Link"
-        } else {
-            "Connect Link"
-        };
+        let mut link_text = egui::RichText::new("LINK");
 
-        if ui.button(enabled).clicked() {
+        if self.sync_active {
+            let peers = self.abl_sync_state.link.num_peers();
+            link_text = egui::RichText::new(format!("LINK: {}", peers));
+            link_text = link_text.color(egui::Color32::BLUE);
+        }
+
+        if ui.button(link_text).clicked() {
             if self.sync_active {
                 self.stop_link();
             } else {
@@ -214,7 +216,5 @@ impl TimeCode {
         }
 
         self.abl_sync_state.capture_app_state();
-        let peers = self.abl_sync_state.link.num_peers();
-        ui.label(format!("Link Peers: {}", peers));
     }
 }
