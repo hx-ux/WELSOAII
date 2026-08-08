@@ -17,14 +17,6 @@ use serde::{Deserialize, Serialize};
 
 use strum::IntoEnumIterator;
 
-#[macro_export]
-macro_rules! connect_scan_line_modulations {
-    ($settings:expr, $mod_matrix:expr) => {
-        $settings.speed.connect_modulation(&mut $mod_matrix);
-        $settings.width.connect_modulation(&mut $mod_matrix);
-    };
-}
-
 #[derive(Serialize, Deserialize)]
 pub struct ScanLineSettings {
     multi_line_count: ConstantParam<u8>,
@@ -38,17 +30,24 @@ pub struct ScanLineSettings {
     begin_pos: f32,
 }
 
-impl AnimatorSettings for ScanLineSettings {
-    fn new(win_rect: &Rect) -> Self {
+impl ScanLineSettings {
+    pub fn new(win_rect: &Rect) -> Self {
         Self {
             multi_line_count: ConstantParam::new(1, 1, 10, "line_count"),
             mode: ScanLineModes::default(),
-            speed: ModulatedParam::new(300.0, 0.0, 1000.0, "speed", Some(ModTarget::ScanSpeed)),
-            width: ModulatedParam::new(20.0, 5.0, 100.0, "width", Some(ModTarget::ScanWidth)),
+            speed: ModulatedParam::new(300.0, 0.0, 1000.0, "speed", Some(ModTarget::new("Scan Speed"))),
+            width: ModulatedParam::new(20.0, 5.0, 100.0, "width", Some(ModTarget::new("Scan Width"))),
             color: ColorParam::default(),
             height: win_rect.h(),
             begin_pos: win_rect.left(),
         }
+    }
+}
+
+impl AnimatorSettings for ScanLineSettings {
+
+    fn modulated_params_mut(&mut self) -> Vec<&mut ModulatedParam> {
+        vec![&mut self.speed, &mut self.width]
     }
 
     fn ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour {
@@ -134,25 +133,14 @@ impl AnimatorSettings for ScanLineSettings {
         }
     }
 
-    fn reset(&mut self) {}
-
-    fn connect_modulations(&mut self, mod_matrix: &mut Modulator) {
-        self.speed.connect_modulation(mod_matrix);
-        self.width.connect_modulation(mod_matrix);
+    fn reset(&mut self) {
+        self.multi_line_count.reset();
+        self.speed.reset();
+        self.width.reset();
     }
 
     fn save_preset(&mut self) -> anyhow::Result<()> {
         Ok(())
-    }
-
-    fn update_modulations(&mut self, beat_pos: f32, mod_matrix: &Modulator) {
-        self.speed.modulate(beat_pos, mod_matrix);
-        self.width.modulate(beat_pos, mod_matrix);
-    }
-
-    fn reset_modulations(&mut self) {
-        self.speed.ghost_value = None;
-        self.width.ghost_value = None;
     }
 }
 

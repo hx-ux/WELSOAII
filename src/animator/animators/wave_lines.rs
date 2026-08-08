@@ -14,17 +14,6 @@ use nannou::prelude::*;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 
-#[macro_export]
-macro_rules! connect_wave_lines_modulations {
-    ($settings:expr, $mod_matrix:expr) => {
-        $settings.amplitude.connect_modulation(&mut $mod_matrix);
-        $settings.frequency.connect_modulation(&mut $mod_matrix);
-        $settings.speed.connect_modulation(&mut $mod_matrix);
-        $settings.thickness.connect_modulation(&mut $mod_matrix);
-        $settings.phase_spread.connect_modulation(&mut $mod_matrix);
-    };
-}
-
 #[derive(Serialize, Deserialize)]
 pub struct WaveLinesSettings {
     pub line_count: ConstantParam<u32>,
@@ -40,8 +29,8 @@ pub struct WaveLinesSettings {
     height: f32,
 }
 
-impl AnimatorSettings for WaveLinesSettings {
-    fn new(win_rect: &Rect) -> Self {
+impl WaveLinesSettings {
+    pub fn new(win_rect: &Rect) -> Self {
         Self {
             line_count: ConstantParam::new(14, 2, 60, "lines"),
             amplitude: ModulatedParam::new(
@@ -49,34 +38,47 @@ impl AnimatorSettings for WaveLinesSettings {
                 5.0,
                 260.0,
                 "amplitude",
-                Some(ModTarget::WaveAmplitude),
+                Some(ModTarget::new("Wave Amplitude")),
             ),
             frequency: ModulatedParam::new(
                 0.018,
                 0.003,
                 0.08,
                 "frequency",
-                Some(ModTarget::WaveFrequency),
+                Some(ModTarget::new("Wave Frequency")),
             ),
-            speed: ModulatedParam::new(1.5, 0.1, 6.0, "speed", Some(ModTarget::WaveSpeed)),
+            speed: ModulatedParam::new(1.5, 0.1, 6.0, "speed", Some(ModTarget::new("Wave Speed"))),
             thickness: ModulatedParam::new(
                 4.0,
                 1.0,
                 14.0,
                 "thickness",
-                Some(ModTarget::WaveThickness),
+                Some(ModTarget::new("Wave Thickness")),
             ),
             phase_spread: ModulatedParam::new(
                 0.0,
                 -2.0,
                 2.0,
                 "phase spread",
-                Some(ModTarget::WavePhaseSpread),
+                Some(ModTarget::new("Wave Spread")),
             ),
             color: ColorParam::default(),
             width: win_rect.w(),
             height: win_rect.h(),
         }
+    }
+}
+
+impl AnimatorSettings for WaveLinesSettings {
+
+    fn modulated_params_mut(&mut self) -> Vec<&mut ModulatedParam> {
+        vec![
+            &mut self.amplitude,
+            &mut self.frequency,
+            &mut self.speed,
+            &mut self.thickness,
+            &mut self.phase_spread,
+        ]
     }
 
     fn ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour {
@@ -180,34 +182,13 @@ impl AnimatorSettings for WaveLinesSettings {
         }
     }
 
-    fn reset(&mut self) {}
-
-    fn force_update(&self) -> UpdateBehaviour {
-        UpdateBehaviour::NeedsReset
-    }
-
-    fn connect_modulations(&mut self, mod_matrix: &mut Modulator) {
-        self.amplitude.connect_modulation(mod_matrix);
-        self.frequency.connect_modulation(mod_matrix);
-        self.speed.connect_modulation(mod_matrix);
-        self.thickness.connect_modulation(mod_matrix);
-        self.phase_spread.connect_modulation(mod_matrix);
-    }
-
-    fn update_modulations(&mut self, beat_pos: f32, mod_matrix: &Modulator) {
-        self.amplitude.modulate(beat_pos, mod_matrix);
-        self.frequency.modulate(beat_pos, mod_matrix);
-        self.speed.modulate(beat_pos, mod_matrix);
-        self.thickness.modulate(beat_pos, mod_matrix);
-        self.phase_spread.modulate(beat_pos, mod_matrix);
-    }
-
-    fn reset_modulations(&mut self) {
-        self.amplitude.ghost_value = None;
-        self.frequency.ghost_value = None;
-        self.speed.ghost_value = None;
-        self.thickness.ghost_value = None;
-        self.phase_spread.ghost_value = None;
+    fn reset(&mut self) {
+        self.line_count.reset();
+        self.amplitude.reset();
+        self.frequency.reset();
+        self.speed.reset();
+        self.thickness.reset();
+        self.phase_spread.reset();
     }
 
     fn save_preset(&mut self) -> anyhow::Result<()> {

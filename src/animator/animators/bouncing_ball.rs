@@ -14,14 +14,6 @@ use nannou::prelude::*;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 
-#[macro_export]
-macro_rules! connect_bouncing_balls_modulations {
-    ($settings:expr, $mod_matrix:expr) => {
-        $settings.speed.connect_modulation(&mut $mod_matrix);
-        $settings.radius.connect_modulation(&mut $mod_matrix);
-    };
-}
-
 fn default_rect() -> Rect {
     Rect::from_w_h(800.0, 600.0)
 }
@@ -37,20 +29,26 @@ pub struct BouncingBallSettings {
     #[serde(default = "default_rect")]
     dimension: Rect,
     color: ColorParam,
-    // presets: PresetManager<BouncingBallSettings>,
 }
 
-impl AnimatorSettings for BouncingBallSettings {
-    fn new(win_rect: &Rect) -> Self {
+impl BouncingBallSettings {
+    pub fn new(win_rect: &Rect) -> Self {
         Self {
             ball_count: ConstantParam::new(20, 1, 400, "Ball Count"),
-            speed: ModulatedParam::new(1.0, 1.0, 5.0, "Speed", Some(ModTarget::BouncingSpeed)),
+            speed: ModulatedParam::new(1.0, 1.0, 5.0, "Speed", Some(ModTarget::new("Bounce Speed"))),
             dimension: *win_rect,
-            radius: ModulatedParam::new(10.0, 6.0, 30.0, "radius", Some(ModTarget::BouncingRadius)),
+            radius: ModulatedParam::new(10.0, 6.0, 30.0, "radius", Some(ModTarget::new("Bounce Radius"))),
             ball_vel_range_x: ConstantParam::new(0.0, -100.0, 100.0, "Range X"),
             ball_vel_range_y: ConstantParam::new(0.0, -100.0, 100.0, "Range Y"),
             color: ColorParam::default(),
         }
+    }
+}
+
+impl AnimatorSettings for BouncingBallSettings {
+
+    fn modulated_params_mut(&mut self) -> Vec<&mut ModulatedParam> {
+        vec![&mut self.speed, &mut self.radius]
     }
 
     fn ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour {
@@ -144,12 +142,6 @@ impl AnimatorSettings for BouncingBallSettings {
                 ball.speed = *self.speed.value();
                 ball.radius = *self.radius.value();
                 ball.color = self.color.clone().value_mapped(ball.index);
-
-                // Re-randomize velocity within new range
-                //  ball.velocity = vec2(
-                //      random_range(self.ball_vel_range_x.lower, self.ball_vel_range_x.upper),
-                //      random_range(self.ball_vel_range_y.lower, self.ball_vel_range_y.upper),
-                //  );
             }
         }
     }
@@ -160,28 +152,8 @@ impl AnimatorSettings for BouncingBallSettings {
         self.radius.reset();
     }
 
-    fn force_update(&self) -> UpdateBehaviour {
-        UpdateBehaviour::NeedsReset
-    }
-
-    fn connect_modulations(&mut self, mod_matrix: &mut Modulator) {
-        self.speed.connect_modulation(mod_matrix);
-        self.radius.connect_modulation(mod_matrix);
-    }
-
     fn save_preset(&mut self) -> anyhow::Result<()> {
-        // self.presets.save_to_file(self, None)?;
         Ok(())
-    }
-
-    fn update_modulations(&mut self, beat_pos: f32, mod_matrix: &Modulator) {
-        self.speed.modulate(beat_pos, mod_matrix);
-        self.radius.modulate(beat_pos, mod_matrix);
-    }
-
-    fn reset_modulations(&mut self) {
-        self.speed.ghost_value = None;
-        self.radius.ghost_value = None;
     }
 }
 

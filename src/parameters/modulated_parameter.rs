@@ -34,8 +34,8 @@ impl ModulatedParam {
         mod_target: Option<ModTarget>,
     ) -> Self {
         let target = mod_target
-            .filter(|t| *t != ModTarget::None)
-            .unwrap_or(ModTarget::None);
+            .filter(|t| !t.is_none())
+            .unwrap_or_else(ModTarget::none);
         Self {
             value: default,
             modulated_value: default,
@@ -54,15 +54,15 @@ impl ModulatedParam {
     }
 
     pub fn connect_modulation(&self, mods: &mut Modulator) {
-        if self.mod_target != ModTarget::None {
-            mods.routes.push(ModRoute::new(self.mod_target));
+        if !self.mod_target.is_none() {
+            mods.routes.push(ModRoute::new(self.mod_target.clone()));
         }
     }
 
     pub fn modulate(&mut self, beat_pos: f32, mod_matrix: &Modulator) {
         if self.modulation_active {
             let speed = self.value
-                * mod_matrix.calc_modulation(beat_pos, self.mod_target)
+                * mod_matrix.calc_modulation(beat_pos, &self.mod_target)
                 * self.mod_amount;
             self.ghost_value = Some(speed);
             self.modulated_value = speed;
@@ -70,7 +70,6 @@ impl ModulatedParam {
     }
 
     pub fn value(&self) -> &f32 {
-        //&self.value
         if self.modulation_active {
             if let Some(_ghost_val) = self.ghost_value {
                 &self.modulated_value
@@ -109,7 +108,7 @@ impl ModulatedParam {
             }
             if ui.button(mod_desc).clicked() {
                 self.modulation_active = !self.modulation_active;
-                mods.set_enables(self.modulation_active, self.mod_target);
+                mods.set_enables(self.modulation_active, &self.mod_target);
                 changed = true;
             }
 
