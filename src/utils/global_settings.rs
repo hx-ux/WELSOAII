@@ -32,7 +32,7 @@ impl GlobalSettings {
             framerate: 60.0,
             view_window_size: (1000, 1000),
             app_mode: AppMode::Edit,
-            control_windows_opacity: ConstantParam::new(200, 1, 255, "opacity"),
+            control_windows_opacity: ConstantParam::new(200, 1, 255, "Opacity", "opactity"),
         }
     }
 

@@ -41,42 +41,35 @@ pub enum ModSourceEngine {
     RampDown,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default, Display, EnumIter)]
-pub enum ModTarget {
-    #[default]
-    #[strum(to_string = "None")]
-    None,
-    // Bouncing Balls
-    #[strum(to_string = "Bounce Speed")]
-    BouncingSpeed,
-    #[strum(to_string = "Bounce Radius")]
-    BouncingRadius,
-    // Scan Line
-    #[strum(to_string = "Scan Speed")]
-    ScanSpeed,
-    #[strum(to_string = "Scan Width")]
-    ScanWidth,
-    #[strum(to_string = "Pulse Speed")]
-    PulseSpeed,
-    #[strum(to_string = "Pulse Limit")]
-    PulseLimit,
-    #[strum(to_string = "Pulse Beat Multiplier")]
-    PulseBeatMult,
-    #[strum(to_string = "Pulse Ring Count")]
-    PulseRingCount,
-    #[strum(to_string = "Pulse Rotation")]
-    PulseRotation,
-    // Wave Lines
-    #[strum(to_string = "Wave Amplitude")]
-    WaveAmplitude,
-    #[strum(to_string = "Wave Frequency")]
-    WaveFrequency,
-    #[strum(to_string = "Wave Speed")]
-    WaveSpeed,
-    #[strum(to_string = "Wave Thickness")]
-    WaveThickness,
-    #[strum(to_string = "Wave Spread")]
-    WavePhaseSpread,
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
+pub struct ModTarget(pub String);
+
+impl ModTarget {
+    pub fn new(name: impl Into<String>) -> Self {
+        Self(name.into())
+    }
+
+    pub fn none() -> Self {
+        Self(String::new())
+    }
+
+    pub fn is_none(&self) -> bool {
+        self.0.is_empty() || self.0 == "None"
+    }
+
+    pub fn name(&self) -> &str {
+        if self.is_none() {
+            "None"
+        } else {
+            &self.0
+        }
+    }
+}
+
+impl std::fmt::Display for ModTarget {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -139,8 +132,8 @@ impl Default for Modulator {
 }
 
 impl Modulator {
-    pub fn set_enables(&mut self, state: bool, target: ModTarget) {
-        if let Some(dev) = self.routes.iter_mut().find(|d| d.target == target) {
+    pub fn set_enables(&mut self, state: bool, target: &ModTarget) {
+        if let Some(dev) = self.routes.iter_mut().find(|d| &d.target == target) {
             dev.enabled = state;
         }
     }
@@ -163,8 +156,6 @@ impl Modulator {
                 .text("Rate (x beat)")
                 .step_by(0.5),
         );
-        // todo higher steps
-        // ui.add(egui::Slider::new(&mut self.phase, -4.0..=4.0).text("Phase (beats)"));
 
         egui::ComboBox::from_label("Wave")
             .selected_text(format!("{:?}", self.wave))
@@ -173,32 +164,12 @@ impl Modulator {
                     ui.selectable_value(&mut self.wave, ss, format!("{}", ss));
                 }
             });
-
-        // show all linked params to one Modulator
-        //let mut remove_idx: Option<usize> = None;
-
-        //for (i, route) in self.routes.iter_mut().enumerate()
-        //// .filter(|(_, route)| route.target.for_animation(animation_type))
-        //{
-        //    ui.horizontal(|ui| {
-        //        if route.enabled {
-        //            ui.label(format!("{}", route.target));
-        //            //ui.checkbox(&mut route.enabled, format!("{}", route.target));
-        //            // ui.add(egui::Slider::new(&mut route.amount, 0.0..=1.0).text("Depth"));
-        //            //
-        //        }
-        //    });
-        //}
-        //if let Some(idx) = remove_idx {
-        //    self.routes.remove(idx);
-        //}
     }
 
-    pub fn calc_modulation(&self, beat_pos: f32, target: ModTarget) -> f32 {
+    pub fn calc_modulation(&self, beat_pos: f32, target: &ModTarget) -> f32 {
         if !self.enabled {
             return 1.0;
         }
-        // let lfo = sample_wave(self.wave, beat_pos * self.freq_mul + self.phase);
         let result = create_modulation(self.wave, beat_pos * self.freq_mul);
         let mut factor = 1.0;
         let mut amount = self.amount;
@@ -210,7 +181,7 @@ impl Modulator {
         for route in self
             .routes
             .iter()
-            .filter(|route| route.enabled && route.target == target)
+            .filter(|route| route.enabled && &route.target == target)
         {
             factor *= 1.0 + (amount * route.amount) * result;
         }

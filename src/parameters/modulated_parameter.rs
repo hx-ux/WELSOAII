@@ -11,7 +11,7 @@ pub struct ModulatedParam {
     #[serde(skip_serializing)]
     pub modulated_value: f32,
     #[serde(skip_serializing)]
-    pub default: f32,
+    pub default_value: f32,
     pub range: (f32, f32),
     #[serde(skip_serializing)]
     pub display_text: String,
@@ -19,7 +19,10 @@ pub struct ModulatedParam {
     pub modulation_active: bool,
     #[serde(skip_serializing)]
     pub ghost_value: Option<f32>,
+    #[serde(skip_serializing)]
     pub mod_target: ModTarget,
+    // unique id for routing and persistence
+    pub identifier: String,
     #[serde(skip_serializing)]
     pub mod_amount: f32,
 }
@@ -27,42 +30,40 @@ pub struct ModulatedParam {
 impl ModulatedParam {
     const SPACE: f32 = 5.0;
     pub fn new(
-        default: f32,
+        default_value: f32,
         lower: f32,
         upper: f32,
-        desc: &str,
-        mod_target: Option<ModTarget>,
+        display_text: &str,
+        identifier: &str,
     ) -> Self {
-        let target = mod_target
-            .filter(|t| *t != ModTarget::None)
-            .unwrap_or(ModTarget::None);
         Self {
-            value: default,
-            modulated_value: default,
-            default,
+            value: default_value,
+            modulated_value: default_value,
+            default_value,
             range: (lower, upper),
-            display_text: desc.to_string(),
+            display_text: display_text.to_string(),
             ghost_value: None,
             modulation_active: false,
-            mod_target: target,
+            mod_target: ModTarget(identifier.clone().to_string()),
             mod_amount: 1.0,
+            identifier: identifier.clone().to_string(),
         }
     }
 
     pub fn reset(&mut self) {
-        self.value = self.default;
+        self.value = self.default_value;
     }
 
     pub fn connect_modulation(&self, mods: &mut Modulator) {
-        if self.mod_target != ModTarget::None {
-            mods.routes.push(ModRoute::new(self.mod_target));
+        if !self.mod_target.is_none() {
+            mods.routes.push(ModRoute::new(self.mod_target.clone()));
         }
     }
 
     pub fn modulate(&mut self, beat_pos: f32, mod_matrix: &Modulator) {
         if self.modulation_active {
             let speed = self.value
-                * mod_matrix.calc_modulation(beat_pos, self.mod_target)
+                * mod_matrix.calc_modulation(beat_pos, &self.mod_target)
                 * self.mod_amount;
             self.ghost_value = Some(speed);
             self.modulated_value = speed;
@@ -70,7 +71,6 @@ impl ModulatedParam {
     }
 
     pub fn value(&self) -> &f32 {
-        //&self.value
         if self.modulation_active {
             if let Some(_ghost_val) = self.ghost_value {
                 &self.modulated_value
@@ -109,7 +109,7 @@ impl ModulatedParam {
             }
             if ui.button(mod_desc).clicked() {
                 self.modulation_active = !self.modulation_active;
-                mods.set_enables(self.modulation_active, self.mod_target);
+                mods.set_enables(self.modulation_active, &self.mod_target);
                 changed = true;
             }
 

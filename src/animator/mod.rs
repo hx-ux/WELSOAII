@@ -1,17 +1,15 @@
 use crate::{
     animator::{
         animation_type::{AnimationType, UpdateBehaviour},
-        animators::{WaveLinesSettings, bouncing_ball, pulse_background, scan_line},
+        animators::{bouncing_ball, pulse_background, scan_line, WaveLinesSettings},
     },
-    connect_bouncing_balls_modulations, connect_pulse_bg_modulations,
-    connect_scan_line_modulations, connect_wave_lines_modulations,
+    parameters::ModulatedParam,
     receiver::ReceiverGrid,
     timecode::TimeCode,
 };
 use anyhow::Result;
 use nannou::prelude::*;
 use nannou_egui::egui::{self};
-use strum::IntoEnumIterator;
 pub mod animation_type;
 mod animators;
 use crate::modulator::Modulator;
@@ -19,17 +17,6 @@ use crate::modulator::Modulator;
 use bouncing_ball::BouncingBallSettings;
 use pulse_background::PulseBackgroundSettings;
 use scan_line::ScanLineSettings;
-
-macro_rules! with_current_settings {
-    ($self:expr, $method:ident $(, $args:expr)*) => {
-        match $self.animation_type {
-            AnimationType::BouncingBalls => $self.bouncing_ball_settings.$method($($args),*),
-            AnimationType::ScanLine => $self.scanline_settings.$method($($args),*),
-            AnimationType::PulseBackground => $self.pulse_settings.$method($($args),*),
-            AnimationType::WaveLines => $self.wave_lines_settings.$method($($args),*),
-        }
-    };
-}
 
 // An animated object, which every animator does emit
 pub enum ObjectShape {
@@ -40,109 +27,131 @@ pub enum ObjectShape {
 pub trait AnimatedObject {
     fn update(&mut self, win_rect: &Rect, delta_time: f32, clock: &TimeCode);
     fn draw(&self, draw: &Draw);
-    // partial obsolete
     fn is_dead(&self) -> bool {
         false
     }
     fn shape(&self) -> ObjectShape;
     fn color(&self) -> Rgba8;
-    // For downcasting to concrete types
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any;
 }
-//DispatchFromDyn
 
 pub trait AnimatorSettings {
-    fn new(win_rect: &Rect) -> Self;
     fn ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour;
     fn animation_type(&self) -> AnimationType;
     fn create(&self) -> Vec<Box<dyn AnimatedObject>>;
     fn set_dimension(&mut self, _window_rect: &Rect) {}
-    // Custom Logic for Hot reloading the animator without resetting
     fn hot_update(&self, objects: &mut Vec<Box<dyn AnimatedObject>>);
-    // Rest all parameter values to its definded standards
     fn reset(&mut self);
     fn force_update(&self) -> UpdateBehaviour {
         UpdateBehaviour::NeedsReset
     }
 
-    fn connect_modulations(&mut self, mod_matrix: &mut Modulator);
-    fn update_modulations(&mut self, beat_pos: f32, mod_matrix: &Modulator);
-    fn reset_modulations(&mut self);
-    fn save_preset(&mut self) -> Result<()>;
+    /// Provides references to all modulated parameters of this effect.
+    /// Default implementations for modulations use this to eliminate boilerplate.
+    fn modulated_params_mut(&mut self) -> Vec<&mut ModulatedParam> {
+        Vec::new()
+    }
+
+    fn connect_modulations(&mut self, mod_matrix: &mut Modulator) {
+        for param in self.modulated_params_mut() {
+            param.connect_modulation(mod_matrix);
+        }
+    }
+
+    fn update_modulations(&mut self, beat_pos: f32, mod_matrix: &Modulator) {
+        for param in self.modulated_params_mut() {
+            param.modulate(beat_pos, mod_matrix);
+        }
+    }
+
+    fn reset_modulations(&mut self) {
+        for param in self.modulated_params_mut() {
+            param.ghost_value = None;
+        }
+    }
+
+    fn save_preset(&mut self) -> Result<()> {
+        Ok(())
+    }
 }
 
 pub struct Animator {
     pub objects: Vec<Box<dyn AnimatedObject>>,
     pub grid: ReceiverGrid,
-    pub animation_type: AnimationType,
+    pub active_index: usize,
     pub clock: TimeCode,
     pub mod_matrix: Modulator,
-    bouncing_ball_settings: BouncingBallSettings,
-    scanline_settings: ScanLineSettings,
-    pulse_settings: PulseBackgroundSettings,
-    wave_lines_settings: WaveLinesSettings,
+    pub effects: Vec<Box<dyn AnimatorSettings>>,
 }
 
 impl Animator {
     pub fn new(win_rect: &Rect, grid: ReceiverGrid) -> Self {
-        let bouncing_ball_settings = BouncingBallSettings::new(win_rect);
-        let scanline_settings = ScanLineSettings::new(win_rect);
-        let pulse_settings = PulseBackgroundSettings::new(win_rect);
-        let wave_lines_settings = WaveLinesSettings::new(win_rect);
-        let mut mod_matrix = Modulator::default();
+        let mut effects: Vec<Box<dyn AnimatorSettings>> = vec![
+            Box::new(BouncingBallSettings::new(win_rect)),
+            Box::new(PulseBackgroundSettings::new(win_rect)),
+            Box::new(ScanLineSettings::new(win_rect)),
+            Box::new(WaveLinesSettings::new(win_rect)),
+        ];
 
-        connect_bouncing_balls_modulations!(bouncing_ball_settings, &mut mod_matrix);
-        connect_scan_line_modulations!(scanline_settings, mod_matrix);
-        connect_pulse_bg_modulations!(pulse_settings, &mut mod_matrix);
-        connect_wave_lines_modulations!(wave_lines_settings, mod_matrix);
+        let mut mod_matrix = Modulator::default();
+        for effect in effects.iter_mut() {
+            effect.connect_modulations(&mut mod_matrix);
+        }
 
         Animator {
             objects: Vec::new(),
-            animation_type: AnimationType::BouncingBalls,
+            active_index: 0,
             clock: TimeCode::new(),
             mod_matrix,
             grid,
-            bouncing_ball_settings,
-            scanline_settings,
-            pulse_settings,
-            wave_lines_settings,
+            effects,
         }
+    }
+
+    pub fn animation_type(&self) -> AnimationType {
+        self.effects
+            .get(self.active_index)
+            .map(|e| e.animation_type())
+            .unwrap_or(AnimationType::BouncingBalls)
     }
 
     pub fn switch_animation_tye(&mut self, dir: i8) {
-        let mut new_index = self.animation_type as usize;
-        let count = AnimationType::iter().count();
+        if self.effects.is_empty() {
+            return;
+        }
+        let count = self.effects.len();
         if dir == 1 {
-            new_index = (new_index + 1) % count;
+            self.active_index = (self.active_index + 1) % count;
         } else if dir == -1 {
-            new_index = if new_index == 0 {
+            self.active_index = if self.active_index == 0 {
                 count - 1
             } else {
-                new_index - 1
+                self.active_index - 1
             };
         }
-        self.animation_type = AnimationType::from(new_index);
     }
 
-    /// Clears and repopulates the animations objects based on current settings.
+    /// Clears and repopulates the animation objects based on current settings.
     pub fn reset(&mut self, win_rect: &Rect) {
         self.objects.clear();
-        // keep settings in sync with the current window
-        // if reset in bind to on_window_resize
-        self.scanline_settings.set_dimension(win_rect);
-        self.bouncing_ball_settings.set_dimension(win_rect);
-        self.pulse_settings.set_dimension(win_rect);
-        self.wave_lines_settings.set_dimension(win_rect);
-
-        self.objects = with_current_settings!(self, create);
+        if let Some(effect) = self.effects.get_mut(self.active_index) {
+            effect.set_dimension(win_rect);
+            self.objects = effect.create();
+        }
     }
+
     /// Apply hot updates to existing objects without recreating them
     pub fn behaviour_hot_update(&mut self) {
-        with_current_settings!(self, hot_update, &mut self.objects);
+        let objects = &mut self.objects;
+        if let Some(effect) = self.effects.get(self.active_index) {
+            effect.hot_update(objects);
+        }
     }
 
     pub fn save_preset(&mut self) {
-        let _ = with_current_settings!(self, save_preset);
+        if let Some(effect) = self.effects.get_mut(self.active_index) {
+            let _ = effect.save_preset();
+        }
     }
 
     pub fn update(&mut self, win_rect: &Rect, delta_time: f32) {
@@ -157,7 +166,7 @@ impl Animator {
             obj.update(win_rect, synced_delta, &self.clock);
         }
 
-        // Remove dead objects ()
+        // Remove dead objects
         self.objects.retain(|obj| !obj.is_dead());
 
         // Reset grid cells
@@ -229,7 +238,6 @@ impl Animator {
         self.grid.update_led_buffer_and_send();
     }
 
-    // draws the created shapes from the animators
     pub fn draw_animator(&self, draw: &Draw) {
         for obj in &self.objects {
             obj.draw(draw);
@@ -237,10 +245,9 @@ impl Animator {
     }
 
     fn clear_mod_ghosts(&mut self) {
-        self.bouncing_ball_settings.reset_modulations();
-        self.scanline_settings.reset_modulations();
-        self.pulse_settings.reset_modulations();
-        self.wave_lines_settings.reset_modulations();
+        for effect in &mut self.effects {
+            effect.reset_modulations();
+        }
     }
 
     fn apply_modulations(&mut self) {
@@ -249,15 +256,9 @@ impl Animator {
             return;
         }
         let beat_pos = self.clock.get_beats();
-
-        self.bouncing_ball_settings
-            .update_modulations(beat_pos, &self.mod_matrix);
-        self.scanline_settings
-            .update_modulations(beat_pos, &self.mod_matrix);
-        self.pulse_settings
-            .update_modulations(beat_pos, &self.mod_matrix);
-        self.wave_lines_settings
-            .update_modulations(beat_pos, &self.mod_matrix);
+        for effect in &mut self.effects {
+            effect.update_modulations(beat_pos, &self.mod_matrix);
+        }
     }
 
     pub fn draw_grid(&self, draw: &Draw) {
@@ -266,31 +267,30 @@ impl Animator {
 
     pub fn ui(&mut self, ui: &mut egui::Ui) -> UpdateBehaviour {
         let mut change_type = UpdateBehaviour::None;
-        // --- General Settings ---
+        let current_type = self.animation_type();
+
         egui::ComboBox::from_label("")
-            .selected_text(format!("{:?}", self.animation_type))
+            .selected_text(format!("{}", current_type))
             .show_ui(ui, |ui| {
-                for option in AnimationType::iter() {
+                for (idx, effect) in self.effects.iter().enumerate() {
+                    let type_name = format!("{}", effect.animation_type());
                     if ui
-                        .selectable_value(&mut self.animation_type, option, format!("{}", option))
+                        .selectable_label(idx == self.active_index, type_name)
                         .clicked()
+                        && self.active_index != idx
                     {
+                        self.active_index = idx;
                         change_type = UpdateBehaviour::NeedsReset;
                     }
                 }
             });
 
-        // --- Show controls for each animator settings
-        let settings_change = match self.animation_type {
-            AnimationType::BouncingBalls => {
-                self.bouncing_ball_settings.ui(ui, &mut self.mod_matrix)
-            }
-            AnimationType::ScanLine => self.scanline_settings.ui(ui, &mut self.mod_matrix),
-            AnimationType::PulseBackground => self.pulse_settings.ui(ui, &mut self.mod_matrix),
-            AnimationType::WaveLines => self.wave_lines_settings.ui(ui, &mut self.mod_matrix),
+        let settings_change = if let Some(effect) = self.effects.get_mut(self.active_index) {
+            effect.ui(ui, &mut self.mod_matrix)
+        } else {
+            UpdateBehaviour::None
         };
 
-        // Prioritize NeedsReset over CanHotUpdate
         if change_type == UpdateBehaviour::NeedsReset {
             change_type
         } else if settings_change != UpdateBehaviour::None {

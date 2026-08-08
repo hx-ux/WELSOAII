@@ -1,31 +1,18 @@
-use crate::animator::animation_type::AnimationType;
-use crate::animator::animation_type::PulseModes;
-use crate::animator::AnimatedObject;
-use crate::animator::AnimatorSettings;
-use crate::animator::ObjectShape;
-use crate::animator::UpdateBehaviour;
-use crate::color::ColorParam;
-use crate::modulator::ModTarget;
-use crate::modulator::Modulator;
-use crate::parameters::ConstantParam;
-use crate::parameters::ModulatedParam;
-use crate::timecode::TimeCode;
+use crate::{
+    animator::{
+        AnimatedObject, AnimatorSettings, ObjectShape, UpdateBehaviour,
+        animation_type::{AnimationType, PulseModes},
+    },
+    color::ColorParam,
+    modulator::ModTarget,
+};
+use crate::{modulator::Modulator, parameters::ConstantParam};
+use crate::{parameters::ModulatedParam, timecode::TimeCode};
 use anyhow::Ok;
 use nannou::prelude::*;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
-
-#[macro_export]
-macro_rules! connect_pulse_bg_modulations {
-    ($settings:expr, $mod_matrix:expr) => {
-        $settings.speed.connect_modulation(&mut $mod_matrix);
-        $settings.limit.connect_modulation(&mut $mod_matrix);
-        $settings
-            .rotation_speed
-            .connect_modulation(&mut $mod_matrix);
-    };
-}
 
 #[derive(Serialize, Deserialize)]
 pub struct PulseBackgroundSettings {
@@ -37,22 +24,22 @@ pub struct PulseBackgroundSettings {
     pub rotation_speed: ModulatedParam,
 }
 
-impl AnimatorSettings for PulseBackgroundSettings {
-    fn new(_win_rect: &Rect) -> Self {
+impl PulseBackgroundSettings {
+    pub fn new(_win_rect: &Rect) -> Self {
         Self {
             mode: PulseModes::default(),
-            speed: ModulatedParam::new(100.0, 1.0, 200.0, "speed", Some(ModTarget::PulseSpeed)),
+            speed: ModulatedParam::new(100.0, 1.0, 200.0, "Speed", "pulse_speed"),
             color: ColorParam::default(),
-            limit: ModulatedParam::new(0.8, 0.1, 1.0, "limit", Some(ModTarget::PulseLimit)),
-            ring_count: ConstantParam::new(3, 1, 10, "ring_count"),
-            rotation_speed: ModulatedParam::new(
-                0.5,
-                0.0,
-                3.0,
-                "rotation",
-                Some(ModTarget::PulseRotation),
-            ),
+            limit: ModulatedParam::new(0.8, 0.1, 1.0, "Limit", "pulse_limit"),
+            ring_count: ConstantParam::new(3, 1, 10, "Ring Count", "ring_count"),
+            rotation_speed: ModulatedParam::new(0.5, 0.0, 3.0, "Rotation", "pulse_rotation"),
         }
+    }
+}
+
+impl AnimatorSettings for PulseBackgroundSettings {
+    fn modulated_params_mut(&mut self) -> Vec<&mut ModulatedParam> {
+        vec![&mut self.speed, &mut self.limit, &mut self.rotation_speed]
     }
 
     fn ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour {
@@ -129,30 +116,14 @@ impl AnimatorSettings for PulseBackgroundSettings {
     }
 
     fn reset(&mut self) {
-        todo!()
-    }
-
-    fn connect_modulations(&mut self, mod_matrix: &mut Modulator) {
-        self.speed.connect_modulation(mod_matrix);
-        self.limit.connect_modulation(mod_matrix);
-        self.rotation_speed.connect_modulation(mod_matrix);
+        self.ring_count.reset();
+        self.speed.reset();
+        self.limit.reset();
+        self.rotation_speed.reset();
     }
 
     fn save_preset(&mut self) -> anyhow::Result<()> {
-        //self.presets.save_to_file(self, None)?;
         Ok(())
-    }
-
-    fn update_modulations(&mut self, beat_pos: f32, mod_matrix: &Modulator) {
-        self.speed.modulate(beat_pos, mod_matrix);
-        self.limit.modulate(beat_pos, mod_matrix);
-        self.rotation_speed.modulate(beat_pos, mod_matrix);
-    }
-
-    fn reset_modulations(&mut self) {
-        self.speed.ghost_value = None;
-        self.limit.ghost_value = None;
-        self.rotation_speed.ghost_value = None;
     }
 }
 

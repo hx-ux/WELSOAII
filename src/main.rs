@@ -117,7 +117,7 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
                 _model
                     .animator
                     .mod_matrix
-                    .ui(ui, _model.animator.animation_type);
+                    .ui(ui, _model.animator.animation_type());
             });
             ui.separator();
 
