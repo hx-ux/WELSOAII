@@ -1,7 +1,7 @@
 use crate::{
     animator::{
         animation_type::{AnimationType, UpdateBehaviour},
-        animators::{bouncing_ball, pulse_background, scan_line, WaveLinesSettings},
+        animators::{WaveLinesSettings, bouncing_ball, pulse_background, scan_line},
     },
     connect_bouncing_balls_modulations, connect_pulse_bg_modulations,
     connect_scan_line_modulations, connect_wave_lines_modulations,

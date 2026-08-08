@@ -80,10 +80,6 @@ impl TimeCode {
         self.abl_sync_state.link.enable(false);
     }
 
-    pub fn set_bpm(&mut self, bpm: f32) {
-        self.tempo.value = bpm;
-    }
-
     pub fn start(&mut self) {
         self.is_running = true;
     }

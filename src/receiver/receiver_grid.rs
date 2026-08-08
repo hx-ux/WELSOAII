@@ -4,7 +4,7 @@ use nannou::prelude::*;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 
-use crate::ui::controls::styled_text_edit;
+use crate::ui::controls::monospace_text_edit;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum LayoutMode {
@@ -15,7 +15,6 @@ pub enum LayoutMode {
 #[derive(Clone)]
 /// the single cell, which interacts with the animator
 pub struct GridCell {
-    pub pos: u32,
     pub rect: Rect,
     pub display_color: Rgba8,
     pub is_active: bool,
@@ -28,7 +27,6 @@ impl GridCell {
             rect,
             is_active: false,
             display_color: Rgba8::new(10, 10, 10, 10),
-            pos,
             pos_string: pos.to_string(), // Cache the string
         }
     }
@@ -304,7 +302,7 @@ impl ReceiverGrid {
         let mut changed = false;
 
         let mut name = self.device.name.clone();
-        if ui.add(styled_text_edit(&mut name, "Device Name")).changed() {
+        if ui.add(monospace_text_edit(&mut name, "Device Name")).changed() {
             self.device.name = name;
             changed = true;
         }
@@ -312,7 +310,7 @@ impl ReceiverGrid {
         ui.add_space(5.0);
 
         let mut ip = self.device.ip.clone();
-        if ui.add(styled_text_edit(&mut ip, "IP Address")).changed() {
+        if ui.add(monospace_text_edit(&mut ip, "IP Address")).changed() {
             // TODO validate IP
             self.device.ip = ip;
             changed = true;

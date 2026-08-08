@@ -19,7 +19,7 @@ pub struct GlobalSettings {
     pub framerate: f64,
     pub view_window_size: (u32, u32),
     pub app_mode: AppMode,
-    pub window_opacity: ConstantParam<u8>,
+    pub control_windows_opacity: ConstantParam<u8>,
 }
 
 impl GlobalSettings {
@@ -32,14 +32,13 @@ impl GlobalSettings {
             framerate: 60.0,
             view_window_size: (1000, 1000),
             app_mode: AppMode::Edit,
-            window_opacity: ConstantParam::new(200, 1, 255, "opacity"),
+            control_windows_opacity: ConstantParam::new(200, 1, 255, "opacity"),
         }
     }
 
     pub fn create_settings_folder() -> Result<bool> {
-        // todo use result
         let z: PathBuf = PathManager::get_preset_path();
-        fs::create_dir_all(&z).unwrap();
+        fs::create_dir_all(&z)?;
 
         for animation in AnimationType::iter() {
             let e_path = z.join(format!("{}", animation));
@@ -80,7 +79,7 @@ impl GlobalSettings {
                 .changed();
         });
 
-        self.window_opacity.to_slider(ui);
+        self.control_windows_opacity.to_slider(ui);
 
         if ui.button("Save Settings").clicked() {
             if let Err(e) = self.save() {

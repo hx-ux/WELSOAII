@@ -2,7 +2,7 @@ use nannou_egui::egui::{self, vec2};
 use std::ops::RangeInclusive;
 
 /// Styled single-line text edit with monospace font and code editor look
-pub fn styled_text_edit<'a>(text: &'a mut String, hint: &'a str) -> egui::TextEdit<'a> {
+pub fn monospace_text_edit<'a>(text: &'a mut String, hint: &'a str) -> egui::TextEdit<'a> {
     egui::TextEdit::singleline(text)
         .hint_text(hint)
         .font(egui::TextStyle::Monospace)

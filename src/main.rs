@@ -6,7 +6,6 @@ use nannou_egui::{self, Egui, egui};
 // Module imports
 mod animator;
 mod color;
-mod common;
 mod modulator;
 mod parameters;
 mod presets;
@@ -83,7 +82,10 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
     egui.set_elapsed_time(_update.since_start);
 
     let ctx = egui.begin_frame();
-    crate::ui::style::apply_custom_style(&ctx, _model.global_settings.window_opacity.value as u8);
+    crate::ui::style_injector::apply_custom_style(
+        &ctx,
+        _model.global_settings.control_windows_opacity.value as u8,
+    );
 
     // Modular Windows with this
     // egui::Window::new("Global Settings").show(&ctx, |ui| {

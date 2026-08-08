@@ -28,7 +28,7 @@ impl AmountType {
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Default, Display, EnumIter)]
-pub enum ModWave {
+pub enum ModSourceEngine {
     #[default]
     Sine,
     #[strum(to_string = "Triangle")]
@@ -39,8 +39,6 @@ pub enum ModWave {
     RampUp,
     #[strum(to_string = "RampDown")]
     RampDown,
-    #[strum(to_string = "Random")]
-    Random,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default, Display, EnumIter)]
@@ -81,36 +79,6 @@ pub enum ModTarget {
     WavePhaseSpread,
 }
 
-// TODO sloppy impl
-impl ModTarget {
-    pub fn animation_type(self) -> Option<AnimationType> {
-        match self {
-            ModTarget::None => None,
-            ModTarget::BouncingSpeed | ModTarget::BouncingRadius => {
-                Some(AnimationType::BouncingBalls)
-            }
-            ModTarget::ScanSpeed | ModTarget::ScanWidth => Some(AnimationType::ScanLine),
-            ModTarget::PulseSpeed
-            | ModTarget::PulseLimit
-            | ModTarget::PulseBeatMult
-            | ModTarget::PulseRingCount
-            | ModTarget::PulseRotation => Some(AnimationType::PulseBackground),
-            ModTarget::WaveAmplitude
-            | ModTarget::WaveFrequency
-            | ModTarget::WaveSpeed
-            | ModTarget::WaveThickness
-            | ModTarget::WavePhaseSpread => Some(AnimationType::WaveLines),
-        }
-    }
-
-    pub fn for_animation(self, animation_type: AnimationType) -> bool {
-        match self.animation_type() {
-            Some(target_animation) => target_animation == animation_type,
-            None => true,
-        }
-    }
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ModRoute {
     pub target: ModTarget,
@@ -146,7 +114,7 @@ pub struct Modulator {
     /// ±1.0 equals ±100% around the base value.
     pub amount: f32,
     pub amount_type: AmountType,
-    pub wave: ModWave,
+    pub wave: ModSourceEngine,
     /// Multiplier for the global beat clock (1.0 = 1 cycle per beat).
     pub freq_mul: f32,
     /// Phase offset in beats.
@@ -161,7 +129,7 @@ impl Default for Modulator {
             routes: Default::default(),
             amount: 0.25,
             amount_type: AmountType::Plus,
-            wave: ModWave::default(),
+            wave: ModSourceEngine::default(),
             freq_mul: 1.0,
             phase: 1.0,
             enabled: true,
@@ -171,14 +139,10 @@ impl Default for Modulator {
 }
 
 impl Modulator {
-    pub fn has_target(&self, target: ModTarget) -> bool {
-        self.routes.iter().any(|r| r.enabled && r.target == target)
-    }
-
     pub fn set_enables(&mut self, state: bool, target: ModTarget) {
         if let Some(dev) = self.routes.iter_mut().find(|d| d.target == target) {
             dev.enabled = state;
-        } 
+        }
     }
 
     pub fn ui(&mut self, ui: &mut egui::Ui, _animation_type: AnimationType) {
@@ -205,7 +169,7 @@ impl Modulator {
         egui::ComboBox::from_label("Wave")
             .selected_text(format!("{:?}", self.wave))
             .show_ui(ui, |ui| {
-                for ss in ModWave::iter() {
+                for ss in ModSourceEngine::iter() {
                     ui.selectable_value(&mut self.wave, ss, format!("{}", ss));
                 }
             });
@@ -256,25 +220,23 @@ impl Modulator {
 }
 
 /// Sample a waveform at the given beat position. Output in [-1, 1].
-pub fn create_modulation(wave: ModWave, beat_pos: f32) -> f32 {
+pub fn create_modulation(wave: ModSourceEngine, beat_pos: f32) -> f32 {
     let phase = beat_pos * std::f32::consts::TAU;
     match wave {
-        ModWave::Sine => phase.sin(),
-        ModWave::Triangle => {
+        ModSourceEngine::Sine => phase.sin(),
+        ModSourceEngine::Triangle => {
             // saw to triangle transform
             let saw = (phase / std::f32::consts::TAU).fract() * 2.0 - 1.0;
             2.0 * saw.abs() - 1.0
         }
-        ModWave::Square => {
+        ModSourceEngine::Square => {
             if phase.sin() >= 0.0 {
                 1.0
             } else {
                 -1.0
             }
         }
-        ModWave::RampUp => ((phase / std::f32::consts::TAU).fract()) * 2.0 - 1.0,
-        ModWave::RampDown => 1.0 - ((phase / std::f32::consts::TAU).fract()) * 2.0,
-        // TODO
-        ModWave::Random => 0.0,
+        ModSourceEngine::RampUp => ((phase / std::f32::consts::TAU).fract()) * 2.0 - 1.0,
+        ModSourceEngine::RampDown => 1.0 - ((phase / std::f32::consts::TAU).fract()) * 2.0,
     }
 }
