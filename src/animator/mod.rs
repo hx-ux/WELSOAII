@@ -1,7 +1,7 @@
 use crate::{
     animator::{
         animation_type::{AnimationType, UpdateBehaviour},
-        animators::{bouncing_ball, pulse_background, scan_line, WaveLinesSettings},
+        animators::{WaveLinesSettings, bouncing_ball, pulse_background, scan_line},
     },
     parameters::ModulatedParam,
     receiver::ReceiverGrid,
@@ -36,7 +36,8 @@ pub trait AnimatedObject {
 }
 
 pub trait AnimatorSettings {
-    fn ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour;
+    fn control_ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour;
+    fn color_ui(&mut self, ui: &mut egui::Ui) -> UpdateBehaviour;
     fn animation_type(&self) -> AnimationType;
     fn create(&self) -> Vec<Box<dyn AnimatedObject>>;
     fn set_dimension(&mut self, _window_rect: &Rect) {}
@@ -265,7 +266,13 @@ impl Animator {
         self.grid.draw(draw);
     }
 
-    pub fn ui(&mut self, ui: &mut egui::Ui) -> UpdateBehaviour {
+    pub fn color_ui(&mut self, ui: &mut egui::Ui) {
+        if let Some(effect) = self.effects.get_mut(self.active_index) {
+            effect.color_ui(ui);
+        }
+    }
+
+    pub fn control_ui(&mut self, ui: &mut egui::Ui) -> UpdateBehaviour {
         let mut change_type = UpdateBehaviour::None;
         let current_type = self.animation_type();
 
@@ -286,7 +293,7 @@ impl Animator {
             });
 
         let settings_change = if let Some(effect) = self.effects.get_mut(self.active_index) {
-            effect.ui(ui, &mut self.mod_matrix)
+            effect.control_ui(ui, &mut self.mod_matrix)
         } else {
             UpdateBehaviour::None
         };

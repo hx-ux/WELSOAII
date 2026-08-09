@@ -50,38 +50,32 @@ impl AnimatorSettings for BouncingBallSettings {
         vec![&mut self.speed, &mut self.radius]
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour {
-        let mut change_type = UpdateBehaviour::None;
-
-        ui.heading(format!("{}", self.animation_type()));
+    fn control_ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour {
+        let mut update = UpdateBehaviour::None;
 
         if self.ball_count.to_slider(ui) {
-            change_type = UpdateBehaviour::HotUpdate;
+            update = UpdateBehaviour::HotUpdate;
         }
 
         if self.radius.to_slider_modulate(ui, mods) {
-            change_type = UpdateBehaviour::HotUpdate;
+            update = UpdateBehaviour::HotUpdate;
         }
 
         if self.speed.to_slider_modulate(ui, mods) {
-            change_type = UpdateBehaviour::HotUpdate;
+            update = UpdateBehaviour::HotUpdate;
         }
 
         if ui.horizontal(|ui| self.ball_vel_range_x.to_drag(ui)).inner {
-            change_type = UpdateBehaviour::HotUpdate;
+            update = UpdateBehaviour::HotUpdate;
         }
         ui.add_space(5.0);
 
         ui.label("Velocity Range (Y-axis)");
         if ui.horizontal(|ui| self.ball_vel_range_y.to_drag(ui)).inner {
-            change_type = UpdateBehaviour::HotUpdate;
+            update = UpdateBehaviour::HotUpdate;
         }
 
-        if self.color.ui(ui) {
-            change_type = UpdateBehaviour::HotUpdate;
-        }
-
-        change_type
+        update
     }
 
     fn animation_type(&self) -> AnimationType {
@@ -153,6 +147,16 @@ impl AnimatorSettings for BouncingBallSettings {
 
     fn save_preset(&mut self) -> anyhow::Result<()> {
         Ok(())
+    }
+
+    fn color_ui(&mut self, ui: &mut egui::Ui) -> UpdateBehaviour {
+        let mut update = UpdateBehaviour::None;
+
+        if self.color.ui(ui) {
+            update = UpdateBehaviour::HotUpdate;
+        }
+
+        update
     }
 }
 

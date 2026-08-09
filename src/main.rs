@@ -87,52 +87,54 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
         _model.global_settings.control_windows_opacity.value as u8,
     );
 
-    // Modular Windows with this
-    // egui::Window::new("Global Settings").show(&ctx, |ui| {
+    // Modular Windows
 
-    egui::SidePanel::left("control_panel")
+    egui::Window::new("Global Settings")
         .resizable(true)
-        .min_width(_model.global_settings.view_window_size.1 as f32 * 0.2)
-        .max_width(_model.global_settings.view_window_size.1 as f32)
-        .default_width(_model.global_settings.view_window_size.1 as f32 * 0.3)
-        .show_animated(&ctx, true, |ui| {
-            ui.heading("Welosa II");
-            ui.separator();
-
-            ui.collapsing("Global", |ui| {
-                _model.global_settings.ui(ui);
-            });
-            ui.separator();
-            ui.collapsing("Time Code", |ui| {
-                _model.animator.clock.ui(ui);
-            });
-            ui.separator();
-
-            ui.collapsing("Device", |ui| {
-                _model.animator.grid.ui(ui);
-            });
-            ui.separator();
-
-            ui.collapsing("Mod Matrix", |ui| {
-                _model
-                    .animator
-                    .mod_matrix
-                    .ui(ui, _model.animator.animation_type());
-            });
-            ui.separator();
-
-            // always set hot update
-            // // idk if this a good idea
-            _model.animator.behaviour_hot_update();
-
-            ui.collapsing("Animator", |ui| match _model.animator.ui(ui) {
-                UpdateBehaviour::NeedsReset => _model.animator.reset(&win_rect),
-                UpdateBehaviour::HotUpdate => _model.animator.behaviour_hot_update(),
-                UpdateBehaviour::LoadPreset => {}
-                UpdateBehaviour::SavePresets => _model.animator.save_preset(),
-                UpdateBehaviour::None => {}
-            });
+        .default_open(false)
+        .show(&ctx, |ui| {
+            _model.global_settings.ui(ui);
         });
+
+    egui::Window::new("Time Code")
+        .resizable(true)
+        .default_open(false)
+        .show(&ctx, |ui| {
+            _model.animator.clock.ui(ui);
+        });
+
+    egui::Window::new("Device")
+        .resizable(true)
+        .default_open(false)
+        .show(&ctx, |ui| {
+            _model.animator.grid.ui(ui);
+        });
+
+    egui::Window::new("Mod Matrix")
+        .resizable(true)
+        .show(&ctx, |ui| {
+            _model
+                .animator
+                .mod_matrix
+                .ui(ui, _model.animator.animation_type());
+        });
+
+    // Always set hot update
+    _model.animator.behaviour_hot_update();
+
+    egui::Window::new("Animator")
+        .resizable(true)
+        .show(&ctx, |ui| match _model.animator.control_ui(ui) {
+            UpdateBehaviour::NeedsReset => _model.animator.reset(&win_rect),
+            UpdateBehaviour::HotUpdate => _model.animator.behaviour_hot_update(),
+            UpdateBehaviour::LoadPreset => {}
+            UpdateBehaviour::SavePresets => _model.animator.save_preset(),
+            UpdateBehaviour::None => {}
+        });
+
+    egui::Window::new("Color")
+        .resizable(true)
+        .show(&ctx, |ui| _model.animator.color_ui(ui));
 
     _model
         .animator

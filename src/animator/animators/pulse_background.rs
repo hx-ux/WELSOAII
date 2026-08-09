@@ -4,7 +4,6 @@ use crate::{
         animation_type::{AnimationType, PulseModes},
     },
     color::ColorParam,
-    modulator::ModTarget,
 };
 use crate::{modulator::Modulator, parameters::ConstantParam};
 use crate::{parameters::ModulatedParam, timecode::TimeCode};
@@ -42,10 +41,8 @@ impl AnimatorSettings for PulseBackgroundSettings {
         vec![&mut self.speed, &mut self.limit, &mut self.rotation_speed]
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour {
-        let mut change_type = UpdateBehaviour::None;
-
-        ui.heading(format!("{}", self.animation_type()));
+    fn control_ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour {
+        let mut update = UpdateBehaviour::None;
 
         ui.add_space(5.0);
         ui.label("Mode:");
@@ -56,32 +53,28 @@ impl AnimatorSettings for PulseBackgroundSettings {
                     .radio_value(&mut self.mode, options, format!("{}", options))
                     .changed()
                 {
-                    change_type = UpdateBehaviour::NeedsReset;
+                    update = UpdateBehaviour::NeedsReset;
                 };
             }
         });
 
         if self.speed.to_slider_modulate(ui, mods) {
-            change_type = UpdateBehaviour::HotUpdate;
+            update = UpdateBehaviour::HotUpdate;
         }
 
         if self.limit.to_slider_modulate(ui, mods) {
-            change_type = UpdateBehaviour::HotUpdate;
+            update = UpdateBehaviour::HotUpdate;
         }
 
         if self.ring_count.to_slider(ui) {
-            change_type = UpdateBehaviour::HotUpdate;
+            update = UpdateBehaviour::HotUpdate;
         }
 
         if self.rotation_speed.to_slider_modulate(ui, mods) {
-            change_type = UpdateBehaviour::HotUpdate;
+            update = UpdateBehaviour::HotUpdate;
         }
 
-        if self.color.ui(ui) {
-            change_type = UpdateBehaviour::HotUpdate;
-        }
-
-        change_type
+        update
     }
 
     fn animation_type(&self) -> AnimationType {
@@ -124,6 +117,15 @@ impl AnimatorSettings for PulseBackgroundSettings {
 
     fn save_preset(&mut self) -> anyhow::Result<()> {
         Ok(())
+    }
+
+    fn color_ui(&mut self, ui: &mut egui::Ui) -> UpdateBehaviour {
+        let mut update = UpdateBehaviour::None;
+        if self.color.ui(ui) {
+            update = UpdateBehaviour::HotUpdate;
+        }
+
+        return update;
     }
 }
 

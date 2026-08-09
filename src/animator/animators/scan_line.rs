@@ -5,7 +5,6 @@ use crate::animator::UpdateBehaviour;
 use crate::animator::animation_type::AnimationType;
 use crate::animator::animation_type::ScanLineModes;
 use crate::color::ColorParam;
-use crate::modulator::ModTarget;
 use crate::modulator::Modulator;
 use crate::parameters::ConstantParam;
 use crate::parameters::ModulatedParam;
@@ -49,21 +48,20 @@ impl AnimatorSettings for ScanLineSettings {
         vec![&mut self.speed, &mut self.width]
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour {
-        let mut change_type = UpdateBehaviour::None;
+    fn control_ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour {
+        let mut update = UpdateBehaviour::None;
 
-        ui.heading(format!("{}", self.animation_type()));
         ui.add_space(5.0);
 
         ui.label("Speed");
         if self.speed.to_slider_modulate(ui, mods) {
-            change_type = UpdateBehaviour::HotUpdate;
+            update = UpdateBehaviour::HotUpdate;
         }
         ui.add_space(5.0);
 
         ui.label("Width");
         if self.width.to_slider_modulate(ui, mods) {
-            change_type = UpdateBehaviour::HotUpdate;
+            update = UpdateBehaviour::HotUpdate;
         }
         ui.add_space(5.0);
 
@@ -75,20 +73,16 @@ impl AnimatorSettings for ScanLineSettings {
                     .radio_value(&mut self.mode, options, format!("{}", options))
                     .changed()
                 {
-                    change_type = UpdateBehaviour::NeedsReset;
+                    update = UpdateBehaviour::NeedsReset;
                 };
             }
         });
 
         if self.multi_line_count.to_slider(ui) {
-            change_type = UpdateBehaviour::NeedsReset;
+            update = UpdateBehaviour::NeedsReset;
         }
 
-        if self.color.ui(ui) {
-            change_type = UpdateBehaviour::HotUpdate;
-        }
-
-        change_type
+        update
     }
 
     fn animation_type(&self) -> AnimationType {
@@ -140,6 +134,14 @@ impl AnimatorSettings for ScanLineSettings {
 
     fn save_preset(&mut self) -> anyhow::Result<()> {
         Ok(())
+    }
+
+    fn color_ui(&mut self, ui: &mut egui::Ui) -> UpdateBehaviour {
+        let mut update = UpdateBehaviour::None;
+        if self.color.ui(ui) {
+            update = UpdateBehaviour::HotUpdate;
+        }
+        update
     }
 }
 

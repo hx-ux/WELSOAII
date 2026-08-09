@@ -39,11 +39,11 @@ impl WaveLinesSettings {
                 Lines",
                 "lines",
             ),
-            amplitude: ModulatedParam::new(90.0, 5.0, 260.0, "amplitude", "wave_amplitude"),
-            frequency: ModulatedParam::new(0.018, 0.003, 0.08, "frequency", "wave_frequency"),
-            speed: ModulatedParam::new(1.5, 0.1, 6.0, "speed", "wave_speed"),
-            thickness: ModulatedParam::new(4.0, 1.0, 14.0, "thickness", "wave_thickness"),
-            phase_spread: ModulatedParam::new(0.0, -2.0, 2.0, "phase spread", "wave_spread"),
+            amplitude: ModulatedParam::new(90.0, 5.0, 260.0, "Amplitude", "wave_amplitude"),
+            frequency: ModulatedParam::new(0.018, 0.003, 0.08, "Frequency", "wave_frequency"),
+            speed: ModulatedParam::new(1.5, 0.1, 6.0, "Speed", "wave_speed"),
+            thickness: ModulatedParam::new(4.0, 1.0, 14.0, "Thickness", "wave_thickness"),
+            phase_spread: ModulatedParam::new(0.0, -2.0, 2.0, "Phase spread", "wave_spread"),
             color: ColorParam::default(),
             width: win_rect.w(),
             height: win_rect.h(),
@@ -62,38 +62,33 @@ impl AnimatorSettings for WaveLinesSettings {
         ]
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour {
-        let mut change = UpdateBehaviour::None;
-        ui.heading(format!("{}", self.animation_type()));
+    fn control_ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour {
+        let mut update = UpdateBehaviour::None;
 
         if self.line_count.to_slider(ui) {
-            change = UpdateBehaviour::NeedsReset;
+            update = UpdateBehaviour::NeedsReset;
         }
         if self.amplitude.to_slider_modulate(ui, mods) {
-            change = UpdateBehaviour::HotUpdate;
+            update = UpdateBehaviour::HotUpdate;
         }
 
         if self.frequency.to_slider_modulate(ui, mods) {
-            change = UpdateBehaviour::HotUpdate;
+            update = UpdateBehaviour::HotUpdate;
         }
 
         if self.speed.to_slider_modulate(ui, mods) {
-            change = UpdateBehaviour::HotUpdate;
+            update = UpdateBehaviour::HotUpdate;
         }
 
         if self.thickness.to_slider_modulate(ui, mods) {
-            change = UpdateBehaviour::HotUpdate;
+            update = UpdateBehaviour::HotUpdate;
         }
 
         if self.phase_spread.to_slider_modulate(ui, mods) {
-            change = UpdateBehaviour::HotUpdate;
+            update = UpdateBehaviour::HotUpdate;
         }
 
-        if self.color.ui(ui) {
-            change = UpdateBehaviour::HotUpdate;
-        }
-
-        change
+        update
     }
 
     fn animation_type(&self) -> AnimationType {
@@ -174,6 +169,15 @@ impl AnimatorSettings for WaveLinesSettings {
 
     fn save_preset(&mut self) -> anyhow::Result<()> {
         Ok(())
+    }
+
+    fn color_ui(&mut self, ui: &mut egui::Ui) -> UpdateBehaviour {
+        let mut update = UpdateBehaviour::None;
+        if self.color.ui(ui) {
+            update = UpdateBehaviour::HotUpdate;
+        }
+
+        update
     }
 }
 
