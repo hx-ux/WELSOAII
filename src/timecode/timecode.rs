@@ -205,13 +205,12 @@ impl TimeCode {
             }
         });
 
-        ui.horizontal(|ui| {
-            ui.label(format!("Time: {}", self.get_formatted_time()));
-
-            let (beat, progress) = self.get_beat_counter();
-            ui.label(format!("Beat: {} ({:.2})", beat, progress));
-            ui.label(format!("Total Beats: {:.0}", self.total_beats));
-        });
+        // ui.horizontal(|ui| {
+        //     //ui.label(format!("Time: {}", self.get_formatted_time()));
+        //     // let (beat, progress) = self.get_beat_counter();
+        //     // ui.label(format!("Beat: {} ({:.2})", beat, progress));
+        //     // ui.label(format!("Total Beats: {:.0}", self.total_beats));
+        // });
 
         self.abl_sync_state.capture_app_state();
     }
