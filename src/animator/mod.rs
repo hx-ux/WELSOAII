@@ -18,7 +18,6 @@ use bouncing_ball::BouncingBallSettings;
 use pulse_background::PulseBackgroundSettings;
 use scan_line::ScanLineSettings;
 
-// An animated object, which every animator does emit
 pub enum ObjectShape {
     Circle(Vec2, f32),
     Rect(Rect),
@@ -32,23 +31,21 @@ pub trait AnimatedObject {
     }
     fn shape(&self) -> ObjectShape;
     fn color(&self) -> Rgba8;
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any;
 }
 
 pub trait AnimatorSettings {
     fn control_ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour;
     fn color_ui(&mut self, ui: &mut egui::Ui) -> UpdateBehaviour;
     fn animation_type(&self) -> AnimationType;
-    fn create(&self) -> Vec<Box<dyn AnimatedObject>>;
+    fn init(&mut self);
     fn set_dimension(&mut self, _window_rect: &Rect) {}
-    fn hot_update(&self, objects: &mut Vec<Box<dyn AnimatedObject>>);
+    fn hot_update(&mut self);
     fn reset(&mut self);
-    fn force_update(&self) -> UpdateBehaviour {
-        UpdateBehaviour::NeedsReset
-    }
 
-    /// Provides references to all modulated parameters of this effect.
-    /// Default implementations for modulations use this to eliminate boilerplate.
+    // Returns references to the internal concrete objects
+    fn get_objects(&self) -> Vec<&dyn AnimatedObject>;
+    fn get_objects_mut(&mut self) -> Vec<&mut dyn AnimatedObject>;
+
     fn modulated_params_mut(&mut self) -> Vec<&mut ModulatedParam> {
         Vec::new()
     }
@@ -77,7 +74,6 @@ pub trait AnimatorSettings {
 }
 
 pub struct Animator {
-    pub objects: Vec<Box<dyn AnimatedObject>>,
     pub grid: ReceiverGrid,
     pub active_index: usize,
     pub clock: TimeCode,
@@ -100,7 +96,6 @@ impl Animator {
         }
 
         Animator {
-            objects: Vec::new(),
             active_index: 0,
             clock: TimeCode::new(),
             mod_matrix,
@@ -132,72 +127,56 @@ impl Animator {
         }
     }
 
-    /// Clears and repopulates the animation objects based on current settings.
     pub fn reset(&mut self, win_rect: &Rect) {
-        self.objects.clear();
         if let Some(effect) = self.effects.get_mut(self.active_index) {
             effect.set_dimension(win_rect);
-            self.objects = effect.create();
+            effect.init();
         }
     }
 
-    /// Apply hot updates to existing objects without recreating them
     pub fn behaviour_hot_update(&mut self) {
-        let objects = &mut self.objects;
-        if let Some(effect) = self.effects.get(self.active_index) {
-            effect.hot_update(objects);
-        }
-    }
-
-    pub fn save_preset(&mut self) {
         if let Some(effect) = self.effects.get_mut(self.active_index) {
-            let _ = effect.save_preset();
+            effect.hot_update();
         }
     }
 
     pub fn update(&mut self, win_rect: &Rect, delta_time: f32) {
-        // Update the master clock
         let synced_delta = self.clock.update(delta_time);
-
-        // Live modulation mapped to current animator parameters (synth-style matrix)
         self.apply_modulations();
 
-        // Update all objects with clock reference
-        for obj in self.objects.iter_mut() {
+        let effect = match self.effects.get_mut(self.active_index) {
+            Some(e) => e,
+            None => return,
+        };
+
+        // Update objects
+        for obj in effect.get_objects_mut() {
             obj.update(win_rect, synced_delta, &self.clock);
         }
 
-        // Remove dead objects
-        self.objects.retain(|obj| !obj.is_dead());
-
-        // Reset grid cells
+        // Reset grid
         for cell in self.grid.cells.iter_mut() {
             cell.reset();
         }
 
-        for obj in &self.objects {
+        // Spatial collision
+        for obj in effect.get_objects() {
             let obj_shape = obj.shape();
             let obj_color = obj.color();
 
-            // Spatial optimization: calculate which cells could possibly intersect
-            let (min_col, max_col, min_row, max_row) = match obj_shape {
-                ObjectShape::Circle(pos, radius) => {
-                    let left = pos.x - radius;
-                    let right = pos.x + radius;
-                    let bottom = pos.y - radius;
-                    let top = pos.y + radius;
-
-                    self.grid.get_cell_range(left, right, bottom, top)
-                }
-                ObjectShape::Rect(obj_rect) => self.grid.get_cell_range(
-                    obj_rect.left(),
-                    obj_rect.right(),
-                    obj_rect.bottom(),
-                    obj_rect.top(),
+            let (min_col, max_col, min_row, max_row) = match &obj_shape {
+                ObjectShape::Circle(pos, radius) => self.grid.get_cell_range(
+                    pos.x - radius,
+                    pos.x + radius,
+                    pos.y - radius,
+                    pos.y + radius,
                 ),
+                ObjectShape::Rect(r) => {
+                    self.grid
+                        .get_cell_range(r.left(), r.right(), r.bottom(), r.top())
+                }
             };
 
-            // Only check cells in the relevant range
             for row in min_row..=max_row {
                 for col in min_col..=max_col {
                     let idx = self.grid.get_cell_index(row, col);
@@ -210,20 +189,18 @@ impl Animator {
                         continue;
                     }
 
-                    // Collision detection
-                    let intersects = match obj_shape {
+                    let intersects = match &obj_shape {
                         ObjectShape::Circle(pos, radius) => {
                             let closest_x = pos.x.clamp(cell.rect.left(), cell.rect.right());
                             let closest_y = pos.y.clamp(cell.rect.bottom(), cell.rect.top());
-                            let distance_sq =
-                                (pos.x - closest_x).powi(2) + (pos.y - closest_y).powi(2);
-                            distance_sq < (radius * radius)
+                            ((pos.x - closest_x).powi(2) + (pos.y - closest_y).powi(2))
+                                < (radius * radius)
                         }
-                        ObjectShape::Rect(obj_rect) => {
-                            obj_rect.left() < cell.rect.right()
-                                && obj_rect.right() > cell.rect.left()
-                                && obj_rect.top() > cell.rect.bottom()
-                                && obj_rect.bottom() < cell.rect.top()
+                        ObjectShape::Rect(r) => {
+                            r.left() < cell.rect.right()
+                                && r.right() > cell.rect.left()
+                                && r.top() > cell.rect.bottom()
+                                && r.bottom() < cell.rect.top()
                         }
                     };
 
@@ -235,24 +212,21 @@ impl Animator {
             }
         }
 
-        // Build the LED buffer and send once per update.
         self.grid.update_led_buffer_and_send();
     }
 
     pub fn draw_animator(&self, draw: &Draw) {
-        for obj in &self.objects {
-            obj.draw(draw);
-        }
-    }
-
-    fn clear_mod_ghosts(&mut self) {
-        for effect in &mut self.effects {
-            effect.reset_modulations();
+        if let Some(effect) = self.effects.get(self.active_index) {
+            for obj in effect.get_objects() {
+                obj.draw(draw);
+            }
         }
     }
 
     fn apply_modulations(&mut self) {
-        self.clear_mod_ghosts();
+        for effect in &mut self.effects {
+            effect.reset_modulations();
+        }
         if self.mod_matrix.routes.is_empty() || !self.mod_matrix.enabled {
             return;
         }
@@ -264,12 +238,6 @@ impl Animator {
 
     pub fn draw_grid(&self, draw: &Draw) {
         self.grid.draw(draw);
-    }
-
-    pub fn color_ui(&mut self, ui: &mut egui::Ui) {
-        if let Some(effect) = self.effects.get_mut(self.active_index) {
-            effect.color_ui(ui);
-        }
     }
 
     pub fn control_ui(&mut self, ui: &mut egui::Ui) -> UpdateBehaviour {

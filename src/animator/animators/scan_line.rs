@@ -13,12 +13,15 @@ use anyhow::Ok;
 use nannou::prelude::*;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
-
 use strum::IntoEnumIterator;
+
+const LINE_COUNT: u8 = 1;
+const SPEED: f32 = 300.0;
+const WIDTH: f32 = 20.00;
 
 #[derive(Serialize, Deserialize)]
 pub struct ScanLineSettings {
-    multi_line_count: ConstantParam<u8>,
+    line_count: ConstantParam<u8>,
     mode: ScanLineModes,
     pub speed: ModulatedParam,
     pub width: ModulatedParam,
@@ -27,18 +30,21 @@ pub struct ScanLineSettings {
     height: f32,
     #[serde(skip)]
     begin_pos: f32,
+    #[serde(skip)]
+    pub animator: Vec<ScanLine>, // Refactored to concrete type
 }
 
 impl ScanLineSettings {
     pub fn new(win_rect: &Rect) -> Self {
         Self {
-            multi_line_count: ConstantParam::new(1, 1, 10, "Line Count", "line_count"),
+            line_count: ConstantParam::new(LINE_COUNT, 1, 10, "Line Count", "line_count"),
             mode: ScanLineModes::default(),
-            speed: ModulatedParam::new(300.0, 0.0, 1000.0, "Speed", "scan_speed"),
-            width: ModulatedParam::new(20.0, 5.0, 100.0, "Width", "scan_width"),
+            speed: ModulatedParam::new(SPEED, 0.0, 1000.0, "Speed", "scan_speed"),
+            width: ModulatedParam::new(WIDTH, 5.0, 100.0, "Width", "scan_width"),
             color: ColorParam::default(),
             height: win_rect.h(),
             begin_pos: win_rect.left(),
+            animator: Vec::new(),
         }
     }
 }
@@ -53,20 +59,17 @@ impl AnimatorSettings for ScanLineSettings {
 
         ui.add_space(5.0);
 
-        ui.label("Speed");
         if self.speed.to_slider_modulate(ui, mods) {
             update = UpdateBehaviour::HotUpdate;
         }
         ui.add_space(5.0);
 
-        ui.label("Width");
         if self.width.to_slider_modulate(ui, mods) {
             update = UpdateBehaviour::HotUpdate;
         }
         ui.add_space(5.0);
 
         ui.label("Mode:");
-
         ui.horizontal(|ui| {
             for options in ScanLineModes::iter() {
                 if ui
@@ -78,7 +81,7 @@ impl AnimatorSettings for ScanLineSettings {
             }
         });
 
-        if self.multi_line_count.to_slider(ui) {
+        if self.line_count.to_slider(ui) {
             update = UpdateBehaviour::NeedsReset;
         }
 
@@ -89,11 +92,10 @@ impl AnimatorSettings for ScanLineSettings {
         AnimationType::ScanLine
     }
 
-    fn create(&self) -> Vec<Box<dyn AnimatedObject>> {
-        let mut animated_objects: Vec<Box<dyn AnimatedObject>> = Vec::new();
-
-        for index in 0..self.multi_line_count.value {
-            animated_objects.push(Box::new(ScanLine::new(
+    fn init(&mut self) {
+        self.animator.clear();
+        for index in 0..self.line_count.value {
+            self.animator.push(ScanLine::new(
                 self.mode,
                 *self.speed.value(),
                 self.color.clone().value_mapped(index as usize),
@@ -101,10 +103,8 @@ impl AnimatorSettings for ScanLineSettings {
                 self.height,
                 self.begin_pos,
                 index as usize,
-            )));
+            ));
         }
-
-        animated_objects
     }
 
     fn set_dimension(&mut self, window_rect: &Rect) {
@@ -112,22 +112,41 @@ impl AnimatorSettings for ScanLineSettings {
         self.begin_pos = window_rect.left();
     }
 
-    fn hot_update(&self, objects: &mut Vec<Box<dyn AnimatedObject>>) {
-        for obj in objects.iter_mut() {
-            if let Some(scan_line) = obj.as_any_mut().downcast_mut::<ScanLine>() {
-                scan_line.color = self.color.clone().value_mapped(scan_line.index);
-                scan_line.width = *self.width.value();
-                scan_line.mode = self.mode;
-                scan_line.height = self.height;
-                // Update speed, preserving direction
-                let direction = scan_line.speed.signum();
-                scan_line.speed = self.speed.value().abs() * direction;
+    fn hot_update(&mut self) {
+        let target_count = self.line_count.value as usize;
+        let current_count = self.animator.len();
+
+        // Adjust count dynamically
+        if target_count > current_count {
+            for index in current_count..target_count {
+                self.animator.push(ScanLine::new(
+                    self.mode,
+                    *self.speed.value(),
+                    self.color.clone().value_mapped(index),
+                    *self.width.value(),
+                    self.height,
+                    self.begin_pos,
+                    index,
+                ));
             }
+        } else if target_count < current_count {
+            self.animator.truncate(target_count);
+        }
+
+        // Update parameters
+        for scan_line in self.animator.iter_mut() {
+            scan_line.color = self.color.clone().value_mapped(scan_line.index);
+            scan_line.width = *self.width.value();
+            scan_line.mode = self.mode;
+            scan_line.height = self.height;
+
+            let direction = scan_line.speed.signum();
+            scan_line.speed = self.speed.value().abs() * direction;
         }
     }
 
     fn reset(&mut self) {
-        self.multi_line_count.reset();
+        self.line_count.reset();
         self.speed.reset();
         self.width.reset();
     }
@@ -142,6 +161,20 @@ impl AnimatorSettings for ScanLineSettings {
             update = UpdateBehaviour::HotUpdate;
         }
         update
+    }
+
+    fn get_objects(&self) -> Vec<&dyn AnimatedObject> {
+        self.animator
+            .iter()
+            .map(|b| b as &dyn AnimatedObject)
+            .collect()
+    }
+
+    fn get_objects_mut(&mut self) -> Vec<&mut dyn AnimatedObject> {
+        self.animator
+            .iter_mut()
+            .map(|b| b as &mut dyn AnimatedObject)
+            .collect()
     }
 }
 
@@ -184,12 +217,7 @@ impl ScanLine {
 }
 
 impl AnimatedObject for ScanLine {
-    fn update(&mut self, win_rect: &Rect, delta_time: f32, timecode: &TimeCode) {
-        // Beat-synced speed modulation with snap
-        let beat_progress = timecode.get_beat_fract();
-        let _beat_pulse = ((beat_progress + self.phase_offset) * std::f32::consts::PI * 2.0).sin();
-        // let speed_multiplier = 1.0 + (beat_pulse * self.beat_snap);
-
+    fn update(&mut self, win_rect: &Rect, delta_time: f32, _timecode: &TimeCode) {
         self.position.x += self.speed * delta_time;
 
         let half_width = self.width / 2.0;
@@ -235,9 +263,5 @@ impl AnimatedObject for ScanLine {
 
     fn color(&self) -> Rgba8 {
         self.color
-    }
-
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
     }
 }

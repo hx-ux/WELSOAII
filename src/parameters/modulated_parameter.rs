@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct ModulatedParam {
-    value: f32,
+    pub value: f32,
     #[serde(skip_serializing)]
     pub modulated_value: f32,
     #[serde(skip_serializing)]

@@ -128,13 +128,9 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
             UpdateBehaviour::NeedsReset => _model.animator.reset(&win_rect),
             UpdateBehaviour::HotUpdate => _model.animator.behaviour_hot_update(),
             UpdateBehaviour::LoadPreset => {}
-            UpdateBehaviour::SavePresets => _model.animator.save_preset(),
+            UpdateBehaviour::SavePresets => {}
             UpdateBehaviour::None => {}
         });
-
-    egui::Window::new("Color")
-        .resizable(true)
-        .show(&ctx, |ui| _model.animator.color_ui(ui));
 
     _model
         .animator

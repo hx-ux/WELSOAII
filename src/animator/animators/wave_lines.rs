@@ -13,6 +13,10 @@ use nannou::prelude::*;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 
+const LINECOUNT: u32 = 14;
+const AMPLITUDE: f32 = 90.00;
+const FREQUENCY: f32 = 0.018;
+
 #[derive(Serialize, Deserialize)]
 pub struct WaveLinesSettings {
     pub line_count: ConstantParam<u32>,
@@ -26,27 +30,23 @@ pub struct WaveLinesSettings {
     width: f32,
     #[serde(skip)]
     height: f32,
+    #[serde(skip)]
+    pub animator: Vec<WaveLine>, // Refactored to concrete type
 }
 
 impl WaveLinesSettings {
     pub fn new(win_rect: &Rect) -> Self {
         Self {
-            line_count: ConstantParam::new(
-                14,
-                2,
-                60,
-                "
-                Lines",
-                "lines",
-            ),
-            amplitude: ModulatedParam::new(90.0, 5.0, 260.0, "Amplitude", "wave_amplitude"),
-            frequency: ModulatedParam::new(0.018, 0.003, 0.08, "Frequency", "wave_frequency"),
-            speed: ModulatedParam::new(1.5, 0.1, 6.0, "Speed", "wave_speed"),
+            line_count: ConstantParam::new(LINECOUNT, 2, 60, "Lines", "lines"),
+            amplitude: ModulatedParam::new(AMPLITUDE, 5.0, 260.0, "Amplitude", "wave_amplitude"),
+            frequency: ModulatedParam::new(FREQUENCY, 0.003, 0.08, "Frequency", "wave_frequency"),
+            speed: ModulatedParam::new(1.5, 1.0, 6.0, "Speed", "wave_speed"),
             thickness: ModulatedParam::new(4.0, 1.0, 14.0, "Thickness", "wave_thickness"),
             phase_spread: ModulatedParam::new(0.0, -2.0, 2.0, "Phase spread", "wave_spread"),
             color: ColorParam::default(),
             width: win_rect.w(),
             height: win_rect.h(),
+            animator: Vec::new(),
         }
     }
 }
@@ -66,24 +66,20 @@ impl AnimatorSettings for WaveLinesSettings {
         let mut update = UpdateBehaviour::None;
 
         if self.line_count.to_slider(ui) {
-            update = UpdateBehaviour::NeedsReset;
+            update = UpdateBehaviour::HotUpdate;
         }
         if self.amplitude.to_slider_modulate(ui, mods) {
             update = UpdateBehaviour::HotUpdate;
         }
-
         if self.frequency.to_slider_modulate(ui, mods) {
             update = UpdateBehaviour::HotUpdate;
         }
-
         if self.speed.to_slider_modulate(ui, mods) {
             update = UpdateBehaviour::HotUpdate;
         }
-
         if self.thickness.to_slider_modulate(ui, mods) {
             update = UpdateBehaviour::HotUpdate;
         }
-
         if self.phase_spread.to_slider_modulate(ui, mods) {
             update = UpdateBehaviour::HotUpdate;
         }
@@ -95,23 +91,22 @@ impl AnimatorSettings for WaveLinesSettings {
         AnimationType::WaveLines
     }
 
-    fn create(&self) -> Vec<Box<dyn AnimatedObject>> {
-        (0..self.line_count.value)
-            .map(|idx| {
-                Box::new(WaveLine::new(
-                    idx as usize,
-                    self.line_count.value,
-                    self.width,
-                    self.height,
-                    *self.amplitude.value(),
-                    *self.frequency.value(),
-                    *self.speed.value(),
-                    *self.thickness.value(),
-                    *self.phase_spread.value(),
-                    self.color.clone().value_mapped(idx as usize),
-                )) as Box<dyn AnimatedObject>
-            })
-            .collect()
+    fn init(&mut self) {
+        self.animator.clear();
+        for idx in 0..self.line_count.value {
+            self.animator.push(WaveLine::new(
+                idx as usize,
+                self.line_count.value,
+                self.width,
+                self.height,
+                *self.amplitude.value(),
+                *self.frequency.value(),
+                *self.speed.value(),
+                *self.thickness.value(),
+                *self.phase_spread.value(),
+                self.color.clone().value_mapped(idx as usize),
+            ));
+        }
     }
 
     fn set_dimension(&mut self, window_rect: &Rect) {
@@ -119,13 +114,13 @@ impl AnimatorSettings for WaveLinesSettings {
         self.height = window_rect.h();
     }
 
-    fn hot_update(&self, objects: &mut Vec<Box<dyn AnimatedObject>>) {
-        let current = objects.len();
+    fn hot_update(&mut self) {
+        let current = self.animator.len();
         let target = self.line_count.value as usize;
 
         if target > current {
             for idx in current..target {
-                objects.push(Box::new(WaveLine::new(
+                self.animator.push(WaveLine::new(
                     idx,
                     self.line_count.value,
                     self.width,
@@ -136,25 +131,22 @@ impl AnimatorSettings for WaveLinesSettings {
                     *self.thickness.value(),
                     *self.phase_spread.value(),
                     self.color.clone().value_mapped(idx),
-                )));
+                ));
             }
         } else if target < current {
-            objects.truncate(target);
+            self.animator.truncate(target);
         }
 
-        for obj in objects.iter_mut() {
-            if let Some(line) = obj.as_any_mut().downcast_mut::<WaveLine>() {
-                line.total_lines = self.line_count.value;
-                line.width = self.width;
-                line.height = self.height;
-                line.amplitude_base = *self.amplitude.value();
-                line.amplitude_current = *self.amplitude.value();
-                line.frequency = *self.frequency.value();
-                line.speed = *self.speed.value();
-                line.thickness = *self.thickness.value();
-                line.phase_spread = *self.phase_spread.value();
-                line.color = self.color.clone().value_mapped(line.index);
-            }
+        for line in self.animator.iter_mut() {
+            line.total_lines = self.line_count.value;
+            line.width = self.width;
+            line.height = self.height;
+            line.amplitude_base = *self.amplitude.value();
+            line.frequency = *self.frequency.value();
+            line.speed = *self.speed.value();
+            line.thickness = *self.thickness.value();
+            line.phase_spread = *self.phase_spread.value();
+            line.color = self.color.clone().value_mapped(line.index);
         }
     }
 
@@ -176,12 +168,23 @@ impl AnimatorSettings for WaveLinesSettings {
         if self.color.ui(ui) {
             update = UpdateBehaviour::HotUpdate;
         }
-
         update
     }
-}
 
-impl WaveLinesSettings {}
+    fn get_objects(&self) -> Vec<&dyn AnimatedObject> {
+        self.animator
+            .iter()
+            .map(|b| b as &dyn AnimatedObject)
+            .collect()
+    }
+
+    fn get_objects_mut(&mut self) -> Vec<&mut dyn AnimatedObject> {
+        self.animator
+            .iter_mut()
+            .map(|b| b as &mut dyn AnimatedObject)
+            .collect()
+    }
+}
 
 pub struct WaveLine {
     index: usize,
@@ -222,8 +225,8 @@ impl WaveLine {
             speed,
             thickness,
             phase_spread,
-            phase: random_range(0.0, TAU),
             color,
+            phase: random_range(0.0, TAU),
         }
     }
 
@@ -279,9 +282,5 @@ impl AnimatedObject for WaveLine {
 
     fn color(&self) -> Rgba8 {
         self.color
-    }
-
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
     }
 }
