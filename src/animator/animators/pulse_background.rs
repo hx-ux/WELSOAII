@@ -168,7 +168,7 @@ impl PulseBackground {
 }
 
 impl AnimatedObject for PulseBackground {
-    fn update(&mut self, win_rect: &Rect, delta_time: f32, clock: &TimeCode) {
+    fn update(&mut self, win_rect: &Rect, delta_time: f32, timecode: &TimeCode) {
         let min_w = 20.0;
         let min_h = 20.0;
 
@@ -179,13 +179,13 @@ impl AnimatedObject for PulseBackground {
         let max_h_allowed = max_h * self.limit;
 
         // Update rotation based on beat
-        let beat_progress = clock.get_beat_progress();
+        let beat_progress = timecode.get_beat_fract();
         self.rotation += delta_time * self.rotation_speed;
 
         match self.mode {
             PulseModes::Smooth => {
                 // Direct beat synchronization - pulse exactly on beat
-                let beats = clock.get_beats();
+                let beats = timecode.get_beats();
                 let beat_cycle = beats.fract();
 
                 self.current_size_w = (beat_cycle * max_w_allowed).max(min_w);

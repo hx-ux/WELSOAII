@@ -1,4 +1,3 @@
-extern crate nannou;
 use crate::receiver::ReceiverDevice;
 use nannou::prelude::*;
 use nannou_egui::egui;
@@ -302,7 +301,10 @@ impl ReceiverGrid {
         let mut changed = false;
 
         let mut name = self.device.name.clone();
-        if ui.add(monospace_text_edit(&mut name, "Device Name")).changed() {
+        if ui
+            .add(monospace_text_edit(&mut name, "Device Name"))
+            .changed()
+        {
             self.device.name = name;
             changed = true;
         }

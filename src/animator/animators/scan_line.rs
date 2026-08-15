@@ -184,9 +184,9 @@ impl ScanLine {
 }
 
 impl AnimatedObject for ScanLine {
-    fn update(&mut self, win_rect: &Rect, delta_time: f32, clock: &TimeCode) {
+    fn update(&mut self, win_rect: &Rect, delta_time: f32, timecode: &TimeCode) {
         // Beat-synced speed modulation with snap
-        let beat_progress = clock.get_beat_progress();
+        let beat_progress = timecode.get_beat_fract();
         let _beat_pulse = ((beat_progress + self.phase_offset) * std::f32::consts::PI * 2.0).sin();
         // let speed_multiplier = 1.0 + (beat_pulse * self.beat_snap);
 

@@ -138,7 +138,7 @@ impl TimeCode {
         self.total_beats
     }
 
-    pub fn get_beat_progress(&self) -> f32 {
+    pub fn get_beat_fract(&self) -> f32 {
         self.total_beats.fract()
     }
 
@@ -151,14 +151,11 @@ impl TimeCode {
 
     pub fn get_beat_counter(&self) -> (i32, f32) {
         let beat = (self.total_beats.floor() as i32).wrapping_rem_euclid(4) + 1;
-        let progress = self.get_beat_progress();
+        let progress = self.get_beat_fract();
         (beat, progress)
     }
 
     pub fn ui(&mut self, ui: &mut egui::Ui) {
-        ui.separator();
-        ui.heading("Master Clock");
-
         ui.horizontal(|ui| {
             if ui.button(if self.is_running { "⏸" } else { "▶" }).clicked() {
                 if self.is_running {
@@ -182,12 +179,29 @@ impl TimeCode {
             }
 
             for i in 1..=4 {
-                let mut col = egui::Color32::BLACK;
+                let mut col = egui::Color32::from_gray(40);
                 if i == self.get_beat_counter().0 {
-                    col = egui::Color32::WHITE;
+                    let brightness = ((1.0 - self.get_beat_fract()) * 255.0) as u8;
+                    col = egui::Color32::from_rgb(brightness, 200, 80);
                 }
                 let rect = ui.allocate_exact_size(egui::vec2(10.0, 10.0), egui::Sense::hover());
-                ui.painter().rect_filled(rect.0, 4.0, col);
+                ui.painter().rect_filled(rect.0, 4.5, col);
+            }
+
+            let mut link_text = egui::RichText::new("LINK");
+
+            if self.sync_active {
+                let peers = self.abl_sync_state.link.num_peers();
+                link_text = egui::RichText::new(format!("LINK: {}", peers));
+                link_text = link_text.color(egui::Color32::BLUE);
+            }
+
+            if ui.button(link_text).clicked() {
+                if self.sync_active {
+                    self.stop_link();
+                } else {
+                    self.start_link();
+                }
             }
         });
 
@@ -198,22 +212,6 @@ impl TimeCode {
             ui.label(format!("Beat: {} ({:.2})", beat, progress));
             ui.label(format!("Total Beats: {:.0}", self.total_beats));
         });
-
-        let mut link_text = egui::RichText::new("LINK");
-
-        if self.sync_active {
-            let peers = self.abl_sync_state.link.num_peers();
-            link_text = egui::RichText::new(format!("LINK: {}", peers));
-            link_text = link_text.color(egui::Color32::BLUE);
-        }
-
-        if ui.button(link_text).clicked() {
-            if self.sync_active {
-                self.stop_link();
-            } else {
-                self.start_link();
-            }
-        }
 
         self.abl_sync_state.capture_app_state();
     }
