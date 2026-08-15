@@ -1,7 +1,7 @@
 use crate::{
     animator::{
         animation_type::{AnimationType, UpdateBehaviour},
-        animators::{bouncing_ball, pulse_background, scan_line, WaveLinesSettings},
+        animators::{bouncing_ball, pulse_background, scan_line, MeteorShowerSettings, StrobeSettings, WaveLinesSettings},
     },
     parameters::ModulatedParam,
     receiver::ReceiverGrid,
@@ -91,6 +91,8 @@ impl Animator {
             Box::new(PulseBackgroundSettings::new(win_rect)),
             Box::new(ScanLineSettings::new(win_rect)),
             Box::new(WaveLinesSettings::new(win_rect)),
+            Box::new(MeteorShowerSettings::new(win_rect)),
+            Box::new(StrobeSettings::new(win_rect)),
         ];
 
         let mut mod_matrix = Modulator::default();
