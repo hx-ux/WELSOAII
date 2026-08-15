@@ -22,6 +22,10 @@ pub struct ScanLineSettings {
     mode: ScanLineModes,
     pub speed: ModulatedParam,
     pub width: ModulatedParam,
+    pub wobble_amp: ModulatedParam,
+    pub wobble_freq: ModulatedParam,
+    pub tilt: ModulatedParam,
+    pub particle_burst: ConstantParam<u8>,
     color: ColorParam,
     #[serde(skip)]
     height: f32,
@@ -35,7 +39,11 @@ impl ScanLineSettings {
             multi_line_count: ConstantParam::new(1, 1, 10, "Line Count", "line_count"),
             mode: ScanLineModes::default(),
             speed: ModulatedParam::new(300.0, 0.0, 1000.0, "Speed", "scan_speed"),
-            width: ModulatedParam::new(20.0, 5.0, 100.0, "Width", "scan_width"),
+            width: ModulatedParam::new(20.0, 5.0, 200.0, "Width", "scan_width"),
+            wobble_amp: ModulatedParam::new(0.0, 0.0, 300.0, "Wobble Amp", "scan_wobble_amp"),
+            wobble_freq: ModulatedParam::new(2.0, 0.1, 20.0, "Wobble Freq", "scan_wobble_freq"),
+            tilt: ModulatedParam::new(0.0, -1.57, 1.57, "Tilt", "scan_tilt"),
+            particle_burst: ConstantParam::new(0, 0, 20, "Particle Burst", "scan_particles"),
             color: ColorParam::default(),
             height: win_rect.h(),
             begin_pos: win_rect.left(),
@@ -45,7 +53,13 @@ impl ScanLineSettings {
 
 impl AnimatorSettings for ScanLineSettings {
     fn modulated_params_mut(&mut self) -> Vec<&mut ModulatedParam> {
-        vec![&mut self.speed, &mut self.width]
+        vec![
+            &mut self.speed,
+            &mut self.width,
+            &mut self.wobble_amp,
+            &mut self.wobble_freq,
+            &mut self.tilt,
+        ]
     }
 
     fn ui(&mut self, ui: &mut egui::Ui, mods: &mut Vec<Box<dyn Modulator>>) -> UpdateBehaviour {
@@ -54,20 +68,28 @@ impl AnimatorSettings for ScanLineSettings {
         ui.heading(format!("{}", self.animation_type()));
         ui.add_space(5.0);
 
-        ui.label("Speed");
         if self.speed.to_slider_modulate(ui, mods) {
             change_type = UpdateBehaviour::HotUpdate;
         }
-        ui.add_space(5.0);
 
-        ui.label("Width");
         if self.width.to_slider_modulate(ui, mods) {
             change_type = UpdateBehaviour::HotUpdate;
         }
+
+        if self.wobble_amp.to_slider_modulate(ui, mods) {
+            change_type = UpdateBehaviour::HotUpdate;
+        }
+
+        if self.wobble_freq.to_slider_modulate(ui, mods) {
+            change_type = UpdateBehaviour::HotUpdate;
+        }
+
+        if self.tilt.to_slider_modulate(ui, mods) {
+            change_type = UpdateBehaviour::HotUpdate;
+        }
+
         ui.add_space(5.0);
-
         ui.label("Mode:");
-
         ui.horizontal(|ui| {
             for options in ScanLineModes::iter() {
                 if ui
@@ -81,6 +103,10 @@ impl AnimatorSettings for ScanLineSettings {
 
         if self.multi_line_count.to_slider(ui) {
             change_type = UpdateBehaviour::NeedsReset;
+        }
+
+        if self.particle_burst.to_slider(ui) {
+            change_type = UpdateBehaviour::HotUpdate;
         }
 
         if self.color.ui(ui) {
@@ -105,6 +131,10 @@ impl AnimatorSettings for ScanLineSettings {
                 *self.width.value(),
                 self.height,
                 self.begin_pos,
+                *self.wobble_amp.value(),
+                *self.wobble_freq.value(),
+                *self.tilt.value(),
+                self.particle_burst.value,
                 index as usize,
             )));
         }
@@ -124,7 +154,10 @@ impl AnimatorSettings for ScanLineSettings {
                 scan_line.width = *self.width.value();
                 scan_line.mode = self.mode;
                 scan_line.height = self.height;
-                // Update speed, preserving direction
+                scan_line.wobble_amp = *self.wobble_amp.value();
+                scan_line.wobble_freq = *self.wobble_freq.value();
+                scan_line.tilt = *self.tilt.value();
+                scan_line.particle_burst = self.particle_burst.value;
                 let direction = scan_line.speed.signum();
                 scan_line.speed = self.speed.value().abs() * direction;
             }
@@ -135,11 +168,21 @@ impl AnimatorSettings for ScanLineSettings {
         self.multi_line_count.reset();
         self.speed.reset();
         self.width.reset();
+        self.wobble_amp.reset();
+        self.wobble_freq.reset();
+        self.tilt.reset();
     }
 
     fn save_preset(&mut self) -> anyhow::Result<()> {
         Ok(())
     }
+}
+
+pub struct Particle {
+    position: Vec2,
+    velocity: Vec2,
+    life: f32,
+    color: Rgba8,
 }
 
 pub struct ScanLine {
@@ -149,6 +192,12 @@ pub struct ScanLine {
     position: Vec2,
     height: f32,
     pub width: f32,
+    pub wobble_amp: f32,
+    pub wobble_freq: f32,
+    pub tilt: f32,
+    pub particle_burst: u8,
+    time: f32,
+    particles: Vec<Particle>,
     index: usize,
     phase_offset: f32,
 }
@@ -161,6 +210,10 @@ impl ScanLine {
         width: f32,
         height: f32,
         begin_pos: f32,
+        wobble_amp: f32,
+        wobble_freq: f32,
+        tilt: f32,
+        particle_burst: u8,
         index: usize,
     ) -> Self {
         let half_width = width / 2.0;
@@ -174,6 +227,12 @@ impl ScanLine {
             position,
             height,
             width,
+            wobble_amp,
+            wobble_freq,
+            tilt,
+            particle_burst,
+            time: 0.0,
+            particles: Vec::new(),
             index,
             phase_offset,
         }
@@ -181,26 +240,29 @@ impl ScanLine {
 }
 
 impl AnimatedObject for ScanLine {
-    fn update(&mut self, win_rect: &Rect, delta_time: f32, clock: &TimeCode) {
-        // Beat-synced speed modulation with snap
-        let beat_progress = clock.get_beat_progress();
-        let _beat_pulse = ((beat_progress + self.phase_offset) * std::f32::consts::PI * 2.0).sin();
-        // let speed_multiplier = 1.0 + (beat_pulse * self.beat_snap);
+    fn update(&mut self, win_rect: &Rect, delta_time: f32, _clock: &TimeCode) {
+        self.time += delta_time;
 
         self.position.x += self.speed * delta_time;
+
+        // Y wobble — oscillate the vertical center
+        self.position.y = (self.time * self.wobble_freq + self.phase_offset).sin() * self.wobble_amp;
 
         let half_width = self.width / 2.0;
         let left_bound = win_rect.left() + half_width;
         let right_bound = win_rect.right() - half_width;
 
+        let mut bounced = false;
         match self.mode {
             ScanLineModes::PingPong => {
                 if self.position.x > right_bound {
                     self.position.x = right_bound;
                     self.speed *= -1.0;
+                    bounced = true;
                 } else if self.position.x < left_bound {
                     self.position.x = left_bound;
                     self.speed *= -1.0;
+                    bounced = true;
                 }
             }
             ScanLineModes::WrapAround => {
@@ -211,13 +273,45 @@ impl AnimatedObject for ScanLine {
                 }
             }
         }
+
+        // Spawn particles on bounce
+        if bounced && self.particle_burst > 0 {
+            for _ in 0..self.particle_burst {
+                let angle = random_range(0.0_f32, std::f32::consts::TAU);
+                let spd = random_range(50.0_f32, 300.0_f32);
+                self.particles.push(Particle {
+                    position: self.position,
+                    velocity: vec2(angle.cos() * spd, angle.sin() * spd),
+                    life: random_range(0.3_f32, 1.0_f32),
+                    color: self.color,
+                });
+            }
+        }
+
+        // Update and decay particles
+        for p in self.particles.iter_mut() {
+            p.position += p.velocity * delta_time;
+            p.velocity *= 0.9;
+            p.life -= delta_time * 1.5;
+        }
+        self.particles.retain(|p| p.life > 0.0);
     }
 
     fn draw(&self, draw: &Draw) {
+        // Draw particles
+        for p in &self.particles {
+            let alpha = (p.life * 255.0) as u8;
+            let mut pc = p.color;
+            pc.alpha = alpha;
+            draw.ellipse().xy(p.position).radius(3.0).color(pc);
+        }
+
+        // Draw scan line rect with tilt
         draw.rect()
             .xy(self.position)
             .height(self.height)
             .width(self.width)
+            .rotate(self.tilt)
             .color(self.color);
     }
 

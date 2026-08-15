@@ -1,7 +1,7 @@
 use crate::{
     animator::{
         animation_type::{AnimationType, UpdateBehaviour},
-        animators::{WaveLinesSettings, bouncing_ball, pulse_background, scan_line},
+        animators::{bouncing_ball, pulse_background, scan_line, MeteorShowerSettings, StrobeSettings, WaveLinesSettings},
     },
     modulator::{Modulator, wave_modulator::WaveModulator},
     parameters::ModulatedParam,
@@ -85,6 +85,8 @@ impl Animator {
             Box::new(PulseBackgroundSettings::new(win_rect)),
             Box::new(ScanLineSettings::new(win_rect)),
             Box::new(WaveLinesSettings::new(win_rect)),
+            Box::new(MeteorShowerSettings::new(win_rect)),
+            Box::new(StrobeSettings::new(win_rect)),
         ];
 
         let modulators: Vec<Box<dyn Modulator>> = vec![
