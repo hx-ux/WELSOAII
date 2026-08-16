@@ -29,8 +29,10 @@ fn main() {
 
 struct Model {
     animator: Animator,
-    settings_egui: Egui,
+    egui: Egui,
     global_settings: GlobalSettings,
+    device_modal_open: bool,
+    settings_modal_open: bool,
 }
 
 fn model(app: &App) -> Model {
@@ -70,15 +72,17 @@ fn model(app: &App) -> Model {
 
     Model {
         animator,
-        settings_egui,
+        egui: settings_egui,
         global_settings,
+        device_modal_open: false,
+        settings_modal_open: false,
     }
 }
 
 fn update(_app: &App, _model: &mut Model, _update: Update) {
     let win_rect = _app.window_rect();
 
-    let egui = &mut _model.settings_egui;
+    let egui = &mut _model.egui;
     egui.set_elapsed_time(_update.since_start);
 
     let ctx = egui.begin_frame();
@@ -87,53 +91,68 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
         _model.global_settings.control_windows_opacity.value as u8,
     );
 
-    // Modular Windows
+    egui::TopBottomPanel::top("top_menu_bar").show(&ctx, |ui| {
+        egui::menu::bar(ui, |ui| {
+            if ui.button("Device").clicked() {
+                _model.device_modal_open = true;
+            }
+            if ui.button("Settings").clicked() {
+                _model.settings_modal_open = true;
+            }
+            ui.separator();
+            _model.animator.timecode.ui(ui);
+        });
+    });
+
+    egui::TopBottomPanel::bottom("bottom")
+        .exact_height(200.00)
+        .show(&ctx, |ui| {
+            egui::menu::bar(ui, |ui| {
+                _model.animator.animator_selector(ui, &win_rect);
+                match _model.animator.control_ui(ui) {
+                    UpdateBehaviour::NeedsReset => _model.animator.reset(&win_rect),
+                    UpdateBehaviour::HotUpdate => _model.animator.behaviour_hot_update(),
+                    UpdateBehaviour::LoadPreset => {}
+                    UpdateBehaviour::SavePresets => {}
+                    UpdateBehaviour::None => {}
+                }
+            });
+        });
 
     egui::Window::new("Global Settings")
         .resizable(true)
-        .default_open(false)
+        .default_open(true)
+        .open(&mut _model.settings_modal_open)
         .show(&ctx, |ui| {
             _model.global_settings.ui(ui);
         });
 
-    egui::Window::new("Time Code")
-        .resizable(true)
-        .default_open(false)
-        .show(&ctx, |ui| {
-            _model.animator.timecode.ui(ui);
-        });
-
     egui::Window::new("Device")
         .resizable(true)
-        .default_open(false)
+        .default_open(true)
+        .open(&mut _model.device_modal_open)
         .show(&ctx, |ui| {
             _model.animator.grid.ui(ui);
         });
 
-    egui::Window::new("Mod Matrix")
-        .resizable(true)
-        .show(&ctx, |ui| {
-            _model.animator.mod_matrix.ui(ui);
-        });
-
-    egui::Window::new("Add Effect")
-        .resizable(true)
-        .show(&ctx, |ui| {
-            _model.animator.animator_selector(ui, &win_rect);
-        });
+    // egui::Window::new("Mod Matrix")
+    //     .resizable(true)
+    //     .show(&ctx, |ui| {
+    //         _model.animator.mod_matrix.ui(ui);
+    //     });
 
     // Always set hot update
     _model.animator.behaviour_hot_update();
 
-    egui::Window::new("Animator")
-        .resizable(true)
-        .show(&ctx, |ui| match _model.animator.control_ui(ui) {
-            UpdateBehaviour::NeedsReset => _model.animator.reset(&win_rect),
-            UpdateBehaviour::HotUpdate => _model.animator.behaviour_hot_update(),
-            UpdateBehaviour::LoadPreset => {}
-            UpdateBehaviour::SavePresets => {}
-            UpdateBehaviour::None => {}
-        });
+    // egui::Window::new("Animator")
+    //     .resizable(true)
+    //     .show(&ctx, |ui| match _model.animator.control_ui(ui) {
+    //         UpdateBehaviour::NeedsReset => _model.animator.reset(&win_rect),
+    //         UpdateBehaviour::HotUpdate => _model.animator.behaviour_hot_update(),
+    //         UpdateBehaviour::LoadPreset => {}
+    //         UpdateBehaviour::SavePresets => {}
+    //         UpdateBehaviour::None => {}
+    //     });
 
     _model
         .animator
@@ -141,7 +160,7 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
 }
 
 fn settings_window_event(_app: &App, model: &mut Model, event: &nannou::winit::event::WindowEvent) {
-    model.settings_egui.handle_raw_event(event);
+    model.egui.handle_raw_event(event);
 }
 
 fn event(_app: &App, _model: &mut Model, event: WindowEvent) {
@@ -197,6 +216,6 @@ fn view(_app: &App, _model: &Model, frame: Frame) {
 
     match _model.global_settings.app_mode {
         AppMode::Presentation => {}
-        AppMode::Edit => _model.settings_egui.draw_to_frame(&frame).unwrap(),
+        AppMode::Edit => _model.egui.draw_to_frame(&frame).unwrap(),
     }
 }
