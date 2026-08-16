@@ -100,7 +100,7 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
         .resizable(true)
         .default_open(false)
         .show(&ctx, |ui| {
-            _model.animator.clock.ui(ui);
+            _model.animator.timecode.ui(ui);
         });
 
     egui::Window::new("Device")
@@ -113,10 +113,13 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
     egui::Window::new("Mod Matrix")
         .resizable(true)
         .show(&ctx, |ui| {
-            _model
-                .animator
-                .mod_matrix
-                .ui(ui, _model.animator.animation_type());
+            _model.animator.mod_matrix.ui(ui);
+        });
+
+    egui::Window::new("Add Effect")
+        .resizable(true)
+        .show(&ctx, |ui| {
+            _model.animator.animator_selector(ui, &win_rect);
         });
 
     // Always set hot update
@@ -161,16 +164,12 @@ fn event(_app: &App, _model: &mut Model, event: WindowEvent) {
                 if receiver.edit_mode {
                     receiver.move_by(vec2(10.0, 0.0));
                 } else {
-                    _model.animator.switch_animation_tye(1);
-                    _model.animator.reset(&win_rect);
                 }
             }
             Key::Left => {
                 if receiver.edit_mode {
                     receiver.move_by(vec2(-10.0, 0.0));
                 } else {
-                    _model.animator.switch_animation_tye(-1);
-                    _model.animator.reset(&win_rect);
                 }
             }
 

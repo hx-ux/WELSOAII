@@ -46,10 +46,6 @@ impl PulseBackgroundSettings {
 }
 
 impl AnimatorSettings for PulseBackgroundSettings {
-    fn modulated_params_mut(&mut self) -> Vec<&mut ModulatedParam> {
-        vec![&mut self.speed, &mut self.limit, &mut self.rotation_speed]
-    }
-
     fn control_ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour {
         let mut update = UpdateBehaviour::None;
 
@@ -117,16 +113,16 @@ impl AnimatorSettings for PulseBackgroundSettings {
         self.rotation_speed.reset();
     }
 
-    fn save_preset(&mut self) -> anyhow::Result<()> {
-        Ok(())
+    fn draw(&self, draw: &Draw) {
+        for g in self.animator.iter() {
+            g.draw(draw);
+        }
     }
 
-    fn color_ui(&mut self, ui: &mut egui::Ui) -> UpdateBehaviour {
-        let mut update = UpdateBehaviour::None;
-        if self.color.ui(ui) {
-            update = UpdateBehaviour::HotUpdate;
+    fn update(&mut self, win_rect: &Rect, delta_time: f32, timecode: &TimeCode) {
+        for g in self.animator.iter_mut() {
+            g.update(win_rect, delta_time, timecode);
         }
-        update
     }
 
     fn get_objects(&self) -> Vec<&dyn AnimatedObject> {
@@ -141,6 +137,32 @@ impl AnimatorSettings for PulseBackgroundSettings {
             .iter_mut()
             .map(|b| b as &mut dyn AnimatedObject)
             .collect()
+    }
+
+    fn modulated_params_mut(&mut self) -> Vec<&mut ModulatedParam> {
+        vec![&mut self.speed, &mut self.limit, &mut self.rotation_speed]
+    }
+
+    fn save_preset(&mut self) -> anyhow::Result<()> {
+        Ok(())
+    }
+
+    fn connect_modulations(&mut self, mod_matrix: &mut Modulator) {
+        for param in self.modulated_params_mut() {
+            param.connect_modulation(mod_matrix);
+        }
+    }
+
+    fn update_modulations(&mut self, beat_pos: f32, mod_matrix: &Modulator) {
+        for param in self.modulated_params_mut() {
+            param.modulate(beat_pos, mod_matrix);
+        }
+    }
+
+    fn reset_modulations(&mut self) {
+        for param in self.modulated_params_mut() {
+            param.ghost_value = None;
+        }
     }
 }
 

@@ -58,11 +58,7 @@ impl ModTarget {
     }
 
     pub fn name(&self) -> &str {
-        if self.is_none() {
-            "None"
-        } else {
-            &self.0
-        }
+        if self.is_none() { "None" } else { &self.0 }
     }
 }
 
@@ -138,7 +134,7 @@ impl Modulator {
         }
     }
 
-    pub fn ui(&mut self, ui: &mut egui::Ui, _animation_type: AnimationType) {
+    pub fn ui(&mut self, ui: &mut egui::Ui) {
         ui.add(egui::Slider::new(&mut self.amount, self.amount_type.range()).text("Depth"));
 
         ui.horizontal(|ui| {

@@ -50,10 +50,6 @@ impl ScanLineSettings {
 }
 
 impl AnimatorSettings for ScanLineSettings {
-    fn modulated_params_mut(&mut self) -> Vec<&mut ModulatedParam> {
-        vec![&mut self.speed, &mut self.width]
-    }
-
     fn control_ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour {
         let mut update = UpdateBehaviour::None;
 
@@ -151,16 +147,16 @@ impl AnimatorSettings for ScanLineSettings {
         self.width.reset();
     }
 
-    fn save_preset(&mut self) -> anyhow::Result<()> {
-        Ok(())
+    fn draw(&self, draw: &Draw) {
+        for g in self.animator.iter() {
+            g.draw(draw);
+        }
     }
 
-    fn color_ui(&mut self, ui: &mut egui::Ui) -> UpdateBehaviour {
-        let mut update = UpdateBehaviour::None;
-        if self.color.ui(ui) {
-            update = UpdateBehaviour::HotUpdate;
+    fn update(&mut self, win_rect: &Rect, delta_time: f32, timecode: &TimeCode) {
+        for g in self.animator.iter_mut() {
+            g.update(win_rect, delta_time, timecode);
         }
-        update
     }
 
     fn get_objects(&self) -> Vec<&dyn AnimatedObject> {
@@ -175,6 +171,14 @@ impl AnimatorSettings for ScanLineSettings {
             .iter_mut()
             .map(|b| b as &mut dyn AnimatedObject)
             .collect()
+    }
+
+    fn modulated_params_mut(&mut self) -> Vec<&mut ModulatedParam> {
+        vec![&mut self.speed, &mut self.width]
+    }
+
+    fn save_preset(&mut self) -> anyhow::Result<()> {
+        Ok(())
     }
 }
 
