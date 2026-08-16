@@ -36,6 +36,8 @@ pub trait AnimatedObject {
 
 pub trait AnimatorSettings {
     fn control_ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour;
+    fn color_ui(&mut self, ui: &mut egui::Ui);
+
     fn animation_type(&self) -> AnimationType;
     fn init(&mut self);
     fn set_dimension(&mut self, _window_rect: &Rect) {}
@@ -138,7 +140,7 @@ impl Animator {
     }
 
     pub fn update(&mut self, win_rect: &Rect, delta_time: f32) {
-        // let synced_delta = self.clock.update(delta_time);
+        self.timecode.update(delta_time);
         self.apply_modulations();
 
         for animations in self.active_animations.iter_mut() {
@@ -228,58 +230,67 @@ impl Animator {
         self.grid.draw(draw);
     }
 
-    pub fn animator_selector(&mut self, ui: &mut egui::Ui, win_rect: &Rect) -> UpdateBehaviour {
-        for direction in AnimationType::iter() {
-            if ui.button(format!("{}", direction)).clicked() {
-                self.add_animator(win_rect, direction);
+    pub fn animator_layer_ui(&mut self, ui: &mut egui::Ui, win_rect: &Rect) {
+        ui.menu_button("My sub-menu", |ui| {
+            for direction in AnimationType::iter() {
+                if ui.button(format!("{}", direction)).clicked() {
+                    self.add_animator(win_rect, direction);
+                    ui.close_menu();
+                }
             }
-        }
+        });
 
-        UpdateBehaviour::None
+        ui.vertical(|ui| {
+            for index in 0..self.active_animations.iter().count() {
+                let mut current = false;
+                let mut entry_text = egui::RichText::new(format!(
+                    "{}: {}",
+                    index,
+                    self.active_animations[index].animation_type()
+                ));
+
+                if let Some(index) = self.serl_ani_index {
+                    if index == index {
+                        current = true;
+                    }
+                }
+
+                entry_text = entry_text.color(egui::Color32::WHITE);
+
+                if current {
+                    entry_text = entry_text.color(egui::Color32::GREEN);
+                }
+
+                ui.horizontal_top(|ui| {
+                    if ui.button(entry_text).clicked() {
+                        self.serl_ani_index = Some(index.clone());
+                    }
+
+                    if current == false {
+                        if ui.button("DEL").clicked() {
+                            self.active_animations.remove(0);
+                        }
+                    }
+                });
+            }
+        });
     }
 
     pub fn control_ui(&mut self, ui: &mut egui::Ui) -> UpdateBehaviour {
         let mut change_type = UpdateBehaviour::None;
-
-        if let Some(index) = self.serl_ani_index {
-            if let Some(animator) = self.active_animations.get_mut(index) {
-                change_type = animator.control_ui(ui, &mut self.mod_matrix);
-            }
-        }
-
-        for index in 0..self.active_animations.iter().count() {
-            let mut current = false;
-
-            let mut entry_text = egui::RichText::new(format!(
-                "{}: {}",
-                index,
-                self.active_animations[index].animation_type()
-            ));
-
+        ui.separator();
+        ui.vertical(|ui| {
             if let Some(index) = self.serl_ani_index {
-                if index == index {
-                    current = true;
+                if let Some(animator) = self.active_animations.get_mut(index) {
+                    ui.heading(format!("Controls: {}", animator.animation_type()));
+                    ui.separator();
+                    change_type = animator.control_ui(ui, &mut self.mod_matrix);
                 }
+            } else {
+                ui.label("Select an animation to edit.");
             }
+        });
 
-            entry_text = entry_text.color(egui::Color32::WHITE);
-
-            if current {
-                entry_text = entry_text.color(egui::Color32::BLUE);
-            }
-
-            ui.horizontal_top(|ui| {
-                if ui.button(entry_text).clicked() {
-                    self.serl_ani_index = Some(index.clone());
-                }
-
-                if current == false {
-                    if ui.button("DEL").clicked() {
-                        self.active_animations.remove(0);
-                    }
-                }
-            });
-        }
         change_type
     }
 }

@@ -71,14 +71,10 @@ impl AnimatorSettings for BouncingBallSettings {
         if ui.horizontal(|ui| self.ball_vel_range_x.to_drag(ui)).inner {
             update = UpdateBehaviour::HotUpdate;
         }
-        ui.add_space(5.0);
 
-        ui.label("Velocity Range (Y-axis)");
         if ui.horizontal(|ui| self.ball_vel_range_y.to_drag(ui)).inner {
             update = UpdateBehaviour::HotUpdate;
         }
-
-        self.color.ui(ui);
 
         update
     }
@@ -179,9 +175,12 @@ impl AnimatorSettings for BouncingBallSettings {
     fn save_preset(&mut self) -> anyhow::Result<()> {
         Ok(())
     }
+
+    fn color_ui(&mut self, ui: &mut egui::Ui) {
+        ui.vertical(|ui| self.color.ui(ui));
+    }
 }
 
-// BouncingBallAnimator implementation remains largely the same
 pub struct BouncingBallAnimator {
     pub speed: f32,
     pub position: Vec2,

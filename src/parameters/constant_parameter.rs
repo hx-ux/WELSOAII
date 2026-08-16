@@ -32,6 +32,7 @@ impl<T> ConstantParam<T> {
                 changed = true;
                 self.reset();
             }
+            ui.label(self.display_text.to_string());
         })
         .inner;
 
@@ -62,13 +63,13 @@ impl<T> ConstantParam<T> {
                 .add(single_slider_styled(
                     &mut self.value,
                     self.lower..=self.upper,
-                    "",
                 ))
                 .changed();
             if ui.button("↻").clicked() {
                 changed = true;
                 self.reset();
             }
+            ui.label(self.display_text.to_string());
         })
         .inner;
         changed

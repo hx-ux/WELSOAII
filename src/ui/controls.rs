@@ -11,16 +11,11 @@ pub fn monospace_text_edit<'a>(text: &'a mut String, hint: &'a str) -> egui::Tex
 }
 
 /// Styled slider with consistent look for egui UI
-pub fn single_slider_styled<'a, T>(
-    value: &'a mut T,
-    range: RangeInclusive<T>,
-    text: &'a str,
-) -> egui::Slider<'a>
+pub fn single_slider_styled<'a, T>(value: &'a mut T, range: RangeInclusive<T>) -> egui::Slider<'a>
 where
     T: egui::emath::Numeric + Copy,
 {
     egui::Slider::new(value, range)
-        .text(text)
         .show_value(true)
         .smart_aim(true)
         .trailing_fill(true)

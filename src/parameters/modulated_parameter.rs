@@ -85,7 +85,6 @@ impl ModulatedParam {
     pub fn to_slider_modulate(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> bool {
         ui.add_space(Self::SPACE);
         let mut changed = false;
-        ui.add(Label::new(self.display_text.to_string()));
 
         let mut mod_desc = "U";
 
@@ -112,7 +111,7 @@ impl ModulatedParam {
                 mods.set_enables(self.modulation_active, &self.mod_target);
                 changed = true;
             }
-
+            ui.label(self.display_text.to_string());
             // TODO add clamp range
             if self.ghost_value.is_some() {
                 ui.add(

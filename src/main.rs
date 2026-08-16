@@ -93,22 +93,36 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
 
     egui::TopBottomPanel::top("top_menu_bar").show(&ctx, |ui| {
         egui::menu::bar(ui, |ui| {
-            if ui.button("Device").clicked() {
-                _model.device_modal_open = true;
-            }
-            if ui.button("Settings").clicked() {
-                _model.settings_modal_open = true;
-            }
+            ui.menu_button("Settings", |ui| {
+                if ui.button("Device").clicked() {
+                    _model.device_modal_open = true;
+                    ui.close_menu();
+                }
+                if ui.button("Settings").clicked() {
+                    _model.settings_modal_open = true;
+                    ui.close_menu();
+                }
+            });
+
             ui.separator();
             _model.animator.timecode.ui(ui);
         });
     });
 
-    egui::TopBottomPanel::bottom("bottom")
+    egui::TopBottomPanel::bottom("modulate")
         .exact_height(200.00)
         .show(&ctx, |ui| {
             egui::menu::bar(ui, |ui| {
-                _model.animator.animator_selector(ui, &win_rect);
+                // ui.vertical(|ui| {
+                _model.animator.animator_layer_ui(ui, &win_rect);
+                ui.separator();
+
+                if let Some(index) = _model.animator.serl_ani_index {
+                    if let Some(animator) = _model.animator.active_animations.get_mut(index) {
+                        animator.color_ui(ui);
+                    }
+                }
+
                 match _model.animator.control_ui(ui) {
                     UpdateBehaviour::NeedsReset => _model.animator.reset(&win_rect),
                     UpdateBehaviour::HotUpdate => _model.animator.behaviour_hot_update(),
@@ -116,6 +130,17 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
                     UpdateBehaviour::SavePresets => {}
                     UpdateBehaviour::None => {}
                 }
+            });
+            // });
+        });
+
+    egui::TopBottomPanel::bottom("bottom")
+        .exact_height(200.00)
+        .show(&ctx, |ui| {
+            egui::menu::bar(ui, |ui| {
+                ui.vertical(|ui| {
+                    _model.animator.mod_matrix.ui(ui);
+                });
             });
         });
 
@@ -135,24 +160,7 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
             _model.animator.grid.ui(ui);
         });
 
-    // egui::Window::new("Mod Matrix")
-    //     .resizable(true)
-    //     .show(&ctx, |ui| {
-    //         _model.animator.mod_matrix.ui(ui);
-    //     });
-
-    // Always set hot update
     _model.animator.behaviour_hot_update();
-
-    // egui::Window::new("Animator")
-    //     .resizable(true)
-    //     .show(&ctx, |ui| match _model.animator.control_ui(ui) {
-    //         UpdateBehaviour::NeedsReset => _model.animator.reset(&win_rect),
-    //         UpdateBehaviour::HotUpdate => _model.animator.behaviour_hot_update(),
-    //         UpdateBehaviour::LoadPreset => {}
-    //         UpdateBehaviour::SavePresets => {}
-    //         UpdateBehaviour::None => {}
-    //     });
 
     _model
         .animator

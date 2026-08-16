@@ -164,6 +164,10 @@ impl AnimatorSettings for PulseBackgroundSettings {
             param.ghost_value = None;
         }
     }
+
+    fn color_ui(&mut self, ui: &mut egui::Ui) {
+        ui.vertical(|ui| self.color.ui(ui));
+    }
 }
 
 pub struct PulseBackgroundAnimator {
