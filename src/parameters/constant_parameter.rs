@@ -14,12 +14,25 @@ pub struct ConstantParam<T> {
 }
 
 impl<T> ConstantParam<T> {
+    pub fn new(default: T, lower: T, upper: T, display_text: &str, identifier: &str) -> Self
+    where
+        T: Clone,
+    {
+        Self {
+            value: default.clone(),
+            default: default,
+            lower,
+            upper,
+            display_text: display_text.to_string(),
+            identifier: identifier.to_string(),
+        }
+    }
+
     pub fn to_drag(&mut self, ui: &mut egui::Ui) -> bool
     where
         T: egui::emath::Numeric + Clone,
     {
         let mut changed = false;
-
         ui.horizontal(|ui| {
             changed |= ui
                 .add(
@@ -37,20 +50,6 @@ impl<T> ConstantParam<T> {
         .inner;
 
         changed
-    }
-
-    pub fn new(default: T, lower: T, upper: T, display_text: &str, identifier: &str) -> Self
-    where
-        T: Clone,
-    {
-        Self {
-            value: default.clone(),
-            default: default,
-            lower,
-            upper,
-            display_text: display_text.to_string(),
-            identifier: identifier.to_string(),
-        }
     }
 
     pub fn to_slider(&mut self, ui: &mut egui::Ui) -> bool

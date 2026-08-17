@@ -33,7 +33,6 @@ impl ColorParam {
 
         match self.mode {
             ColorMode::Solid => {
-                ui.label("Solid Color");
                 changed |= ui
                     .add(egui::Slider::new(&mut self.single_color.red, 0..=255).text("R"))
                     .changed();
@@ -64,7 +63,7 @@ impl ColorParam {
             }
 
             ColorMode::Palette => {
-                let _ = egui::ComboBox::from_label("Palette")
+                let _ = egui::ComboBox::from_label("")
                     .selected_text(format!("{}", self.palette).to_string())
                     .show_ui(ui, |ui| {
                         for option in ColorPalette::iter() {
@@ -73,8 +72,6 @@ impl ColorParam {
                                 .changed();
                         }
                     });
-
-                ui.label("Palette mode");
             }
         }
 

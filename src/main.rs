@@ -91,7 +91,7 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
         _model.global_settings.control_windows_opacity.value as u8,
     );
 
-    egui::TopBottomPanel::top("top_menu_bar").show(&ctx, |ui| {
+    egui::TopBottomPanel::top("MENU").show(&ctx, |ui| {
         egui::menu::bar(ui, |ui| {
             ui.menu_button("Settings", |ui| {
                 if ui.button("Device").clicked() {
@@ -103,48 +103,61 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
                     ui.close_menu();
                 }
             });
-
             ui.separator();
             _model.animator.timecode.ui(ui);
         });
     });
 
-    egui::TopBottomPanel::bottom("modulate")
+    // ── Bottom panel: Layers | Controls | Color ────────────────────────────
+    egui::TopBottomPanel::bottom("ANIMATOR")
         .exact_height(200.00)
         .show(&ctx, |ui| {
-            egui::menu::bar(ui, |ui| {
-                // ui.vertical(|ui| {
-                _model.animator.animator_layer_ui(ui, &win_rect);
-                ui.separator();
+            // Top divider line
+            ui.add_space(1.0);
 
-                if let Some(index) = _model.animator.serl_ani_index {
-                    if let Some(animator) = _model.animator.active_animations.get_mut(index) {
-                        animator.color_ui(ui);
-                    }
-                }
+            ui.columns(3, |cols| {
+                cols[0].set_width(120.0);
+                _model.animator.animator_layer_ui(&mut cols[0], &win_rect);
 
-                match _model.animator.control_ui(ui) {
-                    UpdateBehaviour::NeedsReset => _model.animator.reset(&win_rect),
-                    UpdateBehaviour::HotUpdate => _model.animator.behaviour_hot_update(),
-                    UpdateBehaviour::LoadPreset => {}
-                    UpdateBehaviour::SavePresets => {}
-                    UpdateBehaviour::None => {}
-                }
+                egui::ScrollArea::vertical()
+                    .id_source("ctrl_scroll")
+                    .show(&mut cols[1], |ui| match _model.animator.control_ui(ui) {
+                        UpdateBehaviour::NeedsReset => _model.animator.reset(&win_rect),
+                        UpdateBehaviour::HotUpdate => _model.animator.behaviour_hot_update(),
+                        UpdateBehaviour::LoadPreset => {}
+                        UpdateBehaviour::SavePresets => {}
+                        UpdateBehaviour::None => {}
+                    });
+
+                egui::ScrollArea::vertical()
+                    .id_source("color_scroll")
+                    .show(&mut cols[2], |ui| {
+                        if let Some(index) = _model.animator.current_ani_index {
+                            if let Some(animator) = _model.animator.active_animations.get_mut(index)
+                            {
+                                ui.label(egui::RichText::new("COLOR"));
+                                ui.add(egui::Separator::default().spacing(4.0));
+                                animator.color_ui(ui);
+                            }
+                        }
+                    });
             });
-            // });
         });
 
-    egui::TopBottomPanel::bottom("bottom")
-        .exact_height(200.00)
+    egui::TopBottomPanel::bottom("MODULATOR")
+        .exact_height(130.0)
         .show(&ctx, |ui| {
-            egui::menu::bar(ui, |ui| {
-                ui.vertical(|ui| {
+            ui.add_space(1.0);
+            ui.label(egui::RichText::new("MODULATOR"));
+            ui.add(egui::Separator::default().spacing(4.0));
+            egui::ScrollArea::vertical()
+                .id_source("mod_scroll")
+                .show(ui, |ui| {
                     _model.animator.mod_matrix.ui(ui);
                 });
-            });
         });
 
-    egui::Window::new("Global Settings")
+    egui::Window::new("GLOBAL SETTINGS")
         .resizable(true)
         .default_open(true)
         .open(&mut _model.settings_modal_open)
@@ -152,7 +165,7 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
             _model.global_settings.ui(ui);
         });
 
-    egui::Window::new("Device")
+    egui::Window::new("DEVICE")
         .resizable(true)
         .default_open(true)
         .open(&mut _model.device_modal_open)

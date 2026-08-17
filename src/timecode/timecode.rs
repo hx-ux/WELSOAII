@@ -58,7 +58,7 @@ impl TimeCode {
                 default: 120.0,
                 lower: 40.0,
                 upper: 240.0,
-                display_text: "Tempo".to_string(),
+                display_text: "".to_string(),
                 identifier: "tempo".to_string(),
             },
             current_time: 0.0,
@@ -170,7 +170,7 @@ impl TimeCode {
                 self.reset();
             }
 
-            ui.label("BPM:");
+            ui.add_space(4.0);
 
             if self.sync_active {
                 ui.label(format!("{:.1}", self.tempo.value));
@@ -204,13 +204,6 @@ impl TimeCode {
                 }
             }
         });
-
-        // ui.horizontal(|ui| {
-        //     //ui.label(format!("Time: {}", self.get_formatted_time()));
-        //     // let (beat, progress) = self.get_beat_counter();
-        //     // ui.label(format!("Beat: {} ({:.2})", beat, progress));
-        //     // ui.label(format!("Total Beats: {:.0}", self.total_beats));
-        // });
 
         self.abl_sync_state.capture_app_state();
     }

@@ -86,12 +86,6 @@ impl ModulatedParam {
         ui.add_space(Self::SPACE);
         let mut changed = false;
 
-        let mut mod_desc = "U";
-
-        if self.modulation_active {
-            mod_desc = "M";
-        }
-
         ui.horizontal(|ui| {
             changed |= ui
                 .add(styled_dual_slider(
@@ -102,21 +96,53 @@ impl ModulatedParam {
                 ))
                 .changed();
 
-            if ui.button("↻").clicked() {
+            // Reset button — small, icon-only
+            if ui
+                .add(
+                    egui::Button::new(
+                        egui::RichText::new("↺")
+                            .size(9.0)
+                            .color(egui::Color32::from_gray(110)),
+                    )
+                    .min_size(egui::vec2(14.0, 12.0)),
+                )
+                .clicked()
+            {
                 changed = true;
                 self.reset();
             }
-            if ui.button(mod_desc).clicked() {
+
+            // Modulation toggle — orange when active
+            let mod_label = if self.modulation_active {
+                egui::RichText::new("M")
+                    .size(9.0)
+                    .color(egui::Color32::from_rgb(255, 102, 0))
+            } else {
+                egui::RichText::new("M")
+                    .size(9.0)
+                    .color(egui::Color32::from_gray(90))
+            };
+            if ui
+                .add(egui::Button::new(mod_label).min_size(egui::vec2(14.0, 12.0)))
+                .clicked()
+            {
                 self.modulation_active = !self.modulation_active;
                 mods.set_enables(self.modulation_active, &self.mod_target);
                 changed = true;
             }
-            ui.label(self.display_text.to_string());
-            // TODO add clamp range
+
+            // Parameter label — ALL CAPS, dim
+            ui.label(
+                egui::RichText::new(self.display_text.to_uppercase())
+                    .size(9.0)
+                    .color(egui::Color32::from_gray(120)),
+            );
+
+            // Mod amount drag when modulated
             if self.ghost_value.is_some() {
                 ui.add(
                     egui::DragValue::new(&mut self.mod_amount)
-                        .speed(0.1)
+                        .speed(0.01)
                         .clamp_range(0.000..=1.000),
                 );
             }

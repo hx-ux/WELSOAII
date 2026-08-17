@@ -9,7 +9,7 @@ use crate::{
 };
 use anyhow::Result;
 use nannou::prelude::*;
-use nannou_egui::egui::{self, RichText};
+use nannou_egui::egui::{self};
 use strum::IntoEnumIterator;
 pub mod animation_type;
 mod animators;
@@ -81,7 +81,7 @@ pub struct Animator {
     pub timecode: TimeCode,
     pub mod_matrix: Modulator,
     pub active_animations: Vec<Box<dyn AnimatorSettings>>,
-    pub serl_ani_index: Option<usize>,
+    pub current_ani_index: Option<usize>,
 }
 
 impl Animator {
@@ -100,7 +100,7 @@ impl Animator {
             mod_matrix,
             grid,
             active_animations,
-            serl_ani_index: Some(0),
+            current_ani_index: Some(0),
         }
     }
 
@@ -123,7 +123,7 @@ impl Animator {
                     .push(Box::new(WaveLinesSettings::new(win_rect)));
             }
         }
-        self.serl_ani_index = Some(self.active_animations.iter().len() - 1);
+        self.current_ani_index = Some(self.active_animations.iter().len() - 1);
     }
 
     pub fn reset(&mut self, win_rect: &Rect) {
@@ -231,63 +231,95 @@ impl Animator {
     }
 
     pub fn animator_layer_ui(&mut self, ui: &mut egui::Ui, win_rect: &Rect) {
-        ui.menu_button("My sub-menu", |ui| {
-            for direction in AnimationType::iter() {
-                if ui.button(format!("{}", direction)).clicked() {
-                    self.add_animator(win_rect, direction);
-                    ui.close_menu();
-                }
-            }
-        });
+        let mut index_to_remove = None;
 
         ui.vertical(|ui| {
-            for index in 0..self.active_animations.iter().count() {
-                let mut current = false;
-                let mut entry_text = egui::RichText::new(format!(
-                    "{}: {}",
-                    index,
-                    self.active_animations[index].animation_type()
-                ));
+            ui.label(egui::RichText::new("LAYERS"));
 
-                if let Some(index) = self.serl_ani_index {
-                    if index == index {
-                        current = true;
+            for index in 0..self.active_animations.len() {
+                let is_selected = self.current_ani_index == Some(index);
+                let anim_name = format!("{}", self.active_animations[index].animation_type());
+
+                ui.horizontal(|ui| {
+                    let indicator_color = if is_selected {
+                        egui::Color32::from_rgb(255, 102, 0)
+                    } else {
+                        egui::Color32::from_gray(55)
+                    };
+
+                    let (rect, _) =
+                        ui.allocate_exact_size(egui::vec2(3.0, 14.0), egui::Sense::hover());
+                    ui.painter()
+                        .rect_filled(rect, egui::Rounding::ZERO, indicator_color);
+
+                    let label =
+                        egui::RichText::new(anim_name.to_uppercase()).color(if is_selected {
+                            egui::Color32::from_rgb(255, 102, 0)
+                        } else {
+                            egui::Color32::from_gray(150)
+                        });
+
+                    if ui.button(label).clicked() {
+                        self.current_ani_index = Some(index);
                     }
-                }
 
-                entry_text = entry_text.color(egui::Color32::WHITE);
-
-                if current {
-                    entry_text = entry_text.color(egui::Color32::GREEN);
-                }
-
-                ui.horizontal_top(|ui| {
-                    if ui.button(entry_text).clicked() {
-                        self.serl_ani_index = Some(index.clone());
-                    }
-
-                    if current == false {
-                        if ui.button("DEL").clicked() {
-                            self.active_animations.remove(0);
-                        }
+                    if ui
+                        .add(
+                            egui::Button::new(egui::RichText::new("×"))
+                                .min_size(egui::vec2(12.0, 12.0)),
+                        )
+                        .clicked()
+                    {
+                        index_to_remove = Some(index);
                     }
                 });
             }
+
+            if let Some(remove_idx) = index_to_remove {
+                self.active_animations.remove(remove_idx);
+
+                if let Some(current_idx) = self.current_ani_index {
+                    if current_idx == remove_idx {
+                        self.current_ani_index = if self.active_animations.is_empty() {
+                            None
+                        } else {
+                            Some(remove_idx.saturating_sub(1))
+                        };
+                    } else if current_idx > remove_idx {
+                        self.current_ani_index = Some(current_idx - 1);
+                    }
+                }
+            }
+
+            ui.add_space(2.0);
+            ui.menu_button(egui::RichText::new("+ ADD"), |ui| {
+                for direction in AnimationType::iter() {
+                    if ui
+                        .button(egui::RichText::new(format!("{}", direction).to_uppercase()))
+                        .clicked()
+                    {
+                        self.add_animator(win_rect, direction);
+                        ui.close_menu();
+                    }
+                }
+            });
         });
     }
 
     pub fn control_ui(&mut self, ui: &mut egui::Ui) -> UpdateBehaviour {
         let mut change_type = UpdateBehaviour::None;
-        ui.separator();
+
         ui.vertical(|ui| {
-            if let Some(index) = self.serl_ani_index {
+            if let Some(index) = self.current_ani_index {
                 if let Some(animator) = self.active_animations.get_mut(index) {
-                    ui.heading(format!("Controls: {}", animator.animation_type()));
-                    ui.separator();
+                    ui.label(egui::RichText::new(
+                        format!("{}", animator.animation_type()).to_uppercase(),
+                    ));
+                    ui.add(egui::Separator::default().spacing(4.0));
                     change_type = animator.control_ui(ui, &mut self.mod_matrix);
                 }
             } else {
-                ui.label("Select an animation to edit.");
+                ui.label(egui::RichText::new("SELECT A LAYER"));
             }
         });
 
