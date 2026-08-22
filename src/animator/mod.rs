@@ -292,7 +292,7 @@ impl Animator {
             }
 
             ui.add_space(2.0);
-            ui.menu_button(egui::RichText::new("+ ADD"), |ui| {
+            ui.menu_button(egui::RichText::new("+"), |ui| {
                 for direction in AnimationType::iter() {
                     if ui
                         .button(egui::RichText::new(format!("{}", direction).to_uppercase()))

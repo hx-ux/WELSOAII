@@ -108,7 +108,6 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
         });
     });
 
-    // ── Bottom panel: Layers | Controls | Color ────────────────────────────
     egui::TopBottomPanel::bottom("ANIMATOR")
         .exact_height(200.00)
         .show(&ctx, |ui| {

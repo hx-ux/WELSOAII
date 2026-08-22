@@ -2,7 +2,7 @@ use crate::{
     modulator::{ModRoute, ModTarget, Modulator},
     ui::controls::styled_dual_slider,
 };
-use nannou_egui::egui::{self, Label};
+use nannou_egui::egui::{self};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
@@ -44,9 +44,9 @@ impl ModulatedParam {
             display_text: display_text.to_string(),
             ghost_value: None,
             modulation_active: false,
-            mod_target: ModTarget(identifier.clone().to_string()),
+            mod_target: ModTarget(identifier.to_string()),
             mod_amount: 1.0,
-            identifier: identifier.clone().to_string(),
+            identifier: identifier.to_string(),
         }
     }
 
@@ -118,20 +118,31 @@ impl ModulatedParam {
                     .size(9.0)
                     .color(egui::Color32::from_rgb(255, 102, 0))
             } else {
-                egui::RichText::new("M")
+                egui::RichText::new("+")
                     .size(9.0)
                     .color(egui::Color32::from_gray(90))
             };
-            if ui
-                .add(egui::Button::new(mod_label).min_size(egui::vec2(14.0, 12.0)))
-                .clicked()
-            {
-                self.modulation_active = !self.modulation_active;
-                mods.set_enables(self.modulation_active, &self.mod_target);
-                changed = true;
-            }
 
-            // Parameter label — ALL CAPS, dim
+            ui.menu_button(mod_label, |ui| {
+                if ui
+                    .button(egui::RichText::new(format!("{}", "Mod").to_uppercase()))
+                    .clicked()
+                {
+                    self.modulation_active = !self.modulation_active;
+                    mods.set_enables(self.modulation_active, &self.mod_target);
+                    changed = true;
+                    ui.close_menu();
+                }
+
+                if ui
+                    .button(egui::RichText::new(format!("{}", "None").to_uppercase()))
+                    .clicked()
+                {
+                    self.modulation_active = false;
+                    ui.close_menu();
+                }
+            });
+
             ui.label(
                 egui::RichText::new(self.display_text.to_uppercase())
                     .size(9.0)
