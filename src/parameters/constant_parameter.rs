@@ -65,10 +65,12 @@ impl<T> ConstantParam<T> {
                     "",
                 ))
                 .changed();
+
             if ui.button("↻").clicked() {
                 changed = true;
                 self.reset();
             }
+            ui.label(&self.display_text);
         })
         .inner;
         changed

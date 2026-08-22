@@ -1,56 +1,186 @@
-use egui_plot::{Line, Plot, PlotPoints};
-use nannou_egui::egui::{self};
+use egui_plot::{Line, Plot, PlotPoints, Points, Polygon};
+use nannou_egui::egui::{self, Color32, RichText, Stroke};
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
-use strum_macros::Display;
-use strum_macros::EnumIter;
+use strum_macros::{Display, EnumIter};
 
 use crate::modulator::Modulator;
 use crate::modulator::polarity::Polarity;
+use crate::parameters::ConstantParam;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Default, Display, EnumIter)]
-pub enum WaveType {
+pub enum LfoWave {
     #[default]
     Sine,
-    #[strum(to_string = "Triangle")]
-    Triangle,
+    /// Triangle, skewable -> shows as "Pyramid" like in the reference
+    #[strum(to_string = "Pyramid")]
+    Pyramid,
     #[strum(to_string = "Square")]
     Square,
-    #[strum(to_string = "RampUp")]
+    #[strum(to_string = "Ramp Up")]
     RampUp,
-    #[strum(to_string = "RampDown")]
+    #[strum(to_string = "Ramp Down")]
     RampDown,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct WaveModulator {
     /// ±1.0 equals ±100% around the base value.
-    pub amount: f32,
+    pub amount: ConstantParam<f32>,
     pub amount_type: Polarity,
-    pub wave: WaveType,
-    /// Multiplier for the global beat clock (1.0 = 1 cycle per beat).
+    pub wave: LfoWave,
     pub freq_mul: f32,
-    /// Phase offset in beats.
-    pub phase: f32,
+    pub skew: ConstantParam<f32>,
     pub enabled: bool,
 }
 
 impl WaveModulator {
     pub fn new() -> Self {
         Self {
-            amount: 0.25,
+            amount: ConstantParam {
+                value: 0.25,
+                default: 0.25,
+                lower: 0.0,
+                upper: 1.0,
+                display_text: "Depth".to_string(),
+                identifier: "amount".to_string(),
+            },
             amount_type: Polarity::Plus,
-            wave: WaveType::default(),
+            wave: LfoWave::default(),
             freq_mul: 1.0,
-            phase: 1.0,
+            skew: ConstantParam::new(0.0, 0.0, 1.0, "Skew", "skew"),
             enabled: true,
         }
+    }
+
+    pub fn set_speed_hz(&mut self, hz: f32, bpm: f32) {
+        self.freq_mul = hz * 60.0 / bpm;
+    }
+
+    pub fn speed_hz(&self, bpm: f32) -> f32 {
+        self.freq_mul * bpm / 60.0
+    }
+
+    /// Bipolar -1..=1 waveform value at a (continuous) cycle position.
+    fn shaped(&self, cycles: f32) -> f32 {
+        let p = cycles.rem_euclid(1.0);
+
+        // Skew = phase distortion: warps 0..1 progress before shaping.
+        // skew > 0 stretches the rising side, < 0 the falling side.
+        let e = (2.0f32).powf(self.skew.value.clamp(-2.0, 2.0));
+        let ps = p.powf(e);
+
+        match self.wave {
+            LfoWave::Sine => (std::f32::consts::TAU * ps).sin(),
+            LfoWave::Pyramid => 1.0 - (2.0 * ps - 1.0).abs(),
+            // skew acts as PWM width for square
+            LfoWave::Square => {
+                if ps < 0.5 {
+                    1.0
+                } else {
+                    -1.0
+                }
+            }
+            LfoWave::RampUp => 2.0 * ps - 1.0,
+            LfoWave::RampDown => 1.0 - 2.0 * ps,
+        }
+    }
+
+    fn shaped_mapped(&self, cycles: f32) -> f32 {
+        let v = self.shaped(cycles);
+        match self.amount_type {
+            Polarity::Plus => (v + 1.0) * 0.5,
+            Polarity::Minus => (v - 1.0) * 0.5,
+            Polarity::PlusMinus => v,
+        }
+    }
+
+    /// Value in "around 1.0" space, used for the preview plot.
+    fn preview(&self, cycles: f32) -> f32 {
+        1.0 + self.amount.value * self.shaped_mapped(cycles)
+    }
+
+    fn sample_hold(step: f32) -> f32 {
+        let x = (step * 12.9898).sin() * 43758.5453;
+        (x - x.floor()) * 2.0 - 1.0
+    }
+}
+
+impl Default for WaveModulator {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
 impl Modulator for WaveModulator {
     fn ui(&mut self, ui: &mut egui::Ui, current_beat: f32) {
-        ui.add(egui::Slider::new(&mut self.amount, self.amount_type.range()).text("Depth"));
+        let base_cycles = current_beat * self.freq_mul;
+
+        const N: usize = 128;
+        // blue accent color
+        let accent = Color32::from_rgb(0x5A, 0xA9, 0xFF);
+
+        let samples: Vec<[f64; 2]> = (0..=N)
+            .map(|i| {
+                let t = i as f32 / N as f32;
+                [t as f64, self.preview(base_cycles + t) as f64]
+            })
+            .collect();
+
+        // Floating line
+        let line = Line::new(PlotPoints::from(samples.clone()))
+            .width(1.5)
+            .color(accent);
+
+        // Point
+        let handle = {
+            let peak_t = 0.5f32.powf(1.0 / (2.0f32).powf(self.skew.value)); // where p^e == 0.5
+            Points::new(PlotPoints::from(vec![[
+                peak_t as f64,
+                self.preview(base_cycles + peak_t) as f64,
+            ]]))
+            .radius(4.0)
+            .color(accent)
+        };
+
+        Plot::new(ui.id().with("lfo_preview"))
+            .view_aspect(6.0)
+            .height(20.0)
+            .width(200.0)
+            .show_background(false)
+            .show_grid([false; 2])
+            .show_axes([false; 2])
+            .allow_drag(false)
+            .allow_zoom(false)
+            .allow_boxed_zoom(false)
+            .allow_scroll(false)
+            .allow_double_click_reset(false)
+            .include_x(0.0)
+            .include_x(1.0)
+            .include_y(0.0)
+            .include_y(2.0)
+            .show(ui, |plot_ui| {
+                plot_ui.line(line);
+                plot_ui.points(handle);
+            });
+
+        ui.horizontal_wrapped(|ui| {
+            ui.add(
+                egui::Slider::new(&mut self.freq_mul, 0.5..=2.0)
+                    .text("Rate (x beat)")
+                    .step_by(0.5),
+            );
+
+            egui::ComboBox::from_label("Wave")
+                .selected_text(format!("{}", self.wave))
+                .show_ui(ui, |ui| {
+                    for w in LfoWave::iter() {
+                        ui.selectable_value(&mut self.wave, w, format!("{}", w));
+                    }
+                });
+        });
+
+        self.amount.to_slider(ui);
 
         ui.horizontal(|ui| {
             for options in Polarity::iter() {
@@ -62,56 +192,16 @@ impl Modulator for WaveModulator {
             }
         });
 
-        ui.add(
-            egui::Slider::new(&mut self.freq_mul, 0.5..=2.0)
-                .text("Rate (x beat)")
-                .step_by(0.5),
-        );
-
-        egui::ComboBox::from_label("Wave")
-            .selected_text(format!("{:?}", self.wave))
-            .show_ui(ui, |ui| {
-                for ss in WaveType::iter() {
-                    ui.selectable_value(&mut self.wave, ss, format!("{}", ss));
-                }
-            });
-
-        let points = 100;
-        let line = Line::new(PlotPoints::from_parametric_callback(
-            |t| {
-                let beat = current_beat + t as f32;
-                let val = self.modulated_value(beat, 1.00);
-                (t, val as f64)
-            },
-            0.0..1.0, // show 2 beats ahead
-            points,
-        ))
-        .width(1.0);
-
-        Plot::new(ui.id().with("lfo_plot"))
-            .view_aspect(6.0)
-            .allow_boxed_zoom(false)
-            .sharp_grid_lines(true)
-            .show_background(false)
-            // grid behind the line
-            .show_grid([false; 2])
-            .show_axes([false; 2])
-            .height(20.0)
-            .width(200.0)
-            .allow_drag(false)
-            .allow_zoom(false)
-            .allow_scroll(false)
-            .allow_drag(false)
-            .include_y(0.0)
-            .include_y(2.0)
-            .show(ui, |plot_ui| plot_ui.line(line));
+        self.skew.to_slider(ui);
     }
 
     fn modulated_value(&self, beat_pos: f32, anmount: f32) -> f32 {
         if !self.enabled {
             return 1.0;
         }
-        let result = modulation_creators(self.wave, beat_pos * self.freq_mul);
+
+        let cycles = beat_pos * self.freq_mul;
+        let result = self.shaped(cycles);
 
         let mapped_result = match self.amount_type {
             Polarity::Plus => (result + 1.0) / 2.0,
@@ -119,29 +209,8 @@ impl Modulator for WaveModulator {
             Polarity::PlusMinus => result,
         };
 
-        let g = 1.0 + self.amount * mapped_result;
+        let g = 1.0 + self.amount.value * mapped_result;
 
         1.0 + (g - 1.0) * anmount
-    }
-}
-
-pub fn modulation_creators(wave: WaveType, beat_pos: f32) -> f32 {
-    let phase = beat_pos * std::f32::consts::TAU;
-    match wave {
-        WaveType::Sine => phase.sin(),
-        WaveType::Triangle => {
-            // saw to triangle transform
-            let saw = (phase / std::f32::consts::TAU).fract() * 2.0 - 1.0;
-            2.0 * saw.abs() - 1.0
-        }
-        WaveType::Square => {
-            if phase.sin() >= 0.0 {
-                1.0
-            } else {
-                -1.0
-            }
-        }
-        WaveType::RampUp => ((phase / std::f32::consts::TAU).fract()) * 2.0 - 1.0,
-        WaveType::RampDown => 1.0 - ((phase / std::f32::consts::TAU).fract()) * 2.0,
     }
 }

@@ -20,7 +20,6 @@ pub use utils::AppMode;
 // Core component imports
 use crate::animator::Animator;
 use crate::animator::animation_type::UpdateBehaviour;
-use crate::modulator::Modulator;
 use crate::receiver::{LayoutMode, ReceiverGrid};
 use crate::utils::GlobalSettings;
 
@@ -116,11 +115,16 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
 
             ui.collapsing("Mod Matrix", |ui| {
                 let current_beat = _model.animator.clock.get_beats();
-                _model.animator.modulators.iter_mut().enumerate().for_each(|(i, modulator)| {
-                    ui.collapsing(format!("LFO {}", i), |ui| {
-                        modulator.ui(ui, current_beat);
+                _model
+                    .animator
+                    .modulators
+                    .iter_mut()
+                    .enumerate()
+                    .for_each(|(i, modulator)| {
+                        ui.collapsing(format!("LFO {}", i), |ui| {
+                            modulator.ui(ui, current_beat);
+                        });
                     });
-                });
             });
             ui.separator();
 

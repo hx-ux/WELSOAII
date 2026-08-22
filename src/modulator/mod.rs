@@ -1,7 +1,7 @@
 pub mod polarity;
-pub mod wave_modulator;
 use nannou_egui::egui;
-use wave_modulator::WaveModulator;
+
+pub mod wave_modulator;
 
 pub trait Modulator {
     fn ui(&mut self, ui: &mut egui::Ui, current_beat: f32);
