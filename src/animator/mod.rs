@@ -1,7 +1,7 @@
 use crate::{
     animator::{
         animation_type::{AnimationType, UpdateBehaviour},
-        animators::{bouncing_ball, pulse_background, scan_line, WaveLinesSettings},
+        animators::{WaveLinesSettings, bouncing_ball, pulse_background, scan_line},
     },
     parameters::ModulatedParam,
     receiver::ReceiverGrid,
@@ -36,7 +36,7 @@ pub trait AnimatedObject {
 }
 
 pub trait AnimatorSettings {
-    fn ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour;
+    fn ui(&mut self, ui: &mut egui::Ui, mods: &mut [Modulator]) -> UpdateBehaviour;
     fn animation_type(&self) -> AnimationType;
     fn create(&self) -> Vec<Box<dyn AnimatedObject>>;
     fn set_dimension(&mut self, _window_rect: &Rect) {}
@@ -52,15 +52,9 @@ pub trait AnimatorSettings {
         Vec::new()
     }
 
-    fn connect_modulations(&mut self, mod_matrix: &mut Modulator) {
+    fn update_modulations(&mut self, beat_pos: f32, modulators: &[Modulator]) {
         for param in self.modulated_params_mut() {
-            param.connect_modulation(mod_matrix);
-        }
-    }
-
-    fn update_modulations(&mut self, beat_pos: f32, mod_matrix: &Modulator) {
-        for param in self.modulated_params_mut() {
-            param.modulate(beat_pos, mod_matrix);
+            param.modulate(beat_pos, modulators);
         }
     }
 
@@ -80,29 +74,26 @@ pub struct Animator {
     pub grid: ReceiverGrid,
     pub active_index: usize,
     pub clock: TimeCode,
-    pub mod_matrix: Modulator,
+    pub modulators: Vec<Modulator>,
     pub effects: Vec<Box<dyn AnimatorSettings>>,
 }
 
 impl Animator {
     pub fn new(win_rect: &Rect, grid: ReceiverGrid) -> Self {
-        let mut effects: Vec<Box<dyn AnimatorSettings>> = vec![
+        let effects: Vec<Box<dyn AnimatorSettings>> = vec![
             Box::new(BouncingBallSettings::new(win_rect)),
             Box::new(PulseBackgroundSettings::new(win_rect)),
             Box::new(ScanLineSettings::new(win_rect)),
             Box::new(WaveLinesSettings::new(win_rect)),
         ];
 
-        let mut mod_matrix = Modulator::default();
-        for effect in effects.iter_mut() {
-            effect.connect_modulations(&mut mod_matrix);
-        }
+        let modulators = vec![Modulator::default(), Modulator::default()];
 
         Animator {
             objects: Vec::new(),
             active_index: 0,
             clock: TimeCode::new(),
-            mod_matrix,
+            modulators,
             grid,
             effects,
         }
@@ -252,12 +243,9 @@ impl Animator {
 
     fn apply_modulations(&mut self) {
         self.clear_mod_ghosts();
-        if self.mod_matrix.routes.is_empty() || !self.mod_matrix.enabled {
-            return;
-        }
         let beat_pos = self.clock.get_beats();
         for effect in &mut self.effects {
-            effect.update_modulations(beat_pos, &self.mod_matrix);
+            effect.update_modulations(beat_pos, &self.modulators);
         }
     }
 
@@ -286,7 +274,7 @@ impl Animator {
             });
 
         let settings_change = if let Some(effect) = self.effects.get_mut(self.active_index) {
-            effect.ui(ui, &mut self.mod_matrix)
+            effect.ui(ui, &mut self.modulators)
         } else {
             UpdateBehaviour::None
         };

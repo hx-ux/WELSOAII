@@ -4,7 +4,6 @@ use crate::{
         animation_type::{AnimationType, PulseModes},
     },
     color::ColorParam,
-    modulator::ModTarget,
 };
 use crate::{modulator::Modulator, parameters::ConstantParam};
 use crate::{parameters::ModulatedParam, timecode::TimeCode};
@@ -42,7 +41,7 @@ impl AnimatorSettings for PulseBackgroundSettings {
         vec![&mut self.speed, &mut self.limit, &mut self.rotation_speed]
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour {
+    fn ui(&mut self, ui: &mut egui::Ui, mods: &mut [Modulator]) -> UpdateBehaviour {
         let mut change_type = UpdateBehaviour::None;
 
         ui.heading(format!("{}", self.animation_type()));

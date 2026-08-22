@@ -1,6 +1,6 @@
 use std::ops::RangeInclusive;
 
-use crate::animator::animation_type::AnimationType;
+use egui_plot::{Line, Plot, PlotPoints};
 use nannou_egui::egui::{self};
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
@@ -41,69 +41,9 @@ pub enum ModSourceEngine {
     RampDown,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
-pub struct ModTarget(pub String);
-
-impl ModTarget {
-    pub fn new(name: impl Into<String>) -> Self {
-        Self(name.into())
-    }
-
-    pub fn none() -> Self {
-        Self(String::new())
-    }
-
-    pub fn is_none(&self) -> bool {
-        self.0.is_empty() || self.0 == "None"
-    }
-
-    pub fn name(&self) -> &str {
-        if self.is_none() {
-            "None"
-        } else {
-            &self.0
-        }
-    }
-}
-
-impl std::fmt::Display for ModTarget {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.name())
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ModRoute {
-    pub target: ModTarget,
-    pub enabled: bool,
-    pub amount: f32,
-}
-
-impl ModRoute {
-    pub fn new(target: ModTarget) -> Self {
-        Self {
-            target,
-            enabled: false,
-            amount: 0.5,
-        }
-    }
-}
-
-impl Default for ModRoute {
-    fn default() -> Self {
-        Self {
-            target: Default::default(),
-            enabled: true,
-            amount: 0.5,
-        }
-    }
-}
-
 // Actuaal Modulator, which creates the values
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Modulator {
-    pub routes: Vec<ModRoute>,
-
     /// ±1.0 equals ±100% around the base value.
     pub amount: f32,
     pub amount_type: AmountType,
@@ -113,32 +53,23 @@ pub struct Modulator {
     /// Phase offset in beats.
     pub phase: f32,
     pub enabled: bool,
-    pub mod_route_placeholder: ModRoute,
 }
 
 impl Default for Modulator {
     fn default() -> Self {
         Self {
-            routes: Default::default(),
             amount: 0.25,
             amount_type: AmountType::Plus,
             wave: ModSourceEngine::default(),
             freq_mul: 1.0,
             phase: 1.0,
             enabled: true,
-            mod_route_placeholder: ModRoute::default(),
         }
     }
 }
 
 impl Modulator {
-    pub fn set_enables(&mut self, state: bool, target: &ModTarget) {
-        if let Some(dev) = self.routes.iter_mut().find(|d| &d.target == target) {
-            dev.enabled = state;
-        }
-    }
-
-    pub fn ui(&mut self, ui: &mut egui::Ui, _animation_type: AnimationType) {
+    pub fn ui(&mut self, ui: &mut egui::Ui, current_beat: f32) {
         ui.add(egui::Slider::new(&mut self.amount, self.amount_type.range()).text("Depth"));
 
         ui.horizontal(|ui| {
@@ -164,34 +95,57 @@ impl Modulator {
                     ui.selectable_value(&mut self.wave, ss, format!("{}", ss));
                 }
             });
+
+        let points = 100;
+        let line = Line::new(PlotPoints::from_parametric_callback(
+            |t| {
+                let beat = current_beat + t as f32;
+                let val = self.modulated_value(beat, 1.00);
+                (t, val as f64)
+            },
+            0.0..1.0, // show 2 beats ahead
+            points,
+        ))
+        .width(1.0);
+
+        Plot::new(ui.id().with("lfo_plot"))
+            .view_aspect(6.0)
+            .allow_boxed_zoom(false)
+            .sharp_grid_lines(true)
+            .show_background(false)
+            // grid behind the line
+            .show_grid([false; 2])
+            .show_axes([false; 2])
+            .height(20.0)
+            .width(200.0)
+            .allow_drag(false)
+            .allow_zoom(false)
+            .allow_scroll(false)
+            .allow_drag(false)
+            .include_y(0.0)
+            .include_y(2.0)
+            .show(ui, |plot_ui| plot_ui.line(line));
     }
 
-    pub fn calc_modulation(&self, beat_pos: f32, target: &ModTarget) -> f32 {
+    pub fn modulated_value(&self, beat_pos: f32, anmount: f32) -> f32 {
         if !self.enabled {
             return 1.0;
         }
-        let result = create_modulation(self.wave, beat_pos * self.freq_mul);
-        let mut factor = 1.0;
-        let mut amount = self.amount;
+        let result = modulation_creators(self.wave, beat_pos * self.freq_mul);
 
-        if self.amount_type == AmountType::Minus {
-            amount *= -1.0;
-        }
+        let mapped_result = match self.amount_type {
+            AmountType::Plus => (result + 1.0) / 2.0,
+            AmountType::Minus => (result - 1.0) / 2.0,
+            AmountType::PlusMinus => result,
+        };
 
-        for route in self
-            .routes
-            .iter()
-            .filter(|route| route.enabled && &route.target == target)
-        {
-            factor *= 1.0 + (amount * route.amount) * result;
-        }
+        let g = 1.0 + self.amount * mapped_result;
 
-        factor
+        1.0 + (g - 1.0) * anmount
     }
 }
 
-/// Sample a waveform at the given beat position. Output in [-1, 1].
-pub fn create_modulation(wave: ModSourceEngine, beat_pos: f32) -> f32 {
+pub fn modulation_creators(wave: ModSourceEngine, beat_pos: f32) -> f32 {
     let phase = beat_pos * std::f32::consts::TAU;
     match wave {
         ModSourceEngine::Sine => phase.sin(),

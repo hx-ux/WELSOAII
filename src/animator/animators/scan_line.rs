@@ -5,7 +5,6 @@ use crate::animator::UpdateBehaviour;
 use crate::animator::animation_type::AnimationType;
 use crate::animator::animation_type::ScanLineModes;
 use crate::color::ColorParam;
-use crate::modulator::ModTarget;
 use crate::modulator::Modulator;
 use crate::parameters::ConstantParam;
 use crate::parameters::ModulatedParam;
@@ -49,7 +48,7 @@ impl AnimatorSettings for ScanLineSettings {
         vec![&mut self.speed, &mut self.width]
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour {
+    fn ui(&mut self, ui: &mut egui::Ui, mods: &mut [Modulator]) -> UpdateBehaviour {
         let mut change_type = UpdateBehaviour::None;
 
         ui.heading(format!("{}", self.animation_type()));

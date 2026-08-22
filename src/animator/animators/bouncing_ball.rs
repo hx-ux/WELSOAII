@@ -50,7 +50,7 @@ impl AnimatorSettings for BouncingBallSettings {
         vec![&mut self.speed, &mut self.radius]
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour {
+    fn ui(&mut self, ui: &mut egui::Ui, mods: &mut [Modulator]) -> UpdateBehaviour {
         let mut change_type = UpdateBehaviour::None;
 
         ui.heading(format!("{}", self.animation_type()));

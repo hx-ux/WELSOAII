@@ -114,10 +114,12 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
             ui.separator();
 
             ui.collapsing("Mod Matrix", |ui| {
-                _model
-                    .animator
-                    .mod_matrix
-                    .ui(ui, _model.animator.animation_type());
+                let current_beat = _model.animator.clock.get_beats();
+                for (i, modulator) in _model.animator.modulators.iter_mut().enumerate() {
+                    ui.collapsing(format!("LFO {}", i), |ui| {
+                        modulator.ui(ui, current_beat);
+                    });
+                }
             });
             ui.separator();
 
