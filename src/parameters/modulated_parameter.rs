@@ -50,7 +50,7 @@ impl ModulatedParam {
         self.value = self.default_value;
     }
 
-    pub fn modulate(&mut self, beat_pos: f32, modulators: &[Modulator]) {
+    pub fn modulate(&mut self, beat_pos: f32, modulators: &mut Vec<Box<dyn Modulator>>) {
         if self.modulation_active {
             if let Some(mod_matrix) = modulators.get(self.modulator_index) {
                 let mod_factor = mod_matrix.modulated_value(beat_pos, self.mod_amount);
@@ -74,7 +74,11 @@ impl ModulatedParam {
         }
     }
 
-    pub fn to_slider_modulate(&mut self, ui: &mut egui::Ui, modulators: &mut [Modulator]) -> bool {
+    pub fn to_slider_modulate(
+        &mut self,
+        ui: &mut egui::Ui,
+        modulators: &mut Vec<Box<dyn Modulator>>,
+    ) -> bool {
         ui.add_space(Self::SPACE);
         let mut changed = false;
         ui.add(Label::new(self.display_text.to_string()));

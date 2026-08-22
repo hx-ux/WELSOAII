@@ -1,5 +1,3 @@
-use std::ops::RangeInclusive;
-
 use egui_plot::{Line, Plot, PlotPoints};
 use nannou_egui::egui::{self};
 use serde::{Deserialize, Serialize};
@@ -7,28 +5,11 @@ use strum::IntoEnumIterator;
 use strum_macros::Display;
 use strum_macros::EnumIter;
 
-#[derive(Clone, Display, EnumIter, Serialize, Deserialize, PartialEq)]
-pub enum AmountType {
-    #[strum(to_string = "+")]
-    Plus,
-    #[strum(to_string = "-")]
-    Minus,
-    #[strum(to_string = "+-")]
-    PlusMinus,
-}
-
-impl AmountType {
-    pub fn range(&self) -> RangeInclusive<f32> {
-        match self {
-            AmountType::Plus => RangeInclusive::new(0.0, 1.0),
-            AmountType::Minus => RangeInclusive::new(0.0, 1.0),
-            AmountType::PlusMinus => RangeInclusive::new(-1.0, 1.0),
-        }
-    }
-}
+use crate::modulator::Modulator;
+use crate::modulator::polarity::Polarity;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Default, Display, EnumIter)]
-pub enum ModSourceEngine {
+pub enum WaveType {
     #[default]
     Sine,
     #[strum(to_string = "Triangle")]
@@ -41,13 +22,12 @@ pub enum ModSourceEngine {
     RampDown,
 }
 
-// Actuaal Modulator, which creates the values
 #[derive(Clone, Serialize, Deserialize)]
-pub struct Modulator {
+pub struct WaveModulator {
     /// ±1.0 equals ±100% around the base value.
     pub amount: f32,
-    pub amount_type: AmountType,
-    pub wave: ModSourceEngine,
+    pub amount_type: Polarity,
+    pub wave: WaveType,
     /// Multiplier for the global beat clock (1.0 = 1 cycle per beat).
     pub freq_mul: f32,
     /// Phase offset in beats.
@@ -55,12 +35,12 @@ pub struct Modulator {
     pub enabled: bool,
 }
 
-impl Default for Modulator {
-    fn default() -> Self {
+impl WaveModulator {
+    pub fn new() -> Self {
         Self {
             amount: 0.25,
-            amount_type: AmountType::Plus,
-            wave: ModSourceEngine::default(),
+            amount_type: Polarity::Plus,
+            wave: WaveType::default(),
             freq_mul: 1.0,
             phase: 1.0,
             enabled: true,
@@ -68,12 +48,12 @@ impl Default for Modulator {
     }
 }
 
-impl Modulator {
-    pub fn ui(&mut self, ui: &mut egui::Ui, current_beat: f32) {
+impl Modulator for WaveModulator {
+    fn ui(&mut self, ui: &mut egui::Ui, current_beat: f32) {
         ui.add(egui::Slider::new(&mut self.amount, self.amount_type.range()).text("Depth"));
 
         ui.horizontal(|ui| {
-            for options in AmountType::iter() {
+            for options in Polarity::iter() {
                 ui.radio_value(
                     &mut self.amount_type,
                     options.clone(),
@@ -91,7 +71,7 @@ impl Modulator {
         egui::ComboBox::from_label("Wave")
             .selected_text(format!("{:?}", self.wave))
             .show_ui(ui, |ui| {
-                for ss in ModSourceEngine::iter() {
+                for ss in WaveType::iter() {
                     ui.selectable_value(&mut self.wave, ss, format!("{}", ss));
                 }
             });
@@ -127,16 +107,16 @@ impl Modulator {
             .show(ui, |plot_ui| plot_ui.line(line));
     }
 
-    pub fn modulated_value(&self, beat_pos: f32, anmount: f32) -> f32 {
+    fn modulated_value(&self, beat_pos: f32, anmount: f32) -> f32 {
         if !self.enabled {
             return 1.0;
         }
         let result = modulation_creators(self.wave, beat_pos * self.freq_mul);
 
         let mapped_result = match self.amount_type {
-            AmountType::Plus => (result + 1.0) / 2.0,
-            AmountType::Minus => (result - 1.0) / 2.0,
-            AmountType::PlusMinus => result,
+            Polarity::Plus => (result + 1.0) / 2.0,
+            Polarity::Minus => (result - 1.0) / 2.0,
+            Polarity::PlusMinus => result,
         };
 
         let g = 1.0 + self.amount * mapped_result;
@@ -145,23 +125,23 @@ impl Modulator {
     }
 }
 
-pub fn modulation_creators(wave: ModSourceEngine, beat_pos: f32) -> f32 {
+pub fn modulation_creators(wave: WaveType, beat_pos: f32) -> f32 {
     let phase = beat_pos * std::f32::consts::TAU;
     match wave {
-        ModSourceEngine::Sine => phase.sin(),
-        ModSourceEngine::Triangle => {
+        WaveType::Sine => phase.sin(),
+        WaveType::Triangle => {
             // saw to triangle transform
             let saw = (phase / std::f32::consts::TAU).fract() * 2.0 - 1.0;
             2.0 * saw.abs() - 1.0
         }
-        ModSourceEngine::Square => {
+        WaveType::Square => {
             if phase.sin() >= 0.0 {
                 1.0
             } else {
                 -1.0
             }
         }
-        ModSourceEngine::RampUp => ((phase / std::f32::consts::TAU).fract()) * 2.0 - 1.0,
-        ModSourceEngine::RampDown => 1.0 - ((phase / std::f32::consts::TAU).fract()) * 2.0,
+        WaveType::RampUp => ((phase / std::f32::consts::TAU).fract()) * 2.0 - 1.0,
+        WaveType::RampDown => 1.0 - ((phase / std::f32::consts::TAU).fract()) * 2.0,
     }
 }

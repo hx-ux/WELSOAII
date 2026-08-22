@@ -3,6 +3,7 @@ use crate::{
         animation_type::{AnimationType, UpdateBehaviour},
         animators::{WaveLinesSettings, bouncing_ball, pulse_background, scan_line},
     },
+    modulator::{Modulator, wave_modulator::WaveModulator},
     parameters::ModulatedParam,
     receiver::ReceiverGrid,
     timecode::TimeCode,
@@ -12,7 +13,6 @@ use nannou::prelude::*;
 use nannou_egui::egui::{self};
 pub mod animation_type;
 mod animators;
-use crate::modulator::Modulator;
 
 use bouncing_ball::BouncingBallSettings;
 use pulse_background::PulseBackgroundSettings;
@@ -36,7 +36,7 @@ pub trait AnimatedObject {
 }
 
 pub trait AnimatorSettings {
-    fn ui(&mut self, ui: &mut egui::Ui, mods: &mut [Modulator]) -> UpdateBehaviour;
+    fn ui(&mut self, ui: &mut egui::Ui, mods: &mut Vec<Box<dyn Modulator>>) -> UpdateBehaviour;
     fn animation_type(&self) -> AnimationType;
     fn create(&self) -> Vec<Box<dyn AnimatedObject>>;
     fn set_dimension(&mut self, _window_rect: &Rect) {}
@@ -52,7 +52,7 @@ pub trait AnimatorSettings {
         Vec::new()
     }
 
-    fn update_modulations(&mut self, beat_pos: f32, modulators: &[Modulator]) {
+    fn update_modulations(&mut self, beat_pos: f32, modulators: &mut Vec<Box<dyn Modulator>>) {
         for param in self.modulated_params_mut() {
             param.modulate(beat_pos, modulators);
         }
@@ -74,7 +74,7 @@ pub struct Animator {
     pub grid: ReceiverGrid,
     pub active_index: usize,
     pub clock: TimeCode,
-    pub modulators: Vec<Modulator>,
+    pub modulators: Vec<Box<dyn Modulator>>,
     pub effects: Vec<Box<dyn AnimatorSettings>>,
 }
 
@@ -87,7 +87,10 @@ impl Animator {
             Box::new(WaveLinesSettings::new(win_rect)),
         ];
 
-        let modulators = vec![Modulator::default(), Modulator::default()];
+        let modulators: Vec<Box<dyn Modulator>> = vec![
+            Box::new(WaveModulator::new()),
+            Box::new(WaveModulator::new()),
+        ];
 
         Animator {
             objects: Vec::new(),
@@ -245,7 +248,7 @@ impl Animator {
         self.clear_mod_ghosts();
         let beat_pos = self.clock.get_beats();
         for effect in &mut self.effects {
-            effect.update_modulations(beat_pos, &self.modulators);
+            effect.update_modulations(beat_pos, &mut self.modulators);
         }
     }
 
