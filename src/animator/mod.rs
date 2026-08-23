@@ -3,7 +3,7 @@ use crate::{
         animation_type::{AnimationType, UpdateBehaviour},
         animators::{WaveLinesSettings, bouncing_ball, pulse_background, scan_line},
     },
-    modulator::{Modulator, wave_modulator::WaveModulator},
+    modulator::{Modulator, noise_modulator::NoiseModulator, wave_modulator::WaveModulator},
     parameters::ModulatedParam,
     receiver::ReceiverGrid,
     timecode::TimeCode,
@@ -89,7 +89,7 @@ impl Animator {
 
         let modulators: Vec<Box<dyn Modulator>> = vec![
             Box::new(WaveModulator::new()),
-            Box::new(WaveModulator::new()),
+            Box::new(NoiseModulator::new()),
         ];
 
         Animator {
