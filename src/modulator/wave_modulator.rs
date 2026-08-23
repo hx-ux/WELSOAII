@@ -95,14 +95,9 @@ impl WaveModulator {
         }
     }
 
-    /// Value in "around 1.0" space, used for the preview plot.
+    /// Normalize value for preview
     fn preview(&self, cycles: f32) -> f32 {
         1.0 + self.amount.value * self.shaped_mapped(cycles)
-    }
-
-    fn sample_hold(step: f32) -> f32 {
-        let x = (step * 12.9898).sin() * 43758.5453;
-        (x - x.floor()) * 2.0 - 1.0
     }
 }
 
