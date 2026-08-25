@@ -31,6 +31,7 @@ struct Model {
     animator: Animator,
     settings_egui: Egui,
     global_settings: GlobalSettings,
+    perf_stats: ui::performance_view::PerfStats,
 }
 
 fn model(app: &App) -> Model {
@@ -72,6 +73,7 @@ fn model(app: &App) -> Model {
         animator,
         settings_egui,
         global_settings,
+        perf_stats: ui::performance_view::PerfStats::new(),
     }
 }
 
@@ -87,8 +89,10 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
         _model.global_settings.control_windows_opacity.value as u8,
     );
 
-    // Modular Windows with this
-    // egui::Window::new("Global Settings").show(&ctx, |ui| {
+    // Record frame timing for the perf window (always, even in Presentation mode).
+    let now_secs = _update.since_start.as_secs_f64();
+    let delta_secs = _app.duration.since_prev_update.as_secs_f32();
+    _model.perf_stats.on_new_frame(now_secs, delta_secs);
 
     egui::SidePanel::left("control_panel")
         .resizable(true)
@@ -98,7 +102,6 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
         .show_animated(&ctx, true, |ui| {
             ui.heading("Welosa II");
             ui.separator();
-
             ui.collapsing("Global", |ui| {
                 _model.global_settings.ui(ui);
             });
@@ -110,6 +113,11 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
 
             ui.collapsing("Device", |ui| {
                 _model.animator.grid.ui(ui);
+            });
+            ui.separator();
+
+            ui.collapsing("Performance", |ui| {
+                _model.perf_stats.ui(ui);
             });
             ui.separator();
 
