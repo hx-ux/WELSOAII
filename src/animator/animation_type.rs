@@ -34,6 +34,8 @@ pub enum AnimationType {
     MeteorShower = 4,
     #[strum(to_string = "Strobe")]
     Strobe = 5,
+    #[strum(to_string = "Plasma")]
+    Plasma = 6,
 }
 
 impl From<usize> for AnimationType {
