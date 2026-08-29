@@ -1,7 +1,8 @@
 // External crate imports
 extern crate nannou;
+use bevy_egui::egui;
+use nannou::prelude::bevy_render::view::window;
 use nannou::prelude::*;
-use nannou_egui::{self, Egui, egui};
 
 // Module imports
 mod animator;
@@ -19,8 +20,8 @@ pub use utils::AppMode;
 
 // Core component imports
 use crate::animator::Animator;
+use crate::animator::animation_type::UpdateBehaviour;
 use crate::receiver::{LayoutMode, ReceiverGrid};
-use crate::ui::performance_view::PerfStats;
 use crate::utils::GlobalSettings;
 
 fn main() {
@@ -29,19 +30,16 @@ fn main() {
 
 struct Model {
     animator: Animator,
-    egui: Egui,
     global_settings: GlobalSettings,
     device_modal_open: bool,
     settings_modal_open: bool,
-    performance_view: PerfStats,
+    window: Entity,
 }
 
 fn model(app: &App) -> Model {
     let global_settings = GlobalSettings::load_or_default();
 
-    app.set_loop_mode(LoopMode::rate_fps(global_settings.framerate));
-
-    let view_window_id = app
+    let window = app
         .new_window()
         .title(GlobalSettings::APP_NAME)
         .size(
@@ -49,13 +47,10 @@ fn model(app: &App) -> Model {
             global_settings.view_window_size.1,
         )
         .view(view)
-        .event(event)
-        .raw_event(settings_window_event)
-        .build()
-        .unwrap();
+        // .event(event)
+        // .raw_event(settings_window_event)
+        .build();
 
-    let window = app.window(view_window_id).unwrap();
-    let settings_egui = Egui::from_window(&window);
     let win_rect = app.window_rect();
 
     let receiver_grid = ReceiverGrid::new(
@@ -67,157 +62,174 @@ fn model(app: &App) -> Model {
     );
 
     let mut animator = Animator::new(&win_rect, receiver_grid);
-    animator.init_all_layers(&win_rect);
-
-    app.set_loop_mode(LoopMode::RefreshSync);
+    animator.reset(&win_rect);
 
     Model {
         animator,
-        egui: settings_egui,
         global_settings,
         device_modal_open: false,
         settings_modal_open: false,
-        performance_view: PerfStats::new(),
+        window,
     }
 }
 
-fn update(_app: &App, _model: &mut Model, _update: Update) {
+fn update(_app: &App, _model: &mut Model) {
     let win_rect = _app.window_rect();
 
-    let egui = &mut _model.egui;
-    egui.set_elapsed_time(_update.since_start);
+    let Model {
+        window,
+        global_settings,
+        animator,
+        ..
+    } = *model;
 
-    let ctx = egui.begin_frame();
-    crate::ui::style_injector::apply_custom_style(
-        &ctx,
-        _model.global_settings.control_windows_opacity.value,
-        _model.global_settings.fully_transparent,
-    );
+    // let egui = &mut _model.egui;
+    // egui.set_elapsed_time(_update.since_start);
 
-    let now_secs = _update.since_start.as_secs_f64();
-    let delta_secs = _app.duration.since_prev_update.as_secs_f32();
-    _model.performance_view.on_new_frame(now_secs, delta_secs);
+    let ctx = _app.draw_for_window(_model.window);
+    // crate::ui::style_injector::apply_custom_style(
+    //     &ctx,
+    //     _model.global_settings.control_windows_opacity.value as u8,
+    // );
 
-    egui::TopBottomPanel::top("MENU").show(&ctx, |ui| {
-        ui.horizontal(|ui| {
-            _model.performance_view.ui(ui);
-            ui.separator();
-            egui::menu::bar(ui, |ui| {
-                ui.menu_button("Settings", |ui| {
-                    if ui.button("Device").clicked() {
-                        _model.device_modal_open = true;
-                        ui.close_menu();
-                    }
-                    if ui.button("Settings").clicked() {
-                        _model.settings_modal_open = true;
-                        ui.close_menu();
-                    }
-                });
-                ui.separator();
-                _model.animator.timecode.ui(ui);
-            });
-        });
-    });
+    // egui:::top("MENU").show(&ctx, |ui| {
+    //     egui::menu::bar(ui, |ui| {
+    //         ui.menu_button("Settings", |ui| {
+    //             if ui.button("Device").clicked() {
+    //                 _model.device_modal_open = true;
+    //                 ui.close_menu();
+    //             }
+    //             if ui.button("Settings").clicked() {
+    //                 _model.settings_modal_open = true;
+    //                 ui.close_menu();
+    //             }
+    //         });
+    //         ui.separator();
+    //         _model.animator.timecode.ui(ui);
+    //     });
+    // });
 
-    egui::SidePanel::left("control_panel")
-        .resizable(true)
-        .min_width(_model.global_settings.view_window_size.1 as f32 * 0.2)
-        .max_width(_model.global_settings.view_window_size.1 as f32)
-        .default_width(_model.global_settings.view_window_size.1 as f32 * 0.1)
-        .show_animated(&ctx, true, |ui| {
-            ui.add_space(1.0);
-            _model.animator.animator_layer_ui(ui, &win_rect);
-            _model.animator.control_ui(ui);
-        });
+    // egui::TopBottomPanel::bottom("ANIMATOR")
+    //     .exact_height(200.00)
+    //     .show(&ctx, |ui| {
+    //         // Top divider line
+    //         ui.add_space(1.0);
 
-    egui::TopBottomPanel::bottom("Modulators")
-        .exact_height(200.0)
-        .show(&ctx, |ui| {
-            ui.add_space(1.0);
-            ui.separator();
-            ui.horizontal(|ui| {
-                _model.animator.modulators_ui(ui, &win_rect);
-            });
-        });
+    //         ui.columns(3, |cols| {
+    //             cols[0].set_width(120.0);
+    //             _model.animator.animator_layer_ui(&mut cols[0], &win_rect);
 
-    egui::Window::new("GLOBAL SETTINGS")
-        .resizable(true)
-        .default_open(true)
-        .open(&mut _model.settings_modal_open)
-        .show(&ctx, |ui| {
-            _model.global_settings.ui(ui);
-        });
+    //             egui::ScrollArea::vertical().show(&mut cols[1], |ui| {
+    //                 match _model.animator.control_ui(ui) {
+    //                     UpdateBehaviour::NeedsReset => _model.animator.reset(&win_rect),
+    //                     UpdateBehaviour::HotUpdate => _model.animator.behaviour_hot_update(),
+    //                     UpdateBehaviour::LoadPreset => {}
+    //                     UpdateBehaviour::SavePresets => {}
+    //                     UpdateBehaviour::None => {}
+    //                 }
+    //             });
 
-    egui::Window::new("DEVICE")
-        .resizable(true)
-        .default_open(true)
-        .open(&mut _model.device_modal_open)
-        .show(&ctx, |ui| {
-            _model.animator.grid.ui(ui);
-        });
+    //             egui::ScrollArea::vertical().show(&mut cols[2], |ui| {
+    //                 if let Some(index) = _model.animator.current_ani_index {
+    //                     if let Some(animator) = _model.animator.active_animations.get_mut(index) {
+    //                         ui.label(egui::RichText::new("COLOR"));
+    //                         ui.add(egui::Separator::default().spacing(4.0));
+    //                         animator.color_ui(ui);
+    //                     }
+    //                 }
+    //             });
+    //         });
+    //     });
 
-    _model
-        .animator
-        .update(&win_rect, _app.duration.since_prev_update.as_secs_f32());
+    // egui::TopBottomPanel::bottom("MODULATOR")
+    //     .exact_height(130.0)
+    //     .show(&ctx, |ui| {
+    //         ui.add_space(1.0);
+    //         ui.label(egui::RichText::new("MODULATOR"));
+    //         ui.add(egui::Separator::default().spacing(4.0));
+    //         egui::ScrollArea::vertical()
+    //             .id_source("mod_scroll")
+    //             .show(ui, |ui| {
+    //                 _model.animator.mod_matrix.ui(ui);
+    //             });
+    //     });
+
+    // egui::Window::new("GLOBAL SETTINGS")
+    //     .resizable(true)
+    //     .default_open(true)
+    //     .open(&mut _model.settings_modal_open)
+    //     .show(&ctx, |ui| {
+    //         _model.global_settings.ui(ui);
+    //     });
+
+    // egui::Window::new("DEVICE")
+    //     .resizable(true)
+    //     .default_open(true)
+    //     .open(&mut _model.device_modal_open)
+    //     .show(&ctx, |ui| {
+    //         _model.animator.grid.ui(ui);
+    //     });
+
+    _model.animator.behaviour_hot_update();
+
+    _model.animator.update(&win_rect, 1.00);
 }
 
-fn settings_window_event(_app: &App, model: &mut Model, event: &nannou::winit::event::WindowEvent) {
-    model.egui.handle_raw_event(event);
-}
+// fn settings_window_event(_app: &App, model: &mut Model, event: &nannou::winit::event::WindowEvent) {
+//     model.egui.handle_raw_event(event);
+// }
 
-fn event(_app: &App, _model: &mut Model, event: WindowEvent) {
-    let receiver = &mut _model.animator.grid;
-    let win_rect = _app.window_rect();
+// fn event(_app: &App, _model: &mut Model, event: WindowEvent) {
+//     let receiver = &mut _model.animator.grid;
+//     let win_rect = _app.window_rect();
 
-    match event {
-        KeyPressed(_key) => match _key {
-            Key::Up => {
-                if receiver.edit_mode {
-                    receiver.move_by(vec2(0.0, 10.0))
-                }
-            }
-            Key::Down => {
-                if receiver.edit_mode {
-                    receiver.move_by(vec2(0.0, -10.0))
-                }
-            }
-            Key::Right => {
-                if receiver.edit_mode {
-                    receiver.move_by(vec2(10.0, 0.0));
-                } else {
-                }
-            }
-            Key::Left => {
-                if receiver.edit_mode {
-                    receiver.move_by(vec2(-10.0, 0.0));
-                } else {
-                }
-            }
+//     match event {
+//         KeyPressed(_key) => match _key {
+//             Key::Up => {
+//                 if receiver.edit_mode {
+//                     receiver.move_by(vec2(0.0, 10.0))
+//                 }
+//             }
+//             Key::Down => {
+//                 if receiver.edit_mode {
+//                     receiver.move_by(vec2(0.0, -10.0))
+//                 }
+//             }
+//             Key::Right => {
+//                 if receiver.edit_mode {
+//                     receiver.move_by(vec2(10.0, 0.0));
+//                 } else {
+//                 }
+//             }
+//             Key::Left => {
+//                 if receiver.edit_mode {
+//                     receiver.move_by(vec2(-10.0, 0.0));
+//                 } else {
+//                 }
+//             }
 
-            Key::Equals | Key::Plus => receiver.resize_by(vec2(10.0, 10.0)),
-            Key::Minus => receiver.resize_by(vec2(-10.0, -10.0)),
-            Key::P => _model.global_settings.app_mode = AppMode::Presentation,
-            Key::E => _model.global_settings.app_mode = AppMode::Edit,
-            _ => (),
-        },
-        MousePressed(_button) => {}
-        MouseReleased(_button) => {}
+//             Key::Equals | Key::Plus => receiver.resize_by(vec2(10.0, 10.0)),
+//             Key::Minus => receiver.resize_by(vec2(-10.0, -10.0)),
+//             Key::P => _model.global_settings.app_mode = AppMode::Presentation,
+//             Key::E => _model.global_settings.app_mode = AppMode::Edit,
+//             _ => (),
+//         },
+//         MousePressed(_button) => {}
+//         MouseReleased(_button) => {}
 
-        _other => {}
-    }
-}
+//         _other => {}
+//     }
+// }
 
-fn view(_app: &App, _model: &Model, frame: Frame) {
+fn view(_app: &App, _model: &Model) {
     let draw = _app.draw();
     draw.background().color(BLACK);
 
     _model.animator.draw_animator(&draw);
     _model.animator.draw_grid(&draw);
 
-    draw.to_frame(_app, &frame).unwrap();
-
     match _model.global_settings.app_mode {
         AppMode::Presentation => {}
-        AppMode::Edit => _model.egui.draw_to_frame(&frame).unwrap(),
+        AppMode::Edit => {}
     }
 }

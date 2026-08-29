@@ -9,8 +9,8 @@ use crate::{
     timecode::TimeCode,
 };
 use anyhow::Ok;
+use bevy_egui::egui;
 use nannou::prelude::*;
-use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 #[derive(Serialize, Deserialize)]
@@ -317,7 +317,7 @@ impl AnimatedObject for PulseBackgroundAnimator {
         ObjectShape::Rect(Rect::from_w_h(self.current_size_w, self.current_size_h))
     }
 
-    fn color(&self) -> Rgba8 {
+    fn color(&self) -> Srgba {
         self.color
     }
 }

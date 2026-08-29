@@ -3,8 +3,8 @@ use crate::{
     utils::PathManager,
 };
 
+use bevy_egui::egui::{self};
 use chrono::prelude::*;
-use nannou_egui::egui::{self};
 use serde::Serialize;
 use std::{fs, marker::PhantomData, path::PathBuf};
 
@@ -131,14 +131,15 @@ impl<T> PresetManager<T> {
                 let path = PathManager::get_devices_folder()
                     .join(&self.generate_filename(custom_file_name));
 
-                nannou::io::save_to_json(path, data)?;
+                todo!()
+                //  nannou::io::save_to_json(path, data)?;
             }
             PresetMode::Settings => return Err(anyhow::anyhow!("Missing attribute:")),
             PresetMode::Animator => match self.animation_type {
                 Some(atype) => {
                     let path = PathManager::get_preset_folder(&atype)
                         .join(&self.generate_filename(custom_file_name));
-                    nannou::io::save_to_json(path, data)?;
+                    todo!()
                 }
                 None => return Err(anyhow::anyhow!("Missing attribute:")),
             },

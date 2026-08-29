@@ -32,7 +32,7 @@ pub trait AnimatedObject {
         false
     }
     fn shape(&self) -> ObjectShape;
-    fn color(&self) -> Rgba8;
+    fn color(&self) -> Srgba;
 }
 
 pub trait AnimatorSettings {
@@ -269,7 +269,7 @@ impl Animator {
                     let (rect, _) =
                         ui.allocate_exact_size(egui::vec2(3.0, 14.0), egui::Sense::hover());
                     ui.painter()
-                        .rect_filled(rect, egui::Rounding::ZERO, indicator_color);
+                        .rect_filled(rect, egui::CornerRadius::ZERO, indicator_color);
 
                     let label =
                         egui::RichText::new(anim_name.to_uppercase()).color(if is_selected {

@@ -6,8 +6,8 @@ use crate::{
 
 use crate::modulator::Modulator;
 use crate::timecode::TimeCode;
+use bevy_egui::egui;
 use nannou::prelude::*;
-use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 
 const LINECOUNT: u32 = 14;
@@ -199,7 +199,7 @@ pub struct WaveLine {
     pub thickness: f32,
     pub phase_spread: f32,
     phase: f32,
-    color: Rgba8,
+    color: Srgba,
 }
 
 impl WaveLine {
@@ -213,7 +213,7 @@ impl WaveLine {
         speed: f32,
         thickness: f32,
         phase_spread: f32,
-        color: Rgba8,
+        color: Srgba,
     ) -> Self {
         Self {
             index,
@@ -281,7 +281,7 @@ impl AnimatedObject for WaveLine {
         ))
     }
 
-    fn color(&self) -> Rgba8 {
+    fn color(&self) -> Srgba {
         self.color
     }
 }

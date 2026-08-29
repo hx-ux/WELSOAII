@@ -1,7 +1,6 @@
 use crate::color::ColorPalette;
-use nannou::color::Rgba8;
-use nannou::math::clamp;
-use nannou_egui::egui;
+use bevy_egui::egui;
+use nannou::{math::clamp, prelude::Srgba};
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 
@@ -13,7 +12,7 @@ pub enum ColorMode {
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct ColorParam {
-    pub single_color: Rgba8,
+    pub single_color: Srgba,
     pub mode: ColorMode,
     pub palette: ColorPalette,
 }
@@ -33,33 +32,34 @@ impl ColorParam {
 
         match self.mode {
             ColorMode::Solid => {
-                changed |= ui
-                    .add(egui::Slider::new(&mut self.single_color.red, 0..=255).text("R"))
-                    .changed();
-                changed |= ui
-                    .add(egui::Slider::new(&mut self.single_color.green, 0..=255).text("G"))
-                    .changed();
-                changed |= ui
-                    .add(egui::Slider::new(&mut self.single_color.blue, 0..=255).text("B"))
-                    .changed();
-                changed |= ui
-                    .add(egui::Slider::new(&mut self.single_color.alpha, 0..=255).text("A"))
-                    .changed();
+                // changed |= ui
+                //     .add(egui::Slider::new(&mut self.single_color.red).text("R"))
+                //     .changed();
+                // changed |= ui
+                //     .add(egui::Slider::new(&mut self.single_color.green, 0..=255).text("G"))
+                //     .changed();
+                // changed |= ui
+                //     .add(egui::Slider::new(&mut self.single_color.blue, 0..=255).text("B"))
+                //     .changed();
+                // changed |= ui
+                //     .add(egui::Slider::new(&mut self.single_color.alpha, 0..=255).text("A"))
+                //     .changed();
 
+                // TODO
                 let (color_preview, _) =
                     ui.allocate_exact_size(egui::vec2(60.0, 24.0), egui::Sense::hover());
-                ui.vertical(|ui| {
-                    ui.painter().rect_filled(
-                        color_preview,
-                        4.0,
-                        egui::Color32::from_rgba_premultiplied(
-                            self.single_color.red,
-                            self.single_color.green,
-                            self.single_color.blue,
-                            self.single_color.alpha,
-                        ),
-                    );
-                });
+                // ui.vertical(|ui| {
+                //     ui.painter().rect_filled(
+                //         color_preview,
+                //         4.0,
+                //         egui::Color32::from_rgba_premultiplied(
+                //             self.single_color.red,
+                //             self.single_color.green,
+                //             self.single_color.blue,
+                //             self.single_color.alpha,
+                //         ),
+                //     );
+                // });
             }
 
             ColorMode::Palette => {
@@ -78,7 +78,7 @@ impl ColorParam {
         changed
     }
 
-    pub fn value_mapped(self, index: usize) -> Rgba8 {
+    pub fn value_mapped(self, index: usize) -> Srgba {
         if self.mode == ColorMode::Solid {
             return self.single_color;
         }
@@ -96,7 +96,7 @@ impl ColorParam {
 impl Default for ColorParam {
     fn default() -> Self {
         Self {
-            single_color: Rgba8::new(255, 0, 0, 255),
+            single_color: Srgba::rgba_u8(255, 0, 0, 255),
             mode: ColorMode::Solid,
             palette: ColorPalette::default(),
         }
