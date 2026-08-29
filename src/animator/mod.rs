@@ -8,8 +8,8 @@ use crate::{
     timecode::TimeCode,
 };
 use anyhow::Result;
+use bevy_egui::egui::{self};
 use nannou::prelude::*;
-use nannou_egui::egui::{self};
 use strum::IntoEnumIterator;
 pub mod animation_type;
 mod animators;
@@ -24,17 +24,17 @@ pub enum ObjectShape {
     Rect(Rect),
 }
 
-pub trait AnimatedObject {
+pub trait AnimatedObject: Send + Sync {
     fn update(&mut self, win_rect: &Rect, delta_time: f32, clock: &TimeCode);
     fn draw(&self, draw: &Draw);
     fn is_dead(&self) -> bool {
         false
     }
     fn shape(&self) -> ObjectShape;
-    fn color(&self) -> Rgba8;
+    fn color(&self) -> Srgba;
 }
 
-pub trait AnimatorSettings {
+pub trait AnimatorSettings: Send + Sync {
     fn control_ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour;
     fn color_ui(&mut self, ui: &mut egui::Ui);
 
@@ -250,7 +250,7 @@ impl Animator {
                     let (rect, _) =
                         ui.allocate_exact_size(egui::vec2(3.0, 14.0), egui::Sense::hover());
                     ui.painter()
-                        .rect_filled(rect, egui::Rounding::ZERO, indicator_color);
+                        .rect_filled(rect, egui::CornerRadius::ZERO, indicator_color);
 
                     let label =
                         egui::RichText::new(anim_name.to_uppercase()).color(if is_selected {
@@ -299,7 +299,7 @@ impl Animator {
                         .clicked()
                     {
                         self.add_animator(win_rect, direction);
-                        ui.close_menu();
+                        ui.close();
                     }
                 }
             });

@@ -1,4 +1,4 @@
-use nannou_egui::egui::{self, vec2};
+use bevy_egui::egui::{self, vec2};
 use std::ops::RangeInclusive;
 
 use crate::ui::style_definitions::custom_colors;
@@ -57,11 +57,11 @@ impl<'a> egui::Widget for DualSlider<'a> {
             value_frac += delta;
             value_frac = value_frac.clamp(0.0, 1.0);
             *self.value = min + value_frac * range_size;
-            response.changed = true;
+            // response.changed = true;
         }
 
         let painter = ui.painter();
-        let rounding = egui::Rounding::ZERO;
+        let rounding = egui::CornerRadius::ZERO;
 
         // ── Background track ──────────────────────────────────────────────
         painter.rect_filled(base_rect, rounding, custom_colors::SLIDER_TRACK_BG);

@@ -1,7 +1,7 @@
 use crate::utils::PathManager;
 use crate::{animator::animation_type::AnimationType, parameters::ConstantParam};
 use anyhow::Result;
-use nannou_egui::egui;
+use bevy_egui::egui;
 use serde::{Deserialize, Serialize};
 use std::fs::{self};
 use std::path::PathBuf;
@@ -64,7 +64,7 @@ impl GlobalSettings {
 
     // todo refactor
     pub fn save(&self) -> Result<bool> {
-        nannou::io::save_to_json(PathManager::settings_path(), self)?;
+        // nannou::io::save_to_json(PathManager::settings_path(), self)?;
         Ok(true)
     }
     pub fn ui(&mut self, ui: &mut egui::Ui) -> bool {

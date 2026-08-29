@@ -1,7 +1,7 @@
 use std::ops::RangeInclusive;
 
 use crate::animator::animation_type::AnimationType;
-use nannou_egui::egui::{self};
+use bevy_egui::egui;
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 use strum_macros::Display;

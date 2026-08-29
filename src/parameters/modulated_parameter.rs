@@ -2,7 +2,7 @@ use crate::{
     modulator::{ModRoute, ModTarget, Modulator},
     ui::controls::styled_dual_slider,
 };
-use nannou_egui::egui::{self};
+use bevy_egui::egui::{self};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
@@ -131,7 +131,7 @@ impl ModulatedParam {
                     self.modulation_active = !self.modulation_active;
                     mods.set_enables(self.modulation_active, &self.mod_target);
                     changed = true;
-                    ui.close_menu();
+                    ui.close();
                 }
 
                 if ui
@@ -139,7 +139,7 @@ impl ModulatedParam {
                     .clicked()
                 {
                     self.modulation_active = false;
-                    ui.close_menu();
+                    ui.close();
                 }
             });
 
@@ -154,7 +154,7 @@ impl ModulatedParam {
                 ui.add(
                     egui::DragValue::new(&mut self.mod_amount)
                         .speed(0.01)
-                        .clamp_range(0.000..=1.000),
+                        .range(0.000..=1.000),
                 );
             }
         });

@@ -3,8 +3,8 @@ use crate::{
     utils::PathManager,
 };
 
+use bevy_egui::egui::{self};
 use chrono::prelude::*;
-use nannou_egui::egui::{self};
 use serde::Serialize;
 use std::{fs, marker::PhantomData, path::PathBuf};
 
@@ -131,14 +131,15 @@ impl<T> PresetManager<T> {
                 let path = PathManager::get_devices_folder()
                     .join(&self.generate_filename(custom_file_name));
 
-                nannou::io::save_to_json(path, data)?;
+                todo!()
+                //  nannou::io::save_to_json(path, data)?;
             }
             PresetMode::Settings => return Err(anyhow::anyhow!("Missing attribute:")),
             PresetMode::Animator => match self.animation_type {
                 Some(atype) => {
                     let path = PathManager::get_preset_folder(&atype)
                         .join(&self.generate_filename(custom_file_name));
-                    nannou::io::save_to_json(path, data)?;
+                    todo!()
                 }
                 None => return Err(anyhow::anyhow!("Missing attribute:")),
             },
@@ -166,7 +167,9 @@ impl<T> PresetManager<T> {
     }
 
     fn update_presets(&mut self) {
-        if let Ok(p) = self.load_all_presets() { self.presets = p }
+        if let Ok(p) = self.load_all_presets() {
+            self.presets = p
+        }
     }
 
     fn load_all_presets(&self) -> Result<Vec<Preset<T>>, anyhow::Error> {
@@ -180,21 +183,18 @@ impl<T> PresetManager<T> {
                         for entry in fs::read_dir(path)? {
                             let entry = entry?;
                             if entry.path().extension().and_then(|s| s.to_str()) == Some("json")
-                                && let Some(name) = entry.file_name().to_str() {
-                                    entries.push(Preset::new(name.to_string(), entry.path()));
-                                }
+                                && let Some(name) = entry.file_name().to_str()
+                            {
+                                entries.push(Preset::new(name.to_string(), entry.path()));
+                            }
                         }
                     }
                     entries.reverse(); // Most recent first
                     Ok(entries)
                 }
-                None => {
-                    Err(anyhow::anyhow!("Cant find type"))
-                }
+                None => Err(anyhow::anyhow!("Cant find type")),
             },
-            PresetMode::Settings | PresetMode::Grid => {
-                Err(anyhow::anyhow!("Nothing"))
-            }
+            PresetMode::Settings | PresetMode::Grid => Err(anyhow::anyhow!("Nothing")),
         }
     }
     pub fn ui_simple(&mut self, ui: &mut egui::Ui) -> bool {

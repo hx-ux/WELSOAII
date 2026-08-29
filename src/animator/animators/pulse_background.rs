@@ -9,8 +9,8 @@ use crate::{
     timecode::TimeCode,
 };
 use anyhow::Ok;
+use bevy_egui::egui;
 use nannou::prelude::*;
-use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 
@@ -172,7 +172,7 @@ impl AnimatorSettings for PulseBackgroundSettings {
 
 pub struct PulseBackgroundAnimator {
     mode: PulseModes,
-    pub color: Rgba8,
+    pub color: Srgba,
     pub speed: f32,
     current_size_w: f32,
     current_size_h: f32,
@@ -187,7 +187,7 @@ impl Default for PulseBackgroundAnimator {
     fn default() -> Self {
         Self::new(
             PulseModes::default(),
-            Rgba8::new(0, 0, 0, 0),
+            Srgba::rgba_u8(0, 0, 0, 0),
             0.0,
             0.0,
             0,
@@ -200,7 +200,7 @@ impl Default for PulseBackgroundAnimator {
 impl PulseBackgroundAnimator {
     fn new(
         mode: PulseModes,
-        color: Rgba8,
+        color: Srgba,
         speed: f32,
         limit: f32,
         ring_count: u32,
@@ -252,7 +252,8 @@ impl AnimatedObject for PulseBackgroundAnimator {
         for i in 0..self.ring_count {
             let ring_progress = (i as f32 + 1.0) / self.ring_count as f32;
             let mut ring_color = self.color;
-            ring_color.alpha = (self.color.alpha as f32 * (1.0 - ring_progress * 0.5)) as u8;
+            // TODO
+            // ring_color.alpha = (self.color.alpha as f32 * (1.0 - ring_progress * 0.5)) as u8;
             let ring_rotation = self.rotation * (i as f32 + 1.0) * 0.1;
 
             draw.rect()
@@ -274,7 +275,7 @@ impl AnimatedObject for PulseBackgroundAnimator {
         ObjectShape::Rect(Rect::from_w_h(self.current_size_w, self.current_size_h))
     }
 
-    fn color(&self) -> Rgba8 {
+    fn color(&self) -> Srgba {
         self.color
     }
 }

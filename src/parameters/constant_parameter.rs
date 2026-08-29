@@ -1,5 +1,5 @@
 use crate::ui::controls::single_slider_styled;
-use nannou_egui::egui::{self};
+use bevy_egui::egui::{self};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq, PartialOrd)]
@@ -38,7 +38,7 @@ impl<T> ConstantParam<T> {
                 .add(
                     egui::DragValue::new(&mut self.value)
                         .speed(1)
-                        .clamp_range(self.lower..=self.upper),
+                        .range(self.lower..=self.upper),
                 )
                 .changed();
             if ui.button("↻").clicked() {

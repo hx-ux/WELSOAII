@@ -1,6 +1,6 @@
 use crate::receiver::ReceiverDevice;
+use bevy_egui::egui;
 use nannou::prelude::*;
-use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 
 use crate::ui::controls::monospace_text_edit;
@@ -15,7 +15,7 @@ pub enum LayoutMode {
 /// the single cell, which interacts with the animator
 pub struct GridCell {
     pub rect: Rect,
-    pub display_color: Rgba8,
+    pub display_color: Srgba,
     pub is_active: bool,
     pos_string: String, // Cached string representation
 }
@@ -25,28 +25,28 @@ impl GridCell {
         GridCell {
             rect,
             is_active: false,
-            display_color: Rgba8::new(10, 10, 10, 10),
+            display_color: Srgba::rgba_u8(10, 10, 10, 10),
             pos_string: pos.to_string(), // Cache the string
         }
     }
 
     pub fn reset(&mut self) {
         self.is_active = false;
-        self.display_color = Rgba8::new(10, 10, 10, 10);
+        self.display_color = Srgba::rgba_u8(10, 10, 10, 10);
     }
 
-    pub fn get_send_color(&self) -> Rgba8 {
+    pub fn get_send_color(&self) -> Srgba {
         if self.is_active {
             return self.display_color;
         }
-        Rgba8::new(0, 0, 0, 0)
+        Srgba::rgba_u8(0, 0, 0, 0)
     }
 
-    pub fn get_display_color(&self) -> Rgba8 {
+    pub fn get_display_color(&self) -> Srgba {
         if self.is_active {
             return self.display_color;
         }
-        Rgba8::new(10, 10, 10, 10)
+        Srgba::rgba_u8(10, 10, 10, 10)
     }
 }
 
@@ -263,9 +263,10 @@ impl ReceiverGrid {
             for (idx, cell) in self.cells.iter().enumerate() {
                 let cell_send_col = cell.get_send_color();
                 let base_idx = idx * 3;
-                self.led_buffer[base_idx] = cell_send_col.red;
-                self.led_buffer[base_idx + 1] = cell_send_col.green;
-                self.led_buffer[base_idx + 2] = cell_send_col.blue;
+                // TODO
+                // self.led_buffer[base_idx] = cell_send_col.red;
+                // self.led_buffer[base_idx + 1] = cell_send_col.green;
+                // self.led_buffer[base_idx + 2] = cell_send_col.blue;
             }
 
             let _ = self.device.send_data(&self.led_buffer);

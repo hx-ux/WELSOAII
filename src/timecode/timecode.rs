@@ -1,4 +1,4 @@
-use nannou_egui::egui;
+use bevy_egui::egui;
 use rusty_link::{AblLink, SessionState};
 use serde::{Deserialize, Serialize};
 

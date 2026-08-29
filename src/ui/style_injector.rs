@@ -2,7 +2,7 @@
 //!
 //! This module provides a cohesive dark theme with consistent colors,
 //! spacing, and typography across all UI elements.
-use nannou_egui::egui::{Color32, Context, Style, TextStyle, Visuals};
+use bevy_egui::egui::{Color32, Context, Style, TextStyle, Visuals};
 
 use crate::ui::style_definitions::{
     custom_colors, custom_rounding, custom_spacing, custom_typography,
@@ -18,7 +18,7 @@ pub fn apply_custom_style(ctx: &Context, opacity: u8) {
     inject_text_styles(&mut style);
     inject_spacing(&mut style);
 
-    ctx.set_style(style);
+    // ctx.set_style(style);
 }
 
 // inject style into controls
@@ -30,7 +30,7 @@ fn setup_visuals(opacity: u8) -> Visuals {
 
     visuals.window_stroke.color = custom_colors::WINDOW_BORDER;
     visuals.window_stroke.width = 1.0;
-    visuals.window_rounding = custom_rounding::window();
+    // visuals.cor = custom_rounding::window();
 
     // Widget fill states
     visuals.widgets.inactive.bg_fill = custom_colors::BUTTON_NORMAL;
@@ -71,11 +71,11 @@ fn setup_visuals(opacity: u8) -> Visuals {
 }
 
 fn inject_widget_rounding(visuals: &mut Visuals) {
-    visuals.widgets.active.rounding = custom_rounding::active();
-    visuals.widgets.inactive.rounding = custom_rounding::inactive();
-    visuals.widgets.hovered.rounding = custom_rounding::hovered();
-    visuals.widgets.open.rounding = custom_rounding::open();
-    visuals.widgets.noninteractive.rounding = custom_rounding::noninteractive();
+    // visuals.widgets.active.rounding = custom_rounding::active();
+    // visuals.widgets.inactive.rounding = custom_rounding::inactive();
+    // visuals.widgets.hovered.rounding = custom_rounding::hovered();
+    // visuals.widgets.open.rounding = custom_rounding::open();
+    // visuals.widgets.noninteractive.rounding = custom_rounding::noninteractive();
 }
 
 fn inject_text_styles(style: &mut Style) {

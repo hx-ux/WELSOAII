@@ -1,4 +1,4 @@
-use nannou_egui::egui::{Color32, FontFamily, FontId, Rounding, Vec2};
+use bevy_egui::egui::{Color32, CornerRadius, FontFamily, FontId, Vec2};
 
 pub mod custom_colors {
     use super::Color32;
@@ -82,24 +82,24 @@ pub mod custom_spacing {
 
 /// Rounding constants for visual consistency
 pub mod custom_rounding {
-    use super::Rounding;
+    // use super::Rounding;
 
-    pub fn active() -> Rounding {
-        Rounding::same(4.0)
-    }
-    pub fn inactive() -> Rounding {
-        Rounding::same(4.0)
-    }
-    pub fn hovered() -> Rounding {
-        Rounding::same(4.0)
-    }
-    pub fn open() -> Rounding {
-        Rounding::same(4.0)
-    }
-    pub fn noninteractive() -> Rounding {
-        Rounding::same(4.0)
-    }
-    pub fn window() -> Rounding {
-        Rounding::same(5.0)
-    }
+    // pub fn active() -> Rounding {
+    //     Rounding::same(4.0)
+    // }
+    // pub fn inactive() -> Rounding {
+    //     Rounding::same(4.0)
+    // }
+    // pub fn hovered() -> Rounding {
+    //     Rounding::same(4.0)
+    // }
+    // pub fn open() -> Rounding {
+    //     Rounding::same(4.0)
+    // }
+    // pub fn noninteractive() -> Rounding {
+    //     Rounding::same(4.0)
+    // }
+    // pub fn window() -> Rounding {
+    //     Rounding::same(5.0)
+    // }
 }
