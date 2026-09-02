@@ -73,13 +73,13 @@ impl AnimatorSettings for BouncingBallSettings {
 
         ui.label("Velocity Range (X-axis)");
         if ui.horizontal(|ui| self.ball_vel_range_x.to_drag(ui)).inner {
-            change_type = UpdateBehaviour::HotUpdate;
+            change_type = UpdateBehaviour::NeedsReset;
         }
         ui.add_space(5.0);
 
         ui.label("Velocity Range (Y-axis)");
         if ui.horizontal(|ui| self.ball_vel_range_y.to_drag(ui)).inner {
-            change_type = UpdateBehaviour::HotUpdate;
+            change_type = UpdateBehaviour::NeedsReset;
         }
 
         if self.color.ui(ui) {
