@@ -21,11 +21,9 @@ pub struct WaveLinesSettings {
     pub speed: ModulatedParam,
     pub thickness: ModulatedParam,
     pub phase_spread: ModulatedParam,
-    pub h_frequency: ModulatedParam,
     pub h_amplitude: ModulatedParam,
     pub harmonic: ModulatedParam,
     pub decay: ModulatedParam,
-    pub beat_snap: ModulatedParam,
     color: ColorParam,
     #[serde(skip)]
     width: f32,
@@ -42,11 +40,9 @@ impl WaveLinesSettings {
             speed: ModulatedParam::new(1.5, 0.0, 10.0, "Speed", "wave_speed"),
             thickness: ModulatedParam::new(4.0, 1.0, 20.0, "Thickness", "wave_thickness"),
             phase_spread: ModulatedParam::new(0.0, -3.0, 3.0, "Phase Spread", "wave_spread"),
-            h_frequency: ModulatedParam::new(0.0, 0.0, 0.12, "H-Frequency", "wave_h_freq"),
             h_amplitude: ModulatedParam::new(0.0, 0.0, 200.0, "H-Amplitude", "wave_h_amp"),
             harmonic: ModulatedParam::new(1.0, 1.0, 8.0, "Harmonic", "wave_harmonic"),
             decay: ModulatedParam::new(1.0, 0.0, 1.0, "Edge Decay", "wave_decay"),
-            beat_snap: ModulatedParam::new(0.12, 0.0, 2.0, "Beat Snap", "wave_beat_snap"),
             color: ColorParam::default(),
             width: win_rect.w(),
             height: win_rect.h(),
@@ -62,11 +58,9 @@ impl AnimatorSettings for WaveLinesSettings {
             &mut self.speed,
             &mut self.thickness,
             &mut self.phase_spread,
-            &mut self.h_frequency,
             &mut self.h_amplitude,
             &mut self.harmonic,
             &mut self.decay,
-            &mut self.beat_snap,
         ]
     }
 
@@ -96,9 +90,6 @@ impl AnimatorSettings for WaveLinesSettings {
         ui.separator();
         ui.label("Lissajous / Harmonic");
 
-        if self.h_frequency.to_slider_modulate(ui, mods) {
-            change = UpdateBehaviour::HotUpdate;
-        }
         if self.h_amplitude.to_slider_modulate(ui, mods) {
             change = UpdateBehaviour::HotUpdate;
         }
@@ -106,9 +97,6 @@ impl AnimatorSettings for WaveLinesSettings {
             change = UpdateBehaviour::HotUpdate;
         }
         if self.decay.to_slider_modulate(ui, mods) {
-            change = UpdateBehaviour::HotUpdate;
-        }
-        if self.beat_snap.to_slider_modulate(ui, mods) {
             change = UpdateBehaviour::HotUpdate;
         }
 
@@ -136,11 +124,9 @@ impl AnimatorSettings for WaveLinesSettings {
                     *self.speed.value(),
                     *self.thickness.value(),
                     *self.phase_spread.value(),
-                    *self.h_frequency.value(),
                     *self.h_amplitude.value(),
                     *self.harmonic.value(),
                     *self.decay.value(),
-                    *self.beat_snap.value(),
                     self.color.clone().value_mapped(idx as usize),
                 )) as Box<dyn AnimatedObject>
             })
@@ -168,11 +154,9 @@ impl AnimatorSettings for WaveLinesSettings {
                     *self.speed.value(),
                     *self.thickness.value(),
                     *self.phase_spread.value(),
-                    *self.h_frequency.value(),
                     *self.h_amplitude.value(),
                     *self.harmonic.value(),
                     *self.decay.value(),
-                    *self.beat_snap.value(),
                     self.color.clone().value_mapped(idx),
                 )));
             }
@@ -191,11 +175,9 @@ impl AnimatorSettings for WaveLinesSettings {
                 line.speed = *self.speed.value();
                 line.thickness = *self.thickness.value();
                 line.phase_spread = *self.phase_spread.value();
-                line.h_frequency = *self.h_frequency.value();
                 line.h_amplitude = *self.h_amplitude.value();
                 line.harmonic = (*self.harmonic.value()).round() as u32;
                 line.decay = *self.decay.value();
-                line.beat_snap = *self.beat_snap.value();
                 line.color = self.color.clone().value_mapped(line.index);
             }
         }
@@ -208,11 +190,9 @@ impl AnimatorSettings for WaveLinesSettings {
         self.speed.reset();
         self.thickness.reset();
         self.phase_spread.reset();
-        self.h_frequency.reset();
         self.h_amplitude.reset();
         self.harmonic.reset();
         self.decay.reset();
-        self.beat_snap.reset();
     }
 
     fn save_preset(&mut self) -> anyhow::Result<()> {
@@ -233,11 +213,9 @@ pub struct WaveLine {
     pub speed: f32,
     pub thickness: f32,
     pub phase_spread: f32,
-    pub h_frequency: f32,
     pub h_amplitude: f32,
     pub harmonic: u32,
     pub decay: f32,
-    pub beat_snap: f32,
     phase: f32,
     color: Rgba8,
 }
@@ -253,11 +231,9 @@ impl WaveLine {
         speed: f32,
         thickness: f32,
         phase_spread: f32,
-        h_frequency: f32,
         h_amplitude: f32,
         harmonic: f32,
         decay: f32,
-        beat_snap: f32,
         color: Rgba8,
     ) -> Self {
         Self {
@@ -271,11 +247,9 @@ impl WaveLine {
             speed,
             thickness,
             phase_spread,
-            h_frequency,
             h_amplitude,
             harmonic: harmonic.round() as u32,
             decay,
-            beat_snap,
             phase: random_range(0.0, TAU),
             color,
         }
@@ -294,12 +268,9 @@ impl AnimatedObject for WaveLine {
     fn update(&mut self, win_rect: &Rect, delta_time: f32, clock: &TimeCode) {
         self.width = win_rect.w();
         self.height = win_rect.h();
-        let beat = clock.get_beat_progress();
-        // Beat snap: sharp kick at beat start, smoothly decays within beat
-        let beat_amp = 1.0 + ((beat * TAU).sin() * self.beat_snap);
 
-        self.phase += delta_time * self.speed * TAU;
-        self.amplitude_current = self.amplitude_base * beat_amp;
+        self.phase += clock.get_delta_time() * self.speed * TAU;
+        self.amplitude_current = self.amplitude_base;
     }
 
     fn draw(&self, draw: &Draw) {
@@ -331,7 +302,7 @@ impl AnimatedObject for WaveLine {
                 * self.amplitude_current
                 * decay_env;
             // Secondary horizontal / Lissajous axis
-            let x_h = (y * self.h_frequency + phase_offset * 0.5).cos() * self.h_amplitude;
+            let x_h = (y * phase_offset * 0.5).cos() * self.h_amplitude;
 
             pt2(base_x + x_v + x_h, y)
         });
