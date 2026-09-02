@@ -140,8 +140,6 @@ impl AnimatorSettings for BouncingBallSettings {
             if let Some(ball) = obj.as_any_mut().downcast_mut::<BouncingBall>() {
                 ball.speed = *self.speed.value();
                 ball.radius = *self.radius.value();
-                // ball.velocity.x = self.ball_vel_range_x.value.clone();
-                // ball.velocity.y = self.ball_vel_range_y.value.clone();
                 ball.color = self.color.clone().value_mapped(ball.index);
             }
         }
@@ -162,12 +160,9 @@ pub struct BouncingBall {
     pub speed: f32,
     pub position: Vec2,
     pub velocity: Vec2,
-    pub ui_h: f32,
-    pub ui_w: f32,
     pub radius: f32,
     pub color: Rgba8,
     pub index: usize,
-    pub win_rect: Rect,
 }
 
 impl BouncingBall {
@@ -186,10 +181,6 @@ impl BouncingBall {
         )
     }
 
-    pub fn self_randomize_pos(&mut self) {
-        self.position = Self::randomize_ball_position(&self.win_rect, self.radius);
-        self.velocity = Self::randomize_ball_spread(self.ui_h, self.ui_w);
-    }
     pub fn new(
         win_rect: &Rect,
         color: Rgba8,
@@ -206,16 +197,13 @@ impl BouncingBall {
             color,
             speed,
             index,
-            win_rect: *win_rect,
-            ui_h: horizontal_velocity,
-            ui_w: vertical_velocity,
         }
     }
 }
 
 impl AnimatedObject for BouncingBall {
     fn update(&mut self, win_rect: &Rect, delta_time: f32, clock: &TimeCode) {
-        self.position += self.velocity * delta_time * self.speed;
+        self.position += self.velocity * clock.get_delta_time() * self.speed;
 
         let min_x = win_rect.left() + self.radius;
         let max_x = win_rect.right() - self.radius;
