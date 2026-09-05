@@ -1,13 +1,10 @@
-use crate::{
-    modulator::{ModRoute, ModTarget, Modulator},
-    ui::controls::styled_dual_slider,
-};
-use nannou_egui::egui::{self};
+use crate::{modulator::Modulator, ui::controls::styled_dual_slider};
+use nannou_egui::egui::{self, Label};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct ModulatedParam {
-    pub value: f32,
+    value: f32,
     #[serde(skip_serializing)]
     pub modulated_value: f32,
     #[serde(skip_serializing)]
@@ -19,12 +16,11 @@ pub struct ModulatedParam {
     pub modulation_active: bool,
     #[serde(skip_serializing)]
     pub ghost_value: Option<f32>,
-    #[serde(skip_serializing)]
-    pub mod_target: ModTarget,
     // unique id for routing and persistence
     pub identifier: String,
     #[serde(skip_serializing)]
     pub mod_amount: f32,
+    pub modulator_index: usize,
 }
 
 impl ModulatedParam {
@@ -44,9 +40,9 @@ impl ModulatedParam {
             display_text: display_text.to_string(),
             ghost_value: None,
             modulation_active: false,
-            mod_target: ModTarget(identifier.to_string()),
             mod_amount: 1.0,
             identifier: identifier.to_string(),
+            modulator_index: 0,
         }
     }
 
@@ -54,19 +50,15 @@ impl ModulatedParam {
         self.value = self.default_value;
     }
 
-    pub fn connect_modulation(&self, mods: &mut Modulator) {
-        if !self.mod_target.is_none() {
-            mods.routes.push(ModRoute::new(self.mod_target.clone()));
-        }
-    }
-
-    pub fn modulate(&mut self, beat_pos: f32, mod_matrix: &Modulator) {
+    pub fn modulate(&mut self, beat_pos: f32, modulators: &mut Vec<Box<dyn Modulator>>) {
         if self.modulation_active {
-            let speed = self.value
-                * mod_matrix.calc_modulation(beat_pos, &self.mod_target)
-                * self.mod_amount;
-            self.ghost_value = Some(speed);
-            self.modulated_value = speed;
+            if let Some(mod_matrix) = modulators.get(self.modulator_index) {
+                let mod_factor = mod_matrix.modulated_value(beat_pos, self.mod_amount);
+                // Apply the local mod_amount just to the modulation depth (difference from 1.0)
+                let speed = self.value * mod_factor;
+                self.ghost_value = Some(speed);
+                self.modulated_value = speed;
+            }
         }
     }
 
@@ -82,9 +74,20 @@ impl ModulatedParam {
         }
     }
 
-    pub fn to_slider_modulate(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> bool {
+    pub fn to_slider_modulate(
+        &mut self,
+        ui: &mut egui::Ui,
+        modulators: &mut Vec<Box<dyn Modulator>>,
+    ) -> bool {
         ui.add_space(Self::SPACE);
         let mut changed = false;
+        ui.add(Label::new(self.display_text.to_string()));
+
+        let mut mod_desc = "U";
+
+        if self.modulation_active {
+            mod_desc = "M";
+        }
 
         ui.horizontal(|ui| {
             changed |= ui
@@ -96,66 +99,30 @@ impl ModulatedParam {
                 ))
                 .changed();
 
-            // Reset button — small, icon-only
-            if ui
-                .add(
-                    egui::Button::new(
-                        egui::RichText::new("↺")
-                            .size(9.0)
-                            .color(egui::Color32::from_gray(110)),
-                    )
-                    .min_size(egui::vec2(14.0, 12.0)),
-                )
-                .clicked()
-            {
+            if ui.button("↻").clicked() {
                 changed = true;
                 self.reset();
             }
+            if ui.button(mod_desc).clicked() {
+                self.modulation_active = !self.modulation_active;
+                changed = true;
+            }
 
-            // Modulation toggle — orange when active
-            let mod_label = if self.modulation_active {
-                egui::RichText::new("M")
-                    .size(9.0)
-                    .color(egui::Color32::from_rgb(255, 102, 0))
-            } else {
-                egui::RichText::new("+")
-                    .size(9.0)
-                    .color(egui::Color32::from_gray(90))
-            };
-
-            ui.menu_button(mod_label, |ui| {
-                if ui
-                    .button(egui::RichText::new(format!("{}", "Mod").to_uppercase()))
-                    .clicked()
-                {
-                    self.modulation_active = !self.modulation_active;
-                    mods.set_enables(self.modulation_active, &self.mod_target);
-                    changed = true;
-                    ui.close_menu();
-                }
-
-                if ui
-                    .button(egui::RichText::new(format!("{}", "None").to_uppercase()))
-                    .clicked()
-                {
-                    self.modulation_active = false;
-                    ui.close_menu();
-                }
-            });
-
-            ui.label(
-                egui::RichText::new(self.display_text.to_uppercase())
-                    .size(9.0)
-                    .color(egui::Color32::from_gray(120)),
-            );
-
-            // Mod amount drag when modulated
             if self.ghost_value.is_some() {
                 ui.add(
                     egui::DragValue::new(&mut self.mod_amount)
-                        .speed(0.01)
+                        .speed(0.1)
                         .clamp_range(0.000..=1.000),
                 );
+
+                let max_idx = modulators.len().saturating_sub(1);
+                ui.label("LFO:");
+                if ui
+                    .add(egui::DragValue::new(&mut self.modulator_index).clamp_range(0..=max_idx))
+                    .changed()
+                {
+                    changed = true;
+                }
             }
         });
         changed

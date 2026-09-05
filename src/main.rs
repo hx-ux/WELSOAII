@@ -143,18 +143,18 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
             });
         });
 
-    egui::TopBottomPanel::bottom("MODULATOR")
-        .exact_height(130.0)
-        .show(&ctx, |ui| {
-            ui.add_space(1.0);
-            ui.label(egui::RichText::new("MODULATOR"));
-            ui.add(egui::Separator::default().spacing(4.0));
-            egui::ScrollArea::vertical()
-                .id_source("mod_scroll")
-                .show(ui, |ui| {
-                    _model.animator.mod_matrix.ui(ui);
-                });
-        });
+    // egui::TopBottomPanel::bottom("MODULATOR")
+    //     .exact_height(130.0)
+    //     .show(&ctx, |ui| {
+    //         ui.add_space(1.0);
+    //         ui.label(egui::RichText::new("MODULATOR"));
+    //         ui.add(egui::Separator::default().spacing(4.0));
+    //         egui::ScrollArea::vertical()
+    //             .id_source("mod_scroll")
+    //             .show(ui, |ui| {
+    //                 _model.animator.modulators.ui(ui);
+    //             });
+    //     });
 
     egui::Window::new("GLOBAL SETTINGS")
         .resizable(true)

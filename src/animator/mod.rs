@@ -3,6 +3,7 @@ use crate::{
         animation_type::{AnimationType, UpdateBehaviour},
         animators::{WaveLinesSettings, bouncing_ball, pulse_background, scan_line},
     },
+    modulator::wave_modulator::WaveModulator,
     parameters::ModulatedParam,
     receiver::ReceiverGrid,
     timecode::TimeCode,
@@ -25,7 +26,7 @@ pub enum ObjectShape {
 }
 
 pub trait AnimatedObject {
-    fn update(&mut self, win_rect: &Rect, delta_time: f32, clock: &TimeCode);
+    fn update(&mut self, win_rect: &Rect, clock: &TimeCode);
     fn draw(&self, draw: &Draw);
     fn is_dead(&self) -> bool {
         false
@@ -35,7 +36,11 @@ pub trait AnimatedObject {
 }
 
 pub trait AnimatorSettings {
-    fn control_ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour;
+    fn control_ui(
+        &mut self,
+        ui: &mut egui::Ui,
+        mods: &mut Vec<Box<dyn Modulator>>,
+    ) -> UpdateBehaviour;
     fn color_ui(&mut self, ui: &mut egui::Ui);
 
     fn animation_type(&self) -> AnimationType;
@@ -44,7 +49,7 @@ pub trait AnimatorSettings {
     fn hot_update(&mut self);
     fn reset(&mut self);
     fn draw(&self, draw: &Draw);
-    fn update(&mut self, win_rect: &Rect, delta_time: f32, timecode: &TimeCode);
+    fn update(&mut self, win_rect: &Rect, timecode: &TimeCode);
     // Returns references to the internal concrete objects
     fn get_objects(&self) -> Vec<&dyn AnimatedObject>;
     fn get_objects_mut(&mut self) -> Vec<&mut dyn AnimatedObject>;
@@ -53,15 +58,9 @@ pub trait AnimatorSettings {
         Vec::new()
     }
 
-    fn connect_modulations(&mut self, mod_matrix: &mut Modulator) {
+    fn update_modulations(&mut self, beat_pos: f32, modulators: &mut Vec<Box<dyn Modulator>>) {
         for param in self.modulated_params_mut() {
-            param.connect_modulation(mod_matrix);
-        }
-    }
-
-    fn update_modulations(&mut self, beat_pos: f32, mod_matrix: &Modulator) {
-        for param in self.modulated_params_mut() {
-            param.modulate(beat_pos, mod_matrix);
+            param.modulate(beat_pos, modulators);
         }
     }
 
@@ -79,7 +78,7 @@ pub trait AnimatorSettings {
 pub struct Animator {
     pub grid: ReceiverGrid,
     pub timecode: TimeCode,
-    pub mod_matrix: Modulator,
+    pub modulators: Vec<Box<dyn Modulator>>,
     pub active_animations: Vec<Box<dyn AnimatorSettings>>,
     pub current_ani_index: Option<usize>,
 }
@@ -89,15 +88,14 @@ impl Animator {
         let mut active_animations: Vec<Box<dyn AnimatorSettings>> = Vec::new();
         active_animations.push(Box::new(BouncingBallSettings::new(win_rect)));
 
-        let mut mod_matrix = Modulator::default();
-
-        for effect in active_animations.iter_mut() {
-            effect.connect_modulations(&mut mod_matrix);
-        }
+        let modulators: Vec<Box<dyn Modulator>> = vec![
+            Box::new(WaveModulator::new()),
+            Box::new(WaveModulator::new()),
+        ];
 
         Animator {
             timecode: TimeCode::new(),
-            mod_matrix,
+            modulators,
             grid,
             active_animations,
             current_ani_index: Some(0),
@@ -144,7 +142,7 @@ impl Animator {
         self.apply_modulations();
 
         for animations in self.active_animations.iter_mut() {
-            animations.update(win_rect, delta_time, &self.timecode);
+            animations.update(win_rect, &self.timecode);
         }
 
         for cell in self.grid.cells.iter_mut() {
@@ -213,16 +211,17 @@ impl Animator {
         }
     }
 
-    fn apply_modulations(&mut self) {
-        for effect in &mut self.active_animations.iter_mut() {
+    fn clear_mod_ghosts(&mut self) {
+        for effect in &mut self.active_animations {
             effect.reset_modulations();
         }
-        if self.mod_matrix.routes.is_empty() || !self.mod_matrix.enabled {
-            return;
-        }
+    }
+
+    fn apply_modulations(&mut self) {
+        self.clear_mod_ghosts();
         let beat_pos = self.timecode.get_beats();
-        for effect in &mut self.active_animations.iter_mut() {
-            effect.update_modulations(beat_pos, &self.mod_matrix);
+        for effect in &mut self.active_animations {
+            effect.update_modulations(beat_pos, &mut self.modulators);
         }
     }
 
@@ -316,7 +315,7 @@ impl Animator {
                         format!("{}", animator.animation_type()).to_uppercase(),
                     ));
                     ui.add(egui::Separator::default().spacing(4.0));
-                    change_type = animator.control_ui(ui, &mut self.mod_matrix);
+                    change_type = animator.control_ui(ui, &mut self.modulators);
                 }
             } else {
                 ui.label(egui::RichText::new("SELECT A LAYER"));

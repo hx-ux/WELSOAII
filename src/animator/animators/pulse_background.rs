@@ -46,7 +46,11 @@ impl PulseBackgroundSettings {
 }
 
 impl AnimatorSettings for PulseBackgroundSettings {
-    fn control_ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour {
+    fn control_ui(
+        &mut self,
+        ui: &mut egui::Ui,
+        modulators: &mut Vec<Box<dyn Modulator>>,
+    ) -> UpdateBehaviour {
         let mut update = UpdateBehaviour::None;
 
         ui.add_space(5.0);
@@ -63,16 +67,16 @@ impl AnimatorSettings for PulseBackgroundSettings {
             }
         });
 
-        if self.speed.to_slider_modulate(ui, mods) {
+        if self.speed.to_slider_modulate(ui, modulators) {
             update = UpdateBehaviour::HotUpdate;
         }
-        if self.limit.to_slider_modulate(ui, mods) {
+        if self.limit.to_slider_modulate(ui, modulators) {
             update = UpdateBehaviour::HotUpdate;
         }
         if self.ring_count.to_slider(ui) {
             update = UpdateBehaviour::HotUpdate;
         }
-        if self.rotation_speed.to_slider_modulate(ui, mods) {
+        if self.rotation_speed.to_slider_modulate(ui, modulators) {
             update = UpdateBehaviour::HotUpdate;
         }
 
@@ -119,9 +123,9 @@ impl AnimatorSettings for PulseBackgroundSettings {
         }
     }
 
-    fn update(&mut self, win_rect: &Rect, delta_time: f32, timecode: &TimeCode) {
+    fn update(&mut self, win_rect: &Rect, timecode: &TimeCode) {
         for g in self.animator.iter_mut() {
-            g.update(win_rect, delta_time, timecode);
+            g.update(win_rect, timecode);
         }
     }
 
@@ -147,15 +151,9 @@ impl AnimatorSettings for PulseBackgroundSettings {
         Ok(())
     }
 
-    fn connect_modulations(&mut self, mod_matrix: &mut Modulator) {
+    fn update_modulations(&mut self, beat_pos: f32, modulators: &mut Vec<Box<dyn Modulator>>) {
         for param in self.modulated_params_mut() {
-            param.connect_modulation(mod_matrix);
-        }
-    }
-
-    fn update_modulations(&mut self, beat_pos: f32, mod_matrix: &Modulator) {
-        for param in self.modulated_params_mut() {
-            param.modulate(beat_pos, mod_matrix);
+            param.modulate(beat_pos, modulators);
         }
     }
 
@@ -223,14 +221,14 @@ impl PulseBackgroundAnimator {
 }
 
 impl AnimatedObject for PulseBackgroundAnimator {
-    fn update(&mut self, win_rect: &Rect, delta_time: f32, timecode: &TimeCode) {
+    fn update(&mut self, win_rect: &Rect, timecode: &TimeCode) {
         let min_w = 20.0;
         let min_h = 20.0;
         let max_w_allowed = win_rect.w() * self.limit;
         let max_h_allowed = win_rect.h() * self.limit;
 
         let beat_progress = timecode.get_beat_fract();
-        self.rotation += delta_time * self.rotation_speed;
+        self.rotation += timecode.get_delta_time() * self.rotation_speed;
 
         match self.mode {
             PulseModes::Smooth => {

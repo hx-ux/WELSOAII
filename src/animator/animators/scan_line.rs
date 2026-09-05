@@ -50,17 +50,21 @@ impl ScanLineSettings {
 }
 
 impl AnimatorSettings for ScanLineSettings {
-    fn control_ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour {
+    fn control_ui(
+        &mut self,
+        ui: &mut egui::Ui,
+        modulators: &mut Vec<Box<dyn Modulator>>,
+    ) -> UpdateBehaviour {
         let mut update = UpdateBehaviour::None;
 
         ui.add_space(5.0);
 
-        if self.speed.to_slider_modulate(ui, mods) {
+        if self.speed.to_slider_modulate(ui, modulators) {
             update = UpdateBehaviour::HotUpdate;
         }
         ui.add_space(5.0);
 
-        if self.width.to_slider_modulate(ui, mods) {
+        if self.width.to_slider_modulate(ui, modulators) {
             update = UpdateBehaviour::HotUpdate;
         }
         ui.add_space(5.0);
@@ -153,9 +157,9 @@ impl AnimatorSettings for ScanLineSettings {
         }
     }
 
-    fn update(&mut self, win_rect: &Rect, delta_time: f32, timecode: &TimeCode) {
+    fn update(&mut self, win_rect: &Rect, timecode: &TimeCode) {
         for g in self.animator.iter_mut() {
-            g.update(win_rect, delta_time, timecode);
+            g.update(win_rect, timecode);
         }
     }
 
@@ -225,8 +229,8 @@ impl ScanLine {
 }
 
 impl AnimatedObject for ScanLine {
-    fn update(&mut self, win_rect: &Rect, delta_time: f32, _timecode: &TimeCode) {
-        self.position.x += self.speed * delta_time;
+    fn update(&mut self, win_rect: &Rect, _timecode: &TimeCode) {
+        self.position.x += self.speed * _timecode.get_delta_time();
 
         let half_width = self.width / 2.0;
         let left_bound = win_rect.left() + half_width;

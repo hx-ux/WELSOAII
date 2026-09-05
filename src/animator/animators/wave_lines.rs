@@ -52,25 +52,29 @@ impl WaveLinesSettings {
 }
 
 impl AnimatorSettings for WaveLinesSettings {
-    fn control_ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour {
+    fn control_ui(
+        &mut self,
+        ui: &mut egui::Ui,
+        modulators: &mut Vec<Box<dyn Modulator>>,
+    ) -> UpdateBehaviour {
         let mut update = UpdateBehaviour::None;
 
         if self.line_count.to_slider(ui) {
             update = UpdateBehaviour::HotUpdate;
         }
-        if self.amplitude.to_slider_modulate(ui, mods) {
+        if self.amplitude.to_slider_modulate(ui, modulators) {
             update = UpdateBehaviour::HotUpdate;
         }
-        if self.frequency.to_slider_modulate(ui, mods) {
+        if self.frequency.to_slider_modulate(ui, modulators) {
             update = UpdateBehaviour::HotUpdate;
         }
-        if self.speed.to_slider_modulate(ui, mods) {
+        if self.speed.to_slider_modulate(ui, modulators) {
             update = UpdateBehaviour::HotUpdate;
         }
-        if self.thickness.to_slider_modulate(ui, mods) {
+        if self.thickness.to_slider_modulate(ui, modulators) {
             update = UpdateBehaviour::HotUpdate;
         }
-        if self.phase_spread.to_slider_modulate(ui, mods) {
+        if self.phase_spread.to_slider_modulate(ui, modulators) {
             update = UpdateBehaviour::HotUpdate;
         }
 
@@ -155,9 +159,9 @@ impl AnimatorSettings for WaveLinesSettings {
         }
     }
 
-    fn update(&mut self, win_rect: &Rect, delta_time: f32, timecode: &TimeCode) {
+    fn update(&mut self, win_rect: &Rect, timecode: &TimeCode) {
         for g in self.animator.iter_mut() {
-            g.update(win_rect, delta_time, timecode);
+            g.update(win_rect, timecode);
         }
     }
 
@@ -248,13 +252,13 @@ impl WaveLine {
 }
 
 impl AnimatedObject for WaveLine {
-    fn update(&mut self, win_rect: &Rect, delta_time: f32, timecode: &TimeCode) {
+    fn update(&mut self, win_rect: &Rect, timecode: &TimeCode) {
         self.width = win_rect.w();
         self.height = win_rect.h();
         let beat = timecode.get_beat_fract();
         let beat_amp = 1.0 + (beat * TAU).sin() * 0.12;
 
-        self.phase += delta_time * self.speed * TAU;
+        self.phase += timecode.get_delta_time() * self.speed * TAU;
         self.amplitude_current = self.amplitude_base * beat_amp;
     }
 

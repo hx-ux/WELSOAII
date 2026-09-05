@@ -14,9 +14,6 @@ use nannou::prelude::*;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 
-const BALL_COUNT: u32 = 20;
-const SPEED: f32 = 1.0;
-const RADIUS: f32 = 10.0;
 const X_RANGE: f32 = 0.0;
 const Y_RANGE: f32 = 0.0;
 
@@ -42,12 +39,12 @@ pub struct BouncingBallSettings {
 impl BouncingBallSettings {
     pub fn new(win_rect: &Rect) -> Self {
         Self {
-            ball_count: ConstantParam::new(BALL_COUNT, 1, 400, "Ball Count", "ball_count"),
-            speed: ModulatedParam::new(SPEED, 1.0, 5.0, "Speed", "bounce_speed"),
+            ball_count: ConstantParam::new(20, 1, 400, "Ball Count", "ball_count"),
+            speed: ModulatedParam::new(1.0, 1.0, 5.0, "Speed", "bounce_speed"),
             dimension: *win_rect,
-            radius: ModulatedParam::new(RADIUS, 6.0, 30.0, "Radius", "bounce_radius"),
-            ball_vel_range_x: ConstantParam::new(X_RANGE, -100.0, 100.0, "Range X", "range_x"),
-            ball_vel_range_y: ConstantParam::new(Y_RANGE, -100.0, 100.0, "Range Y", "range_Y"),
+            radius: ModulatedParam::new(10.0, 6.0, 30.0, "Radius", "bounce_radius"),
+            ball_vel_range_x: ConstantParam::new(10.00, 1.00, 100.0, "Range X", "range_x"),
+            ball_vel_range_y: ConstantParam::new(Y_RANGE, 1.00, 100.0, "Range Y", "range_Y"),
             color: ColorParam::default(),
             animator: Vec::new(),
         }
@@ -55,7 +52,11 @@ impl BouncingBallSettings {
 }
 
 impl AnimatorSettings for BouncingBallSettings {
-    fn control_ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour {
+    fn control_ui(
+        &mut self,
+        ui: &mut egui::Ui,
+        mods: &mut Vec<Box<dyn Modulator>>,
+    ) -> UpdateBehaviour {
         let mut update = UpdateBehaviour::None;
 
         if self.ball_count.to_slider(ui) {
@@ -84,8 +85,6 @@ impl AnimatorSettings for BouncingBallSettings {
     }
 
     fn init(&mut self) {
-        self.ball_count.value = BALL_COUNT;
-        self.speed.value = SPEED;
         self.animator.clear();
 
         for index in 0..self.ball_count.value as usize {
@@ -148,9 +147,9 @@ impl AnimatorSettings for BouncingBallSettings {
         }
     }
 
-    fn update(&mut self, win_rect: &Rect, delta_time: f32, timecode: &TimeCode) {
+    fn update(&mut self, win_rect: &Rect, timecode: &TimeCode) {
         for g in self.animator.iter_mut() {
-            g.update(win_rect, delta_time, timecode);
+            g.update(win_rect, timecode);
         }
     }
 
@@ -215,8 +214,8 @@ impl BouncingBallAnimator {
 }
 
 impl AnimatedObject for BouncingBallAnimator {
-    fn update(&mut self, win_rect: &Rect, delta_time: f32, _clock: &TimeCode) {
-        self.position += self.velocity * delta_time * self.speed;
+    fn update(&mut self, win_rect: &Rect, timecode: &TimeCode) {
+        self.position += self.velocity * timecode.get_delta_time() * self.speed;
 
         let min_x = win_rect.left() + self.radius;
         let max_x = win_rect.right() - self.radius;
