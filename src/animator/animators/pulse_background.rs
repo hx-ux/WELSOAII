@@ -98,7 +98,7 @@ impl AnimatorSettings for PulseBackgroundSettings {
         }
 
         if self.rotation_speed.to_slider_modulate(ui, mods) {
-            change_type = UpdateBehaviour::NeedsReset;
+            change_type = UpdateBehaviour::HotUpdate;
         }
 
         if self.color.ui(ui) {
@@ -212,7 +212,7 @@ impl AnimatedObject for PulseBackground {
 
         match self.mode {
             PulseModes::Smooth => {
-                let beat_cycle = clock.get_beats().fract();
+                let beat_cycle = (clock.get_beats() * self.speed as f32).fract();
                 self.current_size_w = (beat_cycle * max_w).max(min_size);
                 self.current_size_h = (beat_cycle * max_h).max(min_size);
             }

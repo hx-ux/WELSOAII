@@ -170,13 +170,6 @@ impl AnimatorSettings for ScanLineSettings {
     }
 }
 
-pub struct Particle {
-    position: Vec2,
-    velocity: Vec2,
-    life: f32,
-    color: Rgba8,
-}
-
 pub struct ScanLine {
     mode: ScanLineModes,
     pub speed: f32,
