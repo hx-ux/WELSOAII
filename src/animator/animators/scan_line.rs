@@ -63,9 +63,6 @@ impl AnimatorSettings for ScanLineSettings {
     fn ui(&mut self, ui: &mut egui::Ui, mods: &mut Vec<Box<dyn Modulator>>) -> UpdateBehaviour {
         let mut change_type = UpdateBehaviour::None;
 
-        ui.heading(format!("{}", self.animation_type()));
-        ui.add_space(5.0);
-
         if self.speed.to_slider_modulate(ui, mods) {
             change_type = UpdateBehaviour::HotUpdate;
         }
@@ -168,13 +165,6 @@ impl AnimatorSettings for ScanLineSettings {
     fn save_preset(&mut self) -> anyhow::Result<()> {
         Ok(())
     }
-}
-
-pub struct Particle {
-    position: Vec2,
-    velocity: Vec2,
-    life: f32,
-    color: Rgba8,
 }
 
 pub struct ScanLine {

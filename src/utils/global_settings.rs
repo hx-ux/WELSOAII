@@ -16,25 +16,25 @@ pub enum AppMode {
 #[derive(Serialize, Deserialize, Debug)]
 
 pub struct GlobalSettings {
-    pub framerate: f64,
     pub view_window_size: (u32, u32),
     pub app_mode: AppMode,
     pub control_windows_opacity: ConstantParam<u8>,
+}
+
+impl Default for GlobalSettings {
+    fn default() -> Self {
+        Self {
+            view_window_size: (1000, 1000),
+            app_mode: AppMode::Edit,
+            control_windows_opacity: ConstantParam::new(200, 1, 255, "Opacity", "opactity"),
+        }
+    }
 }
 
 impl GlobalSettings {
     pub const APP_NAME: &str = "Welosa2";
     pub const EFFECTS_FOLDER: &str = "Effects";
     pub const DEVICES_FOLDER: &str = "Devices";
-
-    pub fn new() -> Self {
-        Self {
-            framerate: 60.0,
-            view_window_size: (1000, 1000),
-            app_mode: AppMode::Edit,
-            control_windows_opacity: ConstantParam::new(200, 1, 255, "Opacity", "opactity"),
-        }
-    }
 
     pub fn create_settings_folder() -> Result<bool> {
         let z: PathBuf = PathManager::get_preset_path();
@@ -51,7 +51,7 @@ impl GlobalSettings {
     pub fn load_or_default() -> Self {
         match Self::load(PathManager::settings_path()) {
             Ok(c) => c,
-            Err(_) => Self::new(),
+            Err(_) => Self::default(),
         }
     }
 

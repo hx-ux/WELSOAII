@@ -53,14 +53,14 @@ pub struct TimeCode {
 impl TimeCode {
     pub fn new() -> Self {
         Self {
-            tempo: ConstantParam {
-                value: 120.0,
-                default: 120.0,
-                lower: 40.0,
-                upper: 240.0,
-                display_text: "Tempo".to_string(),
-                identifier: "tempo".to_string(),
-            },
+            tempo: ConstantParam::new(
+                120.0,
+                40.0,
+                240.0,
+                &"Tempo".to_string(),
+                &"tempo".to_string(),
+            ),
+
             current_time: 0.0,
             total_beats: 0.0,
             is_running: true,

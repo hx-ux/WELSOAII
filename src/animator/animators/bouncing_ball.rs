@@ -35,11 +35,11 @@ impl BouncingBallSettings {
     pub fn new(win_rect: &Rect) -> Self {
         Self {
             ball_count: ConstantParam::new(20, 1, 400, "Ball Count", "ball_count"),
-            speed: ModulatedParam::new(1.0, 0.1, 5.0, "Speed", "bounce_speed"),
+            speed: ModulatedParam::new(5.0, 1.0, 20.0, "Speed", "bounce_speed"),
             dimension: *win_rect,
             radius: ModulatedParam::new(10.0, 4.0, 40.0, "Radius", "bounce_radius"),
-            ball_vel_range_x: ConstantParam::new(10.0, -200.0, 200.0, "Range X", "range_x"),
-            ball_vel_range_y: ConstantParam::new(15.0, -200.0, 200.0, "Range Y", "range_y"),
+            ball_vel_range_x: ConstantParam::new(10.0, 1.0, 200.0, "Range X", "range_x"),
+            ball_vel_range_y: ConstantParam::new(15.0, 1.0, 200.0, "Range Y", "range_y"),
             color: ColorParam::default(),
         }
     }
@@ -56,8 +56,6 @@ impl AnimatorSettings for BouncingBallSettings {
         modulators: &mut Vec<Box<dyn Modulator>>,
     ) -> UpdateBehaviour {
         let mut change_type = UpdateBehaviour::None;
-
-        ui.heading(format!("{}", self.animation_type()));
 
         if self.ball_count.to_slider(ui) {
             change_type = UpdateBehaviour::HotUpdate;
@@ -167,10 +165,8 @@ pub struct BouncingBall {
 
 impl BouncingBall {
     fn randomize_ball_spread(h: f32, w: f32) -> Vec2 {
-        let base_vx = random_range(-100.0_f32, 100.0_f32);
-        let base_vy = random_range(-100.0_f32, 100.0_f32);
-        let vx = base_vx + h;
-        let vy = base_vy + w;
+        let vx = random_range(-h, h);
+        let vy = random_range(-w, w);
         vec2(vx, vy)
     }
 

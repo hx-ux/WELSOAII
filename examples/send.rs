@@ -28,7 +28,6 @@ fn main() -> Result<()> {
         std::thread::sleep(std::time::Duration::from_millis(c));
     }
 }
-
 fn testfill_all(len: u64) -> Result<Vec<u8>> {
     let mut vec = Vec::new();
     for _ in 0..len {

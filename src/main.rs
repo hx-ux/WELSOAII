@@ -36,8 +36,10 @@ struct Model {
 
 fn model(app: &App) -> Model {
     let global_settings = GlobalSettings::load_or_default();
+    // there is currently no way, to limit the fps
+    app.set_loop_mode(LoopMode::RefreshSync);
 
-    app.set_loop_mode(LoopMode::rate_fps(global_settings.framerate));
+    app.set_fullscreen_on_shortcut(true);
 
     let view_window_id = app
         .new_window()
@@ -46,6 +48,7 @@ fn model(app: &App) -> Model {
             global_settings.view_window_size.0,
             global_settings.view_window_size.1,
         )
+        .title("WELOSAII".to_string())
         .view(view)
         .event(event)
         .raw_event(settings_window_event)
@@ -105,6 +108,7 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
             ui.collapsing("Global", |ui| {
                 _model.global_settings.ui(ui);
             });
+
             ui.separator();
             ui.collapsing("Time Code", |ui| {
                 _model.animator.clock.ui(ui);

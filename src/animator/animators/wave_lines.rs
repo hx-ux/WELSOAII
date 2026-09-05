@@ -66,7 +66,6 @@ impl AnimatorSettings for WaveLinesSettings {
 
     fn ui(&mut self, ui: &mut egui::Ui, mods: &mut Vec<Box<dyn Modulator>>) -> UpdateBehaviour {
         let mut change = UpdateBehaviour::None;
-        ui.heading(format!("{}", self.animation_type()));
 
         if self.line_count.to_slider(ui) {
             change = UpdateBehaviour::NeedsReset;
