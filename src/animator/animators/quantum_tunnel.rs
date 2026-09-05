@@ -50,8 +50,6 @@ impl AnimatorSettings for QuantumTunnelSettings {
     fn ui(&mut self, ui: &mut egui::Ui, mods: &mut Vec<Box<dyn Modulator>>) -> UpdateBehaviour {
         let mut change_type = UpdateBehaviour::None;
 
-        ui.heading(format!("{}", self.animation_type()));
-
         if self.ring_count.to_slider(ui) {
             change_type = UpdateBehaviour::HotUpdate;
         }

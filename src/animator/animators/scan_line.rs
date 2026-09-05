@@ -63,9 +63,6 @@ impl AnimatorSettings for ScanLineSettings {
     fn ui(&mut self, ui: &mut egui::Ui, mods: &mut Vec<Box<dyn Modulator>>) -> UpdateBehaviour {
         let mut change_type = UpdateBehaviour::None;
 
-        ui.heading(format!("{}", self.animation_type()));
-        ui.add_space(5.0);
-
         if self.speed.to_slider_modulate(ui, mods) {
             change_type = UpdateBehaviour::HotUpdate;
         }

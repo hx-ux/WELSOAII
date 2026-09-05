@@ -57,8 +57,6 @@ impl AnimatorSettings for BouncingBallSettings {
     ) -> UpdateBehaviour {
         let mut change_type = UpdateBehaviour::None;
 
-        ui.heading(format!("{}", self.animation_type()));
-
         if self.ball_count.to_slider(ui) {
             change_type = UpdateBehaviour::HotUpdate;
         }
