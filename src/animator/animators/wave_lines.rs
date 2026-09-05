@@ -265,7 +265,7 @@ impl WaveLine {
 }
 
 impl AnimatedObject for WaveLine {
-    fn update(&mut self, win_rect: &Rect, delta_time: f32, clock: &TimeCode) {
+    fn update(&mut self, win_rect: &Rect, clock: &TimeCode) {
         self.width = win_rect.w();
         self.height = win_rect.h();
 

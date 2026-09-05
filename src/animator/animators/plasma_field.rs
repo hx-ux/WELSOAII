@@ -280,8 +280,8 @@ fn lerp_u8(a: u8, b: u8, t: f32) -> u8 {
 }
 
 impl AnimatedObject for PlasmaCell {
-    fn update(&mut self, _win_rect: &Rect, delta_time: f32, clock: &TimeCode) {
-        self.time += delta_time * self.speed;
+    fn update(&mut self, _win_rect: &Rect, clock: &TimeCode) {
+        self.time += clock.get_delta_time() * self.speed;
 
         // Beat kick: on each beat, inject an extra phase burst into the radial field
         let beat_progress = clock.get_beat_progress();

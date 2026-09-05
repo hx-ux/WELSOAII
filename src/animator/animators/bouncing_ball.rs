@@ -202,7 +202,7 @@ impl BouncingBall {
 }
 
 impl AnimatedObject for BouncingBall {
-    fn update(&mut self, win_rect: &Rect, delta_time: f32, clock: &TimeCode) {
+    fn update(&mut self, win_rect: &Rect, clock: &TimeCode) {
         self.position += self.velocity * clock.get_delta_time() * self.speed;
 
         let min_x = win_rect.left() + self.radius;

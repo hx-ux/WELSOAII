@@ -29,7 +29,7 @@ pub enum ObjectShape {
 }
 
 pub trait AnimatedObject {
-    fn update(&mut self, win_rect: &Rect, delta_time: f32, clock: &TimeCode);
+    fn update(&mut self, win_rect: &Rect, clock: &TimeCode);
     fn draw(&self, draw: &Draw);
     fn is_dead(&self) -> bool {
         false
@@ -157,14 +157,14 @@ impl Animator {
 
     pub fn update(&mut self, win_rect: &Rect, delta_time: f32) {
         // Update the master clock
-        let synced_delta = self.clock.update(delta_time);
+        let _ = self.clock.update(delta_time);
 
         // Live modulation mapped to current animator parameters (synth-style matrix)
         self.apply_modulations();
 
         // Update all objects with clock reference
         for obj in self.objects.iter_mut() {
-            obj.update(win_rect, synced_delta, &self.clock);
+            obj.update(win_rect, &self.clock);
         }
 
         // Remove dead objects

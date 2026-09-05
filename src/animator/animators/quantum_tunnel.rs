@@ -9,7 +9,6 @@ use crate::{
     timecode::TimeCode,
 };
 
-use anyhow::Ok;
 use nannou::prelude::*;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
@@ -178,11 +177,10 @@ impl TunnelRing {
 }
 
 impl AnimatedObject for TunnelRing {
-    fn update(&mut self, win_rect: &Rect, _delta_time: f32, clock: &TimeCode) {
-        let dt = clock.get_delta_time();
+    fn update(&mut self, win_rect: &Rect, clock: &TimeCode) {
         self.center = vec2(win_rect.x(), win_rect.y());
 
-        self.current_z -= self.speed * dt;
+        self.current_z -= self.speed * clock.get_delta_time();
         if self.current_z <= 0.0 {
             self.current_z += self.depth;
         } else if self.current_z > self.depth {

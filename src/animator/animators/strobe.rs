@@ -108,7 +108,7 @@ impl Strobe {
 }
 
 impl AnimatedObject for Strobe {
-    fn update(&mut self, win_rect: &Rect, _delta_time: f32, clock: &TimeCode) {
+    fn update(&mut self, win_rect: &Rect, clock: &TimeCode) {
         self.win_size = vec2(win_rect.w(), win_rect.h());
 
         // Phase within one strobe cycle — rate flashes per beat

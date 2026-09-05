@@ -227,10 +227,9 @@ impl ScanLine {
 }
 
 impl AnimatedObject for ScanLine {
-    fn update(&mut self, win_rect: &Rect, delta_time: f32, _clock: &TimeCode) {
-
+    fn update(&mut self, win_rect: &Rect, _clock: &TimeCode) {
         self.time += _clock.get_delta_time();
-        self.position.x += self.speed * delta_time;
+        self.position.x += self.speed * _clock.get_delta_time();
 
         // Y wobble — oscillate the vertical center
         self.position.y =

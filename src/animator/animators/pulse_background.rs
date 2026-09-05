@@ -203,12 +203,12 @@ impl PulseBackground {
 }
 
 impl AnimatedObject for PulseBackground {
-    fn update(&mut self, win_rect: &Rect, delta_time: f32, clock: &TimeCode) {
+    fn update(&mut self, win_rect: &Rect, clock: &TimeCode) {
         let min_size = 20.0;
         let max_w = win_rect.w() * self.limit;
         let max_h = win_rect.h() * self.limit;
 
-        self.rotation += delta_time * self.rotation_speed;
+        self.rotation += clock.get_delta_time() * self.rotation_speed;
 
         match self.mode {
             PulseModes::Smooth => {
