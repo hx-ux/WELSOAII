@@ -6,7 +6,7 @@ use crate::{
     },
     color::ColorParam,
     modulator::Modulator,
-    parameters::{ConstantParam, ModulatedParam},
+    parameters::ModulatedParam,
     timecode::TimeCode,
 };
 use anyhow::Ok;

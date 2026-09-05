@@ -62,7 +62,7 @@ impl AnimatorSettings for PlasmaFieldSettings {
         ]
     }
 
-    fn ui(&mut self, ui: &mut egui::Ui, mods: &mut Modulator) -> UpdateBehaviour {
+    fn ui(&mut self, ui: &mut egui::Ui, mods: &mut Vec<Box<dyn Modulator>>) -> UpdateBehaviour {
         let mut change = UpdateBehaviour::None;
         ui.heading(format!("{}", self.animation_type()));
 
