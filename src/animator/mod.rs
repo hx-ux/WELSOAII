@@ -3,7 +3,7 @@ use crate::{
         animation_type::{AnimationType, UpdateBehaviour},
         animators::{
             PlasmaFieldSettings, StrobeSettings, WaveLinesSettings, bouncing_ball,
-            pulse_background, scan_line,
+            pulse_background, quantum_tunnel, scan_line,
         },
     },
     modulator::{Modulator, wave_modulator::WaveModulator},
@@ -19,6 +19,7 @@ mod animators;
 
 use bouncing_ball::BouncingBallSettings;
 use pulse_background::PulseBackgroundSettings;
+use quantum_tunnel::QuantumTunnelSettings;
 use scan_line::ScanLineSettings;
 
 // An animated object, which every animator does emit
@@ -90,6 +91,7 @@ impl Animator {
             Box::new(WaveLinesSettings::new(win_rect)),
             Box::new(StrobeSettings::new(win_rect)),
             Box::new(PlasmaFieldSettings::new(win_rect)),
+            Box::new(QuantumTunnelSettings::new(win_rect)),
         ];
 
         let modulators: Vec<Box<dyn Modulator>> = vec![
