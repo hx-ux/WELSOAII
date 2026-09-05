@@ -1,5 +1,5 @@
-use egui_plot::{Line, Plot, PlotPoints, Points, Polygon};
-use nannou_egui::egui::{self, Color32, RichText, Stroke};
+use egui_plot::{Line, Plot, PlotPoints, Points};
+use nannou_egui::egui::{self, Color32};
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter};

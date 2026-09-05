@@ -1,8 +1,6 @@
 use nannou_egui::egui::{self, RichText};
 
-const HISTORY_SECS: f32 = 5.0;
-
-// ─────────────────────────────────────────────────────────────────────────────
+const HISTORY_SECS: f32 = 1.0;
 
 pub struct PerfStats {
     frame_history: egui::util::History<f32>,
@@ -20,8 +18,7 @@ impl PerfStats {
     }
 
     pub fn ui(&mut self, ui: &mut egui::Ui) {
-        let fps = self.current_fps();
-        ui.label(RichText::new(format!("FPS  {:.1}", fps)).monospace());
+        ui.label(RichText::new(format!("FPS  {:.1}", self.current_fps())).monospace());
     }
 
     fn current_fps(&self) -> f32 {
