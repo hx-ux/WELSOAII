@@ -166,7 +166,9 @@ impl<T> PresetManager<T> {
     }
 
     fn update_presets(&mut self) {
-        if let Ok(p) = self.load_all_presets() { self.presets = p }
+        if let Ok(p) = self.load_all_presets() {
+            self.presets = p
+        }
     }
 
     fn load_all_presets(&self) -> Result<Vec<Preset<T>>, anyhow::Error> {
@@ -180,21 +182,18 @@ impl<T> PresetManager<T> {
                         for entry in fs::read_dir(path)? {
                             let entry = entry?;
                             if entry.path().extension().and_then(|s| s.to_str()) == Some("json")
-                                && let Some(name) = entry.file_name().to_str() {
-                                    entries.push(Preset::new(name.to_string(), entry.path()));
-                                }
+                                && let Some(name) = entry.file_name().to_str()
+                            {
+                                entries.push(Preset::new(name.to_string(), entry.path()));
+                            }
                         }
                     }
                     entries.reverse(); // Most recent first
                     Ok(entries)
                 }
-                None => {
-                    Err(anyhow::anyhow!("Cant find type"))
-                }
+                None => Err(anyhow::anyhow!("Cant find type")),
             },
-            PresetMode::Settings | PresetMode::Grid => {
-                Err(anyhow::anyhow!("Nothing"))
-            }
+            PresetMode::Settings | PresetMode::Grid => Err(anyhow::anyhow!("Nothing")),
         }
     }
     pub fn ui_simple(&mut self, ui: &mut egui::Ui) -> bool {
