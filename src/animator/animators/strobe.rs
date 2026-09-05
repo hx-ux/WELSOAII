@@ -38,8 +38,6 @@ impl AnimatorSettings for StrobeSettings {
     fn ui(&mut self, ui: &mut egui::Ui, mods: &mut Vec<Box<dyn Modulator>>) -> UpdateBehaviour {
         let mut change = UpdateBehaviour::None;
 
-        ui.heading(format!("{}", self.animation_type()));
-
         if self.rate.to_slider(ui) {
             change = UpdateBehaviour::HotUpdate;
         }

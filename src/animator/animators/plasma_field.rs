@@ -64,7 +64,6 @@ impl AnimatorSettings for PlasmaFieldSettings {
 
     fn ui(&mut self, ui: &mut egui::Ui, mods: &mut Vec<Box<dyn Modulator>>) -> UpdateBehaviour {
         let mut change = UpdateBehaviour::None;
-        ui.heading(format!("{}", self.animation_type()));
 
         if self.tile_size.to_slider(ui) {
             change = UpdateBehaviour::NeedsReset;
