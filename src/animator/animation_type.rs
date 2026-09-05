@@ -22,14 +22,20 @@ pub enum UpdateBehaviour {
 #[derive(Debug, PartialEq, Clone, Copy, Default, EnumString, Display, EnumIter)]
 pub enum AnimationType {
     #[default]
-    #[strum(to_string = "Bouncing Balls")]
+    #[strum(to_string = "Gravity Balls")]
     BouncingBalls = 0,
-    #[strum(to_string = "Pulse Background")]
+    #[strum(to_string = "Radial Burst")]
     PulseBackground = 1,
-    #[strum(to_string = "Scan Line ")]
+    #[strum(to_string = "Particle Sweep")]
     ScanLine = 2,
-    #[strum(to_string = "Wave Lines")]
+    #[strum(to_string = "Lissajous Grid")]
     WaveLines = 3,
+    #[strum(to_string = "Strobe")]
+    Strobe = 4,
+    #[strum(to_string = "Plasma")]
+    Plasma = 5,
+    #[strum(to_string = "Quantum Tunnel")]
+    QuantumTunnel = 6,
 }
 
 impl From<usize> for AnimationType {
@@ -39,6 +45,9 @@ impl From<usize> for AnimationType {
             _ if value == AnimationType::PulseBackground as usize => AnimationType::PulseBackground,
             _ if value == AnimationType::ScanLine as usize => AnimationType::ScanLine,
             _ if value == AnimationType::WaveLines as usize => AnimationType::WaveLines,
+            _ if value == AnimationType::Strobe as usize => AnimationType::Strobe,
+            _ if value == AnimationType::Plasma as usize => AnimationType::Plasma,
+            _ if value == AnimationType::QuantumTunnel as usize => AnimationType::QuantumTunnel,
             _ => AnimationType::BouncingBalls,
         }
     }
@@ -56,8 +65,19 @@ pub enum ScanLineModes {
 #[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize, Default, Display, EnumIter)]
 pub enum PulseModes {
     #[default]
-    #[strum(to_string = "Wrap Around")]
+    #[strum(to_string = "Smooth")]
     Smooth,
     #[strum(to_string = "Elastic")]
     Elastic,
+}
+
+#[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize, Default, Display, EnumIter)]
+pub enum PulseShape {
+    #[default]
+    #[strum(to_string = "Square")]
+    Square,
+    #[strum(to_string = "Circle")]
+    Circle,
+    #[strum(to_string = "Diamond")]
+    Diamond,
 }

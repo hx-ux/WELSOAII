@@ -86,13 +86,8 @@ impl ColorParam {
             return self.single_color;
         }
 
-        let palette = self.palette.as_vec();
-        if palette.is_empty() {
-            return self.single_color;
-        }
-
-        let mapped_index = clamp(index % palette.len(), 0, palette.len() - 1);
-        palette[mapped_index]
+        let palette = self.palette.as_slice();
+        palette[clamp(index % palette.len(), 0, palette.len() - 1)]
     }
 }
 

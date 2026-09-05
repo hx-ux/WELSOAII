@@ -1,7 +1,10 @@
 use crate::{
     animator::{
         animation_type::{AnimationType, UpdateBehaviour},
-        animators::{WaveLinesSettings, bouncing_ball, pulse_background, scan_line},
+        animators::{
+            PlasmaFieldSettings, StrobeSettings, WaveLinesSettings, bouncing_ball,
+            pulse_background, quantum_tunnel, scan_line,
+        },
     },
     modulator::{Modulator, wave_modulator::WaveModulator},
     parameters::ModulatedParam,
@@ -16,6 +19,7 @@ mod animators;
 
 use bouncing_ball::BouncingBallSettings;
 use pulse_background::PulseBackgroundSettings;
+use quantum_tunnel::QuantumTunnelSettings;
 use scan_line::ScanLineSettings;
 
 // An animated object, which every animator does emit
@@ -25,7 +29,7 @@ pub enum ObjectShape {
 }
 
 pub trait AnimatedObject {
-    fn update(&mut self, win_rect: &Rect, delta_time: f32, clock: &TimeCode);
+    fn update(&mut self, win_rect: &Rect, clock: &TimeCode);
     fn draw(&self, draw: &Draw);
     fn is_dead(&self) -> bool {
         false
@@ -85,6 +89,9 @@ impl Animator {
             Box::new(PulseBackgroundSettings::new(win_rect)),
             Box::new(ScanLineSettings::new(win_rect)),
             Box::new(WaveLinesSettings::new(win_rect)),
+            Box::new(StrobeSettings::new(win_rect)),
+            Box::new(PlasmaFieldSettings::new(win_rect)),
+            Box::new(QuantumTunnelSettings::new(win_rect)),
         ];
 
         let modulators: Vec<Box<dyn Modulator>> = vec![
@@ -150,14 +157,14 @@ impl Animator {
 
     pub fn update(&mut self, win_rect: &Rect, delta_time: f32) {
         // Update the master clock
-        let synced_delta = self.clock.update(delta_time);
+        let _ = self.clock.update(delta_time);
 
         // Live modulation mapped to current animator parameters (synth-style matrix)
         self.apply_modulations();
 
         // Update all objects with clock reference
         for obj in self.objects.iter_mut() {
-            obj.update(win_rect, synced_delta, &self.clock);
+            obj.update(win_rect, &self.clock);
         }
 
         // Remove dead objects
