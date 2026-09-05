@@ -38,8 +38,8 @@ impl BouncingBallSettings {
             speed: ModulatedParam::new(5.0, 1.0, 20.0, "Speed", "bounce_speed"),
             dimension: *win_rect,
             radius: ModulatedParam::new(10.0, 4.0, 40.0, "Radius", "bounce_radius"),
-            ball_vel_range_x: ConstantParam::new(10.0, -200.0, 200.0, "Range X", "range_x"),
-            ball_vel_range_y: ConstantParam::new(15.0, -200.0, 200.0, "Range Y", "range_y"),
+            ball_vel_range_x: ConstantParam::new(10.0, 1.0, 200.0, "Range X", "range_x"),
+            ball_vel_range_y: ConstantParam::new(15.0, 1.0, 200.0, "Range Y", "range_y"),
             color: ColorParam::default(),
         }
     }

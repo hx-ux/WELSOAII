@@ -37,14 +37,14 @@ pub struct WaveModulator {
 impl WaveModulator {
     pub fn new() -> Self {
         Self {
-            amount: ConstantParam {
-                value: 0.25,
-                default: 0.25,
-                lower: 0.0,
-                upper: 1.0,
-                display_text: "Depth".to_string(),
-                identifier: "amount".to_string(),
-            },
+            amount: ConstantParam::new(
+                0.25,
+                0.0,
+                1.0,
+                &"display_text.".to_string(),
+                &"amount".to_string(),
+            ),
+
             amount_type: Polarity::Plus,
             wave: LfoWave::default(),
             freq_mul: 1.0,
