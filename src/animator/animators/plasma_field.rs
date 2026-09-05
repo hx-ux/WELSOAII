@@ -37,7 +37,7 @@ pub struct PlasmaFieldSettings {
 impl PlasmaFieldSettings {
     pub fn new(win_rect: &Rect) -> Self {
         Self {
-            tile_size: ConstantParam::new(10, 10, 80, "Tile Size", "plasma_tile"),
+            tile_size: ConstantParam::new(40, 40, 80, "Tile Size", "plasma_tile"),
             freq_x: ModulatedParam::new(0.018, 0.002, 0.1, "Freq X", "plasma_fx"),
             freq_y: ModulatedParam::new(0.022, 0.002, 0.1, "Freq Y", "plasma_fy"),
             freq_radial: ModulatedParam::new(0.012, 0.0, 0.08, "Freq Radial", "plasma_fr"),
