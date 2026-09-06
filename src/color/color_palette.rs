@@ -1,8 +1,7 @@
 use nannou::color::Rgba8;
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumIter};
-#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, EnumIter, Display)]
-#[derive(Default)]
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, EnumIter, Display, Default)]
 pub enum ColorPalette {
     #[strum(to_string = "Breeze")]
     #[default]
@@ -103,4 +102,3 @@ impl ColorPalette {
         }
     }
 }
-
