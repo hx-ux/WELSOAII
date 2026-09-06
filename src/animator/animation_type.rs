@@ -61,3 +61,14 @@ pub enum PulseModes {
     #[strum(to_string = "Elastic")]
     Elastic,
 }
+
+#[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize, Default, Display, EnumIter)]
+pub enum PulseShape {
+    #[default]
+    #[strum(to_string = "Square")]
+    Square,
+    #[strum(to_string = "Circle")]
+    Circle,
+    #[strum(to_string = "Diamond")]
+    Diamond,
+}

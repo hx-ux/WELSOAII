@@ -105,18 +105,23 @@ impl Animator {
     pub fn add_animator(&mut self, win_rect: &Rect, animation_type: AnimationType) {
         match animation_type {
             AnimationType::BouncingBalls => {
-                self.active_animations
-                    .push(Box::new(BouncingBallSettings::new(win_rect)));
+                let mut ani = Box::new(BouncingBallSettings::new(win_rect));
+                ani.init();
+                self.active_animations.push(ani);
             }
             AnimationType::PulseBackground => {
-                self.active_animations
-                    .push(Box::new(PulseBackgroundSettings::new(win_rect)));
+                let mut ani = Box::new(PulseBackgroundSettings::new(win_rect));
+                ani.init();
+                self.active_animations.push(ani);
             }
             AnimationType::ScanLine => {
-                self.active_animations
-                    .push(Box::new(ScanLineSettings::new(win_rect)));
+                let mut ani = Box::new(ScanLineSettings::new(win_rect));
+                ani.init();
+                self.active_animations.push(ani);
             }
             AnimationType::WaveLines => {
+                let mut ani = Box::new(WaveLinesSettings::new(win_rect));
+                ani.init();
                 self.active_animations
                     .push(Box::new(WaveLinesSettings::new(win_rect)));
             }

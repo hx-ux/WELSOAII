@@ -138,7 +138,7 @@ impl TimeCode {
         self.total_beats
     }
 
-    pub fn get_beat_fract(&self) -> f32 {
+    pub fn get_beat_progress(&self) -> f32 {
         self.total_beats.fract()
     }
 
@@ -151,7 +151,7 @@ impl TimeCode {
 
     pub fn get_beat_counter(&self) -> (i32, f32) {
         let beat = (self.total_beats.floor() as i32).wrapping_rem_euclid(4) + 1;
-        let progress = self.get_beat_fract();
+        let progress = self.get_beat_progress();
         (beat, progress)
     }
 
@@ -181,7 +181,7 @@ impl TimeCode {
             for i in 1..=4 {
                 let mut col = egui::Color32::from_gray(40);
                 if i == self.get_beat_counter().0 {
-                    let brightness = ((1.0 - self.get_beat_fract()) * 255.0) as u8;
+                    let brightness = ((1.0 - self.get_beat_progress()) * 255.0) as u8;
                     col = egui::Color32::from_rgb(brightness, 200, 80);
                 }
                 let rect = ui.allocate_exact_size(egui::vec2(10.0, 10.0), egui::Sense::hover());

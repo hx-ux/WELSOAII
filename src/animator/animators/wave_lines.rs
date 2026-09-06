@@ -255,7 +255,7 @@ impl AnimatedObject for WaveLine {
     fn update(&mut self, win_rect: &Rect, timecode: &TimeCode) {
         self.width = win_rect.w();
         self.height = win_rect.h();
-        let beat = timecode.get_beat_fract();
+        let beat = timecode.get_beat_progress();
         let beat_amp = 1.0 + (beat * TAU).sin() * 0.12;
 
         self.phase += timecode.get_delta_time() * self.speed * TAU;
