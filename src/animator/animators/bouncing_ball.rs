@@ -14,9 +14,6 @@ use nannou::prelude::*;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 
-const X_RANGE: f32 = 0.0;
-const Y_RANGE: f32 = 0.0;
-
 fn default_rect() -> Rect {
     Rect::from_w_h(800.0, 600.0)
 }
@@ -40,11 +37,11 @@ impl BouncingBallSettings {
     pub fn new(win_rect: &Rect) -> Self {
         Self {
             ball_count: ConstantParam::new(20, 1, 400, "Ball Count", "ball_count"),
-            speed: ModulatedParam::new(1.0, 1.0, 5.0, "Speed", "bounce_speed"),
+            speed: ModulatedParam::new(5.0, 1.0, 20.0, "Speed", "bounce_speed"),
             dimension: *win_rect,
-            radius: ModulatedParam::new(10.0, 6.0, 30.0, "Radius", "bounce_radius"),
-            ball_vel_range_x: ConstantParam::new(10.00, 1.00, 100.0, "Range X", "range_x"),
-            ball_vel_range_y: ConstantParam::new(Y_RANGE, 1.00, 100.0, "Range Y", "range_Y"),
+            radius: ModulatedParam::new(10.0, 4.0, 40.0, "Radius", "bounce_radius"),
+            ball_vel_range_x: ConstantParam::new(10.0, 1.0, 200.0, "Range X", "range_x"),
+            ball_vel_range_y: ConstantParam::new(15.0, 1.0, 200.0, "Range Y", "range_y"),
             color: ColorParam::default(),
             animator: Vec::new(),
         }
@@ -70,11 +67,11 @@ impl AnimatorSettings for BouncingBallSettings {
         }
 
         if ui.horizontal(|ui| self.ball_vel_range_x.to_drag(ui)).inner {
-            update = UpdateBehaviour::HotUpdate;
+            update = UpdateBehaviour::NeedsReset;
         }
 
         if ui.horizontal(|ui| self.ball_vel_range_y.to_drag(ui)).inner {
-            update = UpdateBehaviour::HotUpdate;
+            update = UpdateBehaviour::NeedsReset;
         }
 
         update
@@ -109,7 +106,6 @@ impl AnimatorSettings for BouncingBallSettings {
         let current_count = self.animator.len();
         let target_count = self.ball_count.value as usize;
 
-        // Adjust ball count
         if target_count > current_count {
             for index in current_count..target_count {
                 let new_obj = BouncingBallAnimator::new(
@@ -139,6 +135,8 @@ impl AnimatorSettings for BouncingBallSettings {
         self.ball_count.reset();
         self.speed.reset();
         self.radius.reset();
+        self.ball_vel_range_x.reset();
+        self.ball_vel_range_y.reset();
     }
 
     fn draw(&self, draw: &Draw) {
@@ -190,21 +188,31 @@ pub struct BouncingBallAnimator {
 }
 
 impl BouncingBallAnimator {
+    fn randomize_ball_spread(h: f32, w: f32) -> Vec2 {
+        let vx = random_range(-h, h);
+        let vy = random_range(-w, w);
+        vec2(vx, vy)
+    }
+
+    fn randomize_ball_position(win: &Rect, r: f32) -> Vec2 {
+        vec2(
+            random_range(win.left() + r, win.right() - r),
+            random_range(win.bottom() + r, win.top() - r),
+        )
+    }
+
     pub fn new(
         win_rect: &Rect,
         color: Rgba8,
         radius: f32,
-        _horizontal_velocity: f32,
-        _vertical_velocity: f32,
+        horizontal_velocity: f32,
+        vertical_velocity: f32,
         speed: f32,
         index: usize,
     ) -> Self {
         BouncingBallAnimator {
-            position: vec2(
-                random_range(win_rect.left() + radius, win_rect.right() - radius),
-                random_range(win_rect.bottom() + radius, win_rect.top() - radius),
-            ),
-            velocity: vec2(random_range(-100.0, 100.0), random_range(-100.0, 100.0)),
+            position: Self::randomize_ball_position(win_rect, radius),
+            velocity: Self::randomize_ball_spread(horizontal_velocity, vertical_velocity),
             radius,
             color,
             speed,
@@ -224,18 +232,18 @@ impl AnimatedObject for BouncingBallAnimator {
 
         if self.position.x < min_x {
             self.position.x = min_x;
-            self.velocity.x *= -1.0;
+            self.velocity.x = self.velocity.x.abs();
         } else if self.position.x > max_x {
             self.position.x = max_x;
-            self.velocity.x *= -1.0;
+            self.velocity.x = -self.velocity.x.abs();
         }
 
         if self.position.y < min_y {
             self.position.y = min_y;
-            self.velocity.y *= -1.0;
+            self.velocity.y = self.velocity.y.abs();
         } else if self.position.y > max_y {
             self.position.y = max_y;
-            self.velocity.y *= -1.0;
+            self.velocity.y = -self.velocity.y.abs();
         }
     }
 
