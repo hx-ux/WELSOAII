@@ -88,7 +88,8 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
     let ctx = egui.begin_frame();
     crate::ui::style_injector::apply_custom_style(
         &ctx,
-        _model.global_settings.control_windows_opacity.value as u8,
+        _model.global_settings.control_windows_opacity.value,
+        _model.global_settings.fully_transparent,
     );
 
     egui::TopBottomPanel::top("MENU").show(&ctx, |ui| {

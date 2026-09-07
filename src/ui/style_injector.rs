@@ -2,6 +2,7 @@
 //!
 //! This module provides a cohesive dark theme with consistent colors,
 //! spacing, and typography across all UI elements.
+use nannou::glam::bool;
 use nannou_egui::egui::{Color32, Context, Style, TextStyle, Visuals};
 
 use crate::ui::style_definitions::{
@@ -9,9 +10,9 @@ use crate::ui::style_definitions::{
 };
 
 /// Applies the custom dark theme to the given egui context
-pub fn apply_custom_style(ctx: &Context, opacity: u8) {
+pub fn apply_custom_style(ctx: &Context, opacity: u8, transparent: bool) {
     let mut style = Style {
-        visuals: setup_visuals(opacity),
+        visuals: setup_visuals(opacity, transparent),
         ..Default::default()
     };
 
@@ -22,11 +23,16 @@ pub fn apply_custom_style(ctx: &Context, opacity: u8) {
 }
 
 // inject style into controls
-fn setup_visuals(opacity: u8) -> Visuals {
+fn setup_visuals(opacity: u8, transparent: bool) -> Visuals {
     let mut visuals = Visuals::dark();
 
-    visuals.window_fill = Color32::from_rgba_premultiplied(12, 14, 18, opacity);
-    visuals.panel_fill = Color32::from_rgba_premultiplied(12, 14, 18, opacity);
+    if (transparent) {
+        visuals.window_fill = Color32::TRANSPARENT;
+        visuals.panel_fill = Color32::TRANSPARENT;
+    } else {
+        visuals.window_fill = Color32::from_rgba_premultiplied(12, 14, 18, opacity);
+        visuals.panel_fill = Color32::from_rgba_premultiplied(12, 14, 18, opacity);
+    }
 
     visuals.window_stroke.color = custom_colors::WINDOW_BORDER;
     visuals.window_stroke.width = 1.0;

@@ -20,6 +20,7 @@ pub struct GlobalSettings {
     pub view_window_size: (u32, u32),
     pub app_mode: AppMode,
     pub control_windows_opacity: ConstantParam<u8>,
+    pub fully_transparent: bool,
 }
 
 impl GlobalSettings {
@@ -33,6 +34,7 @@ impl GlobalSettings {
             view_window_size: (1000, 1000),
             app_mode: AppMode::Edit,
             control_windows_opacity: ConstantParam::new(200, 1, 255, "Opacity", "opactity"),
+            fully_transparent: true,
         }
     }
 
@@ -80,6 +82,8 @@ impl GlobalSettings {
         });
 
         self.control_windows_opacity.to_slider(ui);
+
+        ui.checkbox(&mut self.fully_transparent, "transparent");
 
         if ui.button("Save Settings").clicked() {
             if let Err(e) = self.save() {
