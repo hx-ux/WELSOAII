@@ -124,16 +124,10 @@ impl Animator {
         self.current_animation_index = Some(self.active_animations.iter().len() - 1);
     }
 
-    pub fn reset(&mut self, win_rect: &Rect) {
+    pub fn init_all_layers(&mut self, win_rect: &Rect) {
         for ani in self.active_animations.iter_mut() {
             ani.set_dimension(win_rect);
             ani.init();
-        }
-    }
-
-    pub fn behaviour_hot_update(&mut self) {
-        for ani in self.active_animations.iter_mut() {
-            ani.hot_update();
         }
     }
 
@@ -315,12 +309,8 @@ impl Animator {
         ui.vertical(|ui| {
             if let Some(index) = self.current_animation_index {
                 if let Some(animator) = self.active_animations.get_mut(index) {
-                    ui.label(egui::RichText::new(
-                        format!("{}", animator.animation_type()).to_uppercase(),
-                    ));
                     ui.add(egui::Separator::default().spacing(4.0));
                     animator.control_ui(ui, &mut self.modulators);
-                    animator.color_ui(ui);
                 }
             } else {
                 ui.label(egui::RichText::new("SELECT A LAYER"));

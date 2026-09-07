@@ -67,7 +67,7 @@ fn model(app: &App) -> Model {
     );
 
     let mut animator = Animator::new(&win_rect, receiver_grid);
-    animator.reset(&win_rect);
+    animator.init_all_layers(&win_rect);
 
     app.set_loop_mode(LoopMode::RefreshSync);
 
@@ -175,8 +175,6 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
         .show(&ctx, |ui| {
             _model.animator.grid.ui(ui);
         });
-
-    _model.animator.behaviour_hot_update();
 
     _model
         .animator
