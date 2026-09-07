@@ -1,8 +1,5 @@
 use crate::{
-    animator::{
-        AnimatedObject, AnimatorSettings, ObjectShape, UpdateBehaviour,
-        animation_type::AnimationType,
-    },
+    animator::{AnimatedObject, AnimatorSettings, ObjectShape, animation_type::AnimationType},
     color::ColorParam,
     parameters::{ConstantParam, ModulatedParam},
 };
@@ -52,33 +49,30 @@ impl WaveLinesSettings {
 }
 
 impl AnimatorSettings for WaveLinesSettings {
-    fn control_ui(
-        &mut self,
-        ui: &mut egui::Ui,
-        modulators: &mut Vec<Box<dyn Modulator>>,
-    ) -> UpdateBehaviour {
-        let mut update = UpdateBehaviour::None;
-
+    fn control_ui(&mut self, ui: &mut egui::Ui, modulators: &mut Vec<Box<dyn Modulator>>) {
         if self.line_count.to_slider(ui) {
-            update = UpdateBehaviour::HotUpdate;
-        }
-        if self.amplitude.to_slider_modulate(ui, modulators) {
-            update = UpdateBehaviour::HotUpdate;
-        }
-        if self.frequency.to_slider_modulate(ui, modulators) {
-            update = UpdateBehaviour::HotUpdate;
-        }
-        if self.speed.to_slider_modulate(ui, modulators) {
-            update = UpdateBehaviour::HotUpdate;
-        }
-        if self.thickness.to_slider_modulate(ui, modulators) {
-            update = UpdateBehaviour::HotUpdate;
-        }
-        if self.phase_spread.to_slider_modulate(ui, modulators) {
-            update = UpdateBehaviour::HotUpdate;
+            self.hot_update();
         }
 
-        update
+        if self.amplitude.to_slider_modulate(ui, modulators) {
+            self.hot_update();
+        }
+
+        if self.frequency.to_slider_modulate(ui, modulators) {
+            self.hot_update();
+        }
+
+        if self.speed.to_slider_modulate(ui, modulators) {
+            self.hot_update();
+        }
+
+        if self.thickness.to_slider_modulate(ui, modulators) {
+            self.hot_update();
+        }
+
+        if self.phase_spread.to_slider_modulate(ui, modulators) {
+            self.hot_update();
+        }
     }
 
     fn animation_type(&self) -> AnimationType {
@@ -142,15 +136,6 @@ impl AnimatorSettings for WaveLinesSettings {
             line.phase_spread = *self.phase_spread.value();
             line.color = self.color.clone().value_mapped(line.index);
         }
-    }
-
-    fn reset(&mut self) {
-        self.line_count.reset();
-        self.amplitude.reset();
-        self.frequency.reset();
-        self.speed.reset();
-        self.thickness.reset();
-        self.phase_spread.reset();
     }
 
     fn draw(&self, draw: &Draw) {

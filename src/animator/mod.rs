@@ -1,6 +1,6 @@
 use crate::{
     animator::{
-        animation_type::{AnimationType, UpdateBehaviour},
+        animation_type::AnimationType,
         animators::{WaveLinesSettings, bouncing_ball, pulse_background, scan_line},
     },
     modulator::wave_modulator::WaveModulator,
@@ -36,18 +36,13 @@ pub trait AnimatedObject {
 }
 
 pub trait AnimatorSettings {
-    fn control_ui(
-        &mut self,
-        ui: &mut egui::Ui,
-        mods: &mut Vec<Box<dyn Modulator>>,
-    ) -> UpdateBehaviour;
+    fn control_ui(&mut self, ui: &mut egui::Ui, mods: &mut Vec<Box<dyn Modulator>>);
     fn color_ui(&mut self, ui: &mut egui::Ui);
 
     fn animation_type(&self) -> AnimationType;
     fn init(&mut self);
     fn set_dimension(&mut self, _window_rect: &Rect) {}
     fn hot_update(&mut self);
-    fn reset(&mut self);
     fn draw(&self, draw: &Draw);
     fn update(&mut self, win_rect: &Rect, timecode: &TimeCode);
     // Returns references to the internal concrete objects
@@ -80,7 +75,7 @@ pub struct Animator {
     pub timecode: TimeCode,
     pub modulators: Vec<Box<dyn Modulator>>,
     pub active_animations: Vec<Box<dyn AnimatorSettings>>,
-    pub current_ani_index: Option<usize>,
+    pub current_animation_index: Option<usize>,
 }
 
 impl Animator {
@@ -89,8 +84,8 @@ impl Animator {
         active_animations.push(Box::new(BouncingBallSettings::new(win_rect)));
 
         let modulators: Vec<Box<dyn Modulator>> = vec![
-            Box::new(WaveModulator::new()),
-            Box::new(WaveModulator::new()),
+            Box::new(WaveModulator::new(0)),
+            Box::new(WaveModulator::new(1)),
         ];
 
         Animator {
@@ -98,7 +93,7 @@ impl Animator {
             modulators,
             grid,
             active_animations,
-            current_ani_index: Some(0),
+            current_animation_index: Some(0),
         }
     }
 
@@ -126,7 +121,7 @@ impl Animator {
                     .push(Box::new(WaveLinesSettings::new(win_rect)));
             }
         }
-        self.current_ani_index = Some(self.active_animations.iter().len() - 1);
+        self.current_animation_index = Some(self.active_animations.iter().len() - 1);
     }
 
     pub fn reset(&mut self, win_rect: &Rect) {
@@ -234,14 +229,33 @@ impl Animator {
         self.grid.draw(draw);
     }
 
+    pub fn modulators_ui(&mut self, ui: &mut egui::Ui, win_rect: &Rect) {
+        for g in self.modulators.iter_mut() {
+            g.ui(ui, 0.0);
+        }
+    }
+
     pub fn animator_layer_ui(&mut self, ui: &mut egui::Ui, win_rect: &Rect) {
         let mut index_to_remove = None;
 
         ui.vertical(|ui| {
             ui.label(egui::RichText::new("LAYERS"));
 
+            ui.add_space(2.0);
+            ui.menu_button(egui::RichText::new("+"), |ui| {
+                for direction in AnimationType::iter() {
+                    if ui
+                        .button(egui::RichText::new(format!("{}", direction).to_uppercase()))
+                        .clicked()
+                    {
+                        self.add_animator(win_rect, direction);
+                        ui.close_menu();
+                    }
+                }
+            });
+
             for index in 0..self.active_animations.len() {
-                let is_selected = self.current_ani_index == Some(index);
+                let is_selected = self.current_animation_index == Some(index);
                 let anim_name = format!("{}", self.active_animations[index].animation_type());
 
                 ui.horizontal(|ui| {
@@ -264,7 +278,7 @@ impl Animator {
                         });
 
                     if ui.button(label).clicked() {
-                        self.current_ani_index = Some(index);
+                        self.current_animation_index = Some(index);
                     }
 
                     if ui
@@ -282,51 +296,35 @@ impl Animator {
             if let Some(remove_idx) = index_to_remove {
                 self.active_animations.remove(remove_idx);
 
-                if let Some(current_idx) = self.current_ani_index {
+                if let Some(current_idx) = self.current_animation_index {
                     if current_idx == remove_idx {
-                        self.current_ani_index = if self.active_animations.is_empty() {
+                        self.current_animation_index = if self.active_animations.is_empty() {
                             None
                         } else {
                             Some(remove_idx.saturating_sub(1))
                         };
                     } else if current_idx > remove_idx {
-                        self.current_ani_index = Some(current_idx - 1);
+                        self.current_animation_index = Some(current_idx - 1);
                     }
                 }
             }
-
-            ui.add_space(2.0);
-            ui.menu_button(egui::RichText::new("+"), |ui| {
-                for direction in AnimationType::iter() {
-                    if ui
-                        .button(egui::RichText::new(format!("{}", direction).to_uppercase()))
-                        .clicked()
-                    {
-                        self.add_animator(win_rect, direction);
-                        ui.close_menu();
-                    }
-                }
-            });
         });
     }
 
-    pub fn control_ui(&mut self, ui: &mut egui::Ui) -> UpdateBehaviour {
-        let mut change_type = UpdateBehaviour::None;
-
+    pub fn control_ui(&mut self, ui: &mut egui::Ui) {
         ui.vertical(|ui| {
-            if let Some(index) = self.current_ani_index {
+            if let Some(index) = self.current_animation_index {
                 if let Some(animator) = self.active_animations.get_mut(index) {
                     ui.label(egui::RichText::new(
                         format!("{}", animator.animation_type()).to_uppercase(),
                     ));
                     ui.add(egui::Separator::default().spacing(4.0));
-                    change_type = animator.control_ui(ui, &mut self.modulators);
+                    animator.control_ui(ui, &mut self.modulators);
+                    animator.color_ui(ui);
                 }
             } else {
                 ui.label(egui::RichText::new("SELECT A LAYER"));
             }
         });
-
-        change_type
     }
 }

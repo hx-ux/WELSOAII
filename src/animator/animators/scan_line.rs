@@ -1,7 +1,6 @@
 use crate::animator::AnimatedObject;
 use crate::animator::AnimatorSettings;
 use crate::animator::ObjectShape;
-use crate::animator::UpdateBehaviour;
 use crate::animator::animation_type::AnimationType;
 use crate::animator::animation_type::ScanLineModes;
 use crate::color::ColorParam;
@@ -52,31 +51,25 @@ impl ScanLineSettings {
 }
 
 impl AnimatorSettings for ScanLineSettings {
-    fn control_ui(
-        &mut self,
-        ui: &mut egui::Ui,
-        modulators: &mut Vec<Box<dyn Modulator>>,
-    ) -> UpdateBehaviour {
-        let mut update = UpdateBehaviour::None;
-
+    fn control_ui(&mut self, ui: &mut egui::Ui, modulators: &mut Vec<Box<dyn Modulator>>) {
         if self.speed.to_slider_modulate(ui, modulators) {
-            update = UpdateBehaviour::HotUpdate;
+            self.hot_update();
         }
 
         if self.width.to_slider_modulate(ui, modulators) {
-            update = UpdateBehaviour::HotUpdate;
+            self.hot_update();
         }
 
         if self.wobble_amp.to_slider_modulate(ui, modulators) {
-            update = UpdateBehaviour::HotUpdate;
+            self.hot_update();
         }
 
         if self.wobble_freq.to_slider_modulate(ui, modulators) {
-            update = UpdateBehaviour::HotUpdate;
+            self.hot_update();
         }
 
         if self.tilt.to_slider_modulate(ui, modulators) {
-            update = UpdateBehaviour::HotUpdate;
+            self.hot_update();
         }
 
         ui.label("Mode:");
@@ -86,16 +79,14 @@ impl AnimatorSettings for ScanLineSettings {
                     .radio_value(&mut self.mode, options, format!("{}", options))
                     .changed()
                 {
-                    update = UpdateBehaviour::NeedsReset;
+                    self.init();
                 };
             }
         });
 
         if self.line_count.to_slider(ui) {
-            update = UpdateBehaviour::NeedsReset;
+            self.init();
         }
-
-        update
     }
 
     fn animation_type(&self) -> AnimationType {
@@ -138,15 +129,6 @@ impl AnimatorSettings for ScanLineSettings {
             obj.tilt = *self.tilt.value();
             obj.speed = self.speed.value().abs() * obj.speed.signum();
         }
-    }
-
-    fn reset(&mut self) {
-        self.line_count.reset();
-        self.speed.reset();
-        self.width.reset();
-        self.wobble_amp.reset();
-        self.wobble_freq.reset();
-        self.tilt.reset();
     }
 
     fn draw(&self, draw: &Draw) {

@@ -19,7 +19,6 @@ pub use utils::AppMode;
 
 // Core component imports
 use crate::animator::Animator;
-use crate::animator::animation_type::UpdateBehaviour;
 use crate::receiver::{LayoutMode, ReceiverGrid};
 use crate::ui::performance_view::PerfStats;
 use crate::utils::GlobalSettings;
@@ -120,30 +119,24 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
         });
     });
 
-    egui::TopBottomPanel::bottom("ANIMATOR")
-        .exact_height(200.00)
-        .show(&ctx, |ui| {
-            // Top divider line
+    egui::SidePanel::left("control_panel")
+        .resizable(true)
+        .min_width(_model.global_settings.view_window_size.1 as f32 * 0.2)
+        .max_width(_model.global_settings.view_window_size.1 as f32)
+        .default_width(_model.global_settings.view_window_size.1 as f32 * 0.1)
+        .show_animated(&ctx, true, |ui| {
             ui.add_space(1.0);
+            _model.animator.animator_layer_ui(ui, &win_rect);
+
+            _model.animator.control_ui(ui);
 
             ui.columns(3, |cols| {
                 cols[0].set_width(120.0);
-                _model.animator.animator_layer_ui(&mut cols[0], &win_rect);
-
-                egui::ScrollArea::vertical()
-                    .id_source("ctrl_scroll")
-                    .show(&mut cols[1], |ui| match _model.animator.control_ui(ui) {
-                        UpdateBehaviour::NeedsReset => _model.animator.reset(&win_rect),
-                        UpdateBehaviour::HotUpdate => _model.animator.behaviour_hot_update(),
-                        UpdateBehaviour::LoadPreset => {}
-                        UpdateBehaviour::SavePresets => {}
-                        UpdateBehaviour::None => {}
-                    });
 
                 egui::ScrollArea::vertical()
                     .id_source("color_scroll")
                     .show(&mut cols[2], |ui| {
-                        if let Some(index) = _model.animator.current_ani_index {
+                        if let Some(index) = _model.animator.current_animation_index {
                             if let Some(animator) = _model.animator.active_animations.get_mut(index)
                             {
                                 ui.label(egui::RichText::new("COLOR"));
@@ -155,18 +148,17 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
             });
         });
 
-    // egui::TopBottomPanel::bottom("MODULATOR")
-    //     .exact_height(130.0)
-    //     .show(&ctx, |ui| {
-    //         ui.add_space(1.0);
-    //         ui.label(egui::RichText::new("MODULATOR"));
-    //         ui.add(egui::Separator::default().spacing(4.0));
-    //         egui::ScrollArea::vertical()
-    //             .id_source("mod_scroll")
-    //             .show(ui, |ui| {
-    //                 _model.animator.modulators.ui(ui);
-    //             });
-    //     });
+    egui::TopBottomPanel::bottom("Modulators")
+        .exact_height(200.0)
+        .show(&ctx, |ui| {
+            ui.add_space(1.0);
+            ui.add(egui::Separator::default().spacing(4.0));
+            egui::ScrollArea::vertical()
+                .id_source("scroll")
+                .show(ui, |ui| {
+                    _model.animator.modulators_ui(ui, &win_rect);
+                });
+        });
 
     egui::Window::new("GLOBAL SETTINGS")
         .resizable(true)

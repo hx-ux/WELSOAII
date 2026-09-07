@@ -12,7 +12,7 @@ use crate::parameters::ConstantParam;
 pub enum LfoWave {
     #[default]
     Sine,
-    /// Triangle, skewable -> shows as "Pyramid" like in the reference
+    /// Pyramid is like triangle
     #[strum(to_string = "Pyramid")]
     Pyramid,
     #[strum(to_string = "Square")]
@@ -23,7 +23,7 @@ pub enum LfoWave {
     RampDown,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct WaveModulator {
     /// ±1.0 equals ±100% around the base value.
     pub amount: ConstantParam<f32>,
@@ -32,24 +32,26 @@ pub struct WaveModulator {
     pub freq_mul: f32,
     pub skew: ConstantParam<f32>,
     pub enabled: bool,
+    // must be unique, used as an identifier
+    pub index: usize,
 }
 
 impl WaveModulator {
-    pub fn new() -> Self {
+    pub fn new(index: usize) -> Self {
         Self {
             amount: ConstantParam::new(
                 0.25,
                 0.0,
                 1.0,
-                &"display_text.".to_string(),
+                &"amount.".to_string(),
                 &"amount".to_string(),
             ),
-
             amount_type: Polarity::Plus,
             wave: LfoWave::default(),
             freq_mul: 1.0,
             skew: ConstantParam::new(0.0, 0.0, 1.0, "Skew", "skew"),
             enabled: true,
+            index,
         }
     }
 
@@ -101,19 +103,13 @@ impl WaveModulator {
     }
 }
 
-impl Default for WaveModulator {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl Modulator for WaveModulator {
     fn ui(&mut self, ui: &mut egui::Ui, current_beat: f32) {
         let base_cycles = current_beat * self.freq_mul;
 
         const N: usize = 128;
-        // blue accent color
-        let accent = Color32::from_rgb(0x5A, 0xA9, 0xFF);
+
+        let accent = Color32::from_rgb(0, 100, 255);
 
         let samples: Vec<[f64; 2]> = (0..=N)
             .map(|i| {
@@ -129,7 +125,7 @@ impl Modulator for WaveModulator {
 
         // Point
         let handle = {
-            let peak_t = 0.5f32.powf(1.0 / (2.0f32).powf(self.skew.value)); // where p^e == 0.5
+            let peak_t = 0.5f32.powf(1.0 / (2.0f32).powf(self.skew.value));
             Points::new(PlotPoints::from(vec![[
                 peak_t as f64,
                 self.preview(base_cycles + peak_t) as f64,
@@ -138,7 +134,7 @@ impl Modulator for WaveModulator {
             .color(accent)
         };
 
-        Plot::new(ui.id().with("lfo_preview"))
+        Plot::new(ui.id().with(format!("preview {}", self.index)))
             .view_aspect(6.0)
             .height(20.0)
             .width(200.0)
@@ -166,7 +162,7 @@ impl Modulator for WaveModulator {
                     .step_by(0.5),
             );
 
-            egui::ComboBox::from_label("Wave")
+            egui::ComboBox::from_label(format!("Wave {}", self.index))
                 .selected_text(format!("{}", self.wave))
                 .show_ui(ui, |ui| {
                     for w in LfoWave::iter() {
@@ -190,7 +186,7 @@ impl Modulator for WaveModulator {
         self.skew.to_slider(ui);
     }
 
-    fn modulated_value(&self, beat_pos: f32, anmount: f32) -> f32 {
+    fn modulated_value(&self, beat_pos: f32, amount: f32) -> f32 {
         if !self.enabled {
             return 1.0;
         }
@@ -206,6 +202,6 @@ impl Modulator for WaveModulator {
 
         let g = 1.0 + self.amount.value * mapped_result;
 
-        1.0 + (g - 1.0) * anmount
+        1.0 + (g - 1.0) * amount
     }
 }

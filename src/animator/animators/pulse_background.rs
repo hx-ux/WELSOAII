@@ -1,6 +1,6 @@
 use crate::{
     animator::{
-        AnimatedObject, AnimatorSettings, ObjectShape, UpdateBehaviour,
+        AnimatedObject, AnimatorSettings, ObjectShape,
         animation_type::{AnimationType, PulseModes, PulseShape},
     },
     color::ColorParam,
@@ -44,21 +44,14 @@ impl PulseBackgroundSettings {
 }
 
 impl AnimatorSettings for PulseBackgroundSettings {
-    fn control_ui(
-        &mut self,
-        ui: &mut egui::Ui,
-        modulators: &mut Vec<Box<dyn Modulator>>,
-    ) -> UpdateBehaviour {
-        let mut update = UpdateBehaviour::None;
-
-        ui.label("Mode:");
+    fn control_ui(&mut self, ui: &mut egui::Ui, modulators: &mut Vec<Box<dyn Modulator>>) {
         ui.horizontal(|ui| {
             for options in PulseModes::iter() {
                 if ui
                     .radio_value(&mut self.mode, options, format!("{}", options))
                     .changed()
                 {
-                    update = UpdateBehaviour::NeedsReset;
+                    self.init();
                 };
             }
         });
@@ -70,32 +63,29 @@ impl AnimatorSettings for PulseBackgroundSettings {
                     .radio_value(&mut self.shape, options, format!("{}", options))
                     .changed()
                 {
-                    update = UpdateBehaviour::HotUpdate;
+                    self.init();
                 };
             }
         });
 
         if self.speed.to_slider(ui) {
-            update = UpdateBehaviour::HotUpdate;
+            self.hot_update();
         }
         if self.limit.to_slider_modulate(ui, modulators) {
-            update = UpdateBehaviour::HotUpdate;
+            self.hot_update();
         }
 
         if self.ring_count.to_slider(ui) {
-            update = UpdateBehaviour::NeedsReset;
             self.init();
         }
 
         if self.ring_spread.to_slider_modulate(ui, modulators) {
-            update = UpdateBehaviour::HotUpdate;
+            self.hot_update();
         }
 
         if self.rotation_speed.to_slider_modulate(ui, modulators) {
-            update = UpdateBehaviour::HotUpdate;
+            self.hot_update();
         }
-
-        update
     }
 
     fn animation_type(&self) -> AnimationType {
@@ -130,14 +120,6 @@ impl AnimatorSettings for PulseBackgroundSettings {
             obj.rotation_speed = *self.rotation_speed.value();
             obj.ring_spread = *self.ring_spread.value();
         }
-    }
-
-    fn reset(&mut self) {
-        self.ring_count.reset();
-        self.speed.reset();
-        self.limit.reset();
-        self.rotation_speed.reset();
-        self.ring_spread.reset();
     }
 
     fn draw(&self, draw: &Draw) {

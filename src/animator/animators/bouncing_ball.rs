@@ -1,8 +1,5 @@
 use crate::{
-    animator::{
-        AnimatedObject, AnimatorSettings, ObjectShape, UpdateBehaviour,
-        animation_type::AnimationType,
-    },
+    animator::{AnimatedObject, AnimatorSettings, ObjectShape, animation_type::AnimationType},
     color::ColorParam,
     modulator::Modulator,
     parameters::{ConstantParam, ModulatedParam},
@@ -49,32 +46,24 @@ impl BouncingBallSettings {
 }
 
 impl AnimatorSettings for BouncingBallSettings {
-    fn control_ui(
-        &mut self,
-        ui: &mut egui::Ui,
-        mods: &mut Vec<Box<dyn Modulator>>,
-    ) -> UpdateBehaviour {
-        let mut update = UpdateBehaviour::None;
-
+    fn control_ui(&mut self, ui: &mut egui::Ui, mods: &mut Vec<Box<dyn Modulator>>) {
         if self.ball_count.to_slider(ui) {
-            update = UpdateBehaviour::HotUpdate;
+            // dont update, creates a smooth transition
         }
         if self.radius.to_slider_modulate(ui, mods) {
-            update = UpdateBehaviour::HotUpdate;
+            self.hot_update();
         }
         if self.speed.to_slider_modulate(ui, mods) {
-            update = UpdateBehaviour::HotUpdate;
+            self.hot_update();
         }
 
         if ui.horizontal(|ui| self.ball_vel_range_x.to_drag(ui)).inner {
-            update = UpdateBehaviour::NeedsReset;
+            self.init();
         }
 
         if ui.horizontal(|ui| self.ball_vel_range_y.to_drag(ui)).inner {
-            update = UpdateBehaviour::NeedsReset;
+            self.init();
         }
-
-        update
     }
 
     fn animation_type(&self) -> AnimationType {
@@ -129,14 +118,6 @@ impl AnimatorSettings for BouncingBallSettings {
             ball.radius = *self.radius.value();
             ball.color = self.color.clone().value_mapped(ball.index);
         }
-    }
-
-    fn reset(&mut self) {
-        self.ball_count.reset();
-        self.speed.reset();
-        self.radius.reset();
-        self.ball_vel_range_x.reset();
-        self.ball_vel_range_y.reset();
     }
 
     fn draw(&self, draw: &Draw) {
