@@ -21,6 +21,7 @@ pub use utils::AppMode;
 use crate::animator::Animator;
 use crate::animator::animation_type::UpdateBehaviour;
 use crate::receiver::{LayoutMode, ReceiverGrid};
+use crate::ui::performance_view::PerfStats;
 use crate::utils::GlobalSettings;
 
 fn main() {
@@ -33,6 +34,7 @@ struct Model {
     global_settings: GlobalSettings,
     device_modal_open: bool,
     settings_modal_open: bool,
+    performance_view: PerfStats,
 }
 
 fn model(app: &App) -> Model {
@@ -76,6 +78,7 @@ fn model(app: &App) -> Model {
         global_settings,
         device_modal_open: false,
         settings_modal_open: false,
+        performance_view: PerfStats::new(),
     }
 }
 
@@ -92,20 +95,28 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
         _model.global_settings.fully_transparent,
     );
 
+    let now_secs = _update.since_start.as_secs_f64();
+    let delta_secs = _app.duration.since_prev_update.as_secs_f32();
+    _model.performance_view.on_new_frame(now_secs, delta_secs);
+
     egui::TopBottomPanel::top("MENU").show(&ctx, |ui| {
-        egui::menu::bar(ui, |ui| {
-            ui.menu_button("Settings", |ui| {
-                if ui.button("Device").clicked() {
-                    _model.device_modal_open = true;
-                    ui.close_menu();
-                }
-                if ui.button("Settings").clicked() {
-                    _model.settings_modal_open = true;
-                    ui.close_menu();
-                }
-            });
+        ui.horizontal(|ui| {
+            _model.performance_view.ui(ui);
             ui.separator();
-            _model.animator.timecode.ui(ui);
+            egui::menu::bar(ui, |ui| {
+                ui.menu_button("Settings", |ui| {
+                    if ui.button("Device").clicked() {
+                        _model.device_modal_open = true;
+                        ui.close_menu();
+                    }
+                    if ui.button("Settings").clicked() {
+                        _model.settings_modal_open = true;
+                        ui.close_menu();
+                    }
+                });
+                ui.separator();
+                _model.animator.timecode.ui(ui);
+            });
         });
     });
 
