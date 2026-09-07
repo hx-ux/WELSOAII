@@ -49,6 +49,8 @@ impl AnimatorSettings for BouncingBallSettings {
     fn control_ui(&mut self, ui: &mut egui::Ui, mods: &mut Vec<Box<dyn Modulator>>) {
         if self.ball_count.to_slider(ui) {
             // dont update, creates a smooth transition
+            self.hot_update();
+            //
         }
         if self.radius.to_slider_modulate(ui, mods) {
             self.hot_update();
@@ -63,6 +65,10 @@ impl AnimatorSettings for BouncingBallSettings {
 
         if ui.horizontal(|ui| self.ball_vel_range_y.to_drag(ui)).inner {
             self.init();
+        }
+
+        if self.color.ui(ui) {
+            self.hot_update();
         }
     }
 

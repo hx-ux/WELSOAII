@@ -73,6 +73,10 @@ impl AnimatorSettings for WaveLinesSettings {
         if self.phase_spread.to_slider_modulate(ui, modulators) {
             self.hot_update();
         }
+
+        if self.color.ui(ui) {
+            self.hot_update();
+        }
     }
 
     fn animation_type(&self) -> AnimationType {

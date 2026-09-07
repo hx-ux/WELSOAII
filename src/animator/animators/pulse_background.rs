@@ -86,6 +86,10 @@ impl AnimatorSettings for PulseBackgroundSettings {
         if self.rotation_speed.to_slider_modulate(ui, modulators) {
             self.hot_update();
         }
+
+        if self.color.ui(ui) {
+            self.hot_update();
+        }
     }
 
     fn animation_type(&self) -> AnimationType {

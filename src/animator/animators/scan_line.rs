@@ -52,6 +52,10 @@ impl ScanLineSettings {
 
 impl AnimatorSettings for ScanLineSettings {
     fn control_ui(&mut self, ui: &mut egui::Ui, modulators: &mut Vec<Box<dyn Modulator>>) {
+        if self.line_count.to_slider(ui) {
+            self.init();
+        }
+
         if self.speed.to_slider_modulate(ui, modulators) {
             self.hot_update();
         }
@@ -84,8 +88,8 @@ impl AnimatorSettings for ScanLineSettings {
             }
         });
 
-        if self.line_count.to_slider(ui) {
-            self.init();
+        if self.color.ui(ui) {
+            self.hot_update();
         }
     }
 
