@@ -127,37 +127,17 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
         .show_animated(&ctx, true, |ui| {
             ui.add_space(1.0);
             _model.animator.animator_layer_ui(ui, &win_rect);
-
             _model.animator.control_ui(ui);
-
-            ui.columns(3, |cols| {
-                cols[0].set_width(120.0);
-
-                egui::ScrollArea::vertical()
-                    .id_source("color_scroll")
-                    .show(&mut cols[2], |ui| {
-                        if let Some(index) = _model.animator.current_animation_index {
-                            if let Some(animator) = _model.animator.active_animations.get_mut(index)
-                            {
-                                ui.label(egui::RichText::new("COLOR"));
-                                ui.add(egui::Separator::default().spacing(4.0));
-                                animator.color_ui(ui);
-                            }
-                        }
-                    });
-            });
         });
 
     egui::TopBottomPanel::bottom("Modulators")
         .exact_height(200.0)
         .show(&ctx, |ui| {
             ui.add_space(1.0);
-            ui.add(egui::Separator::default().spacing(4.0));
-            egui::ScrollArea::vertical()
-                .id_source("scroll")
-                .show(ui, |ui| {
-                    _model.animator.modulators_ui(ui, &win_rect);
-                });
+            ui.separator();
+            ui.horizontal(|ui| {
+                _model.animator.modulators_ui(ui, &win_rect);
+            });
         });
 
     egui::Window::new("GLOBAL SETTINGS")

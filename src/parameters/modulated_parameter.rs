@@ -115,16 +115,27 @@ impl ModulatedParam {
                         .clamp_range(0.000..=1.000),
                 );
 
-                let max_idx = modulators.len().saturating_sub(1);
-                ui.label("LFO:");
-                if ui
-                    .add(egui::DragValue::new(&mut self.modulator_index).clamp_range(0..=max_idx))
-                    .changed()
-                {
-                    changed = true;
-                }
+                ui.label("Target:");
+                ui.horizontal(|ui| {
+                    ui.separator();
+                    egui::menu::bar(ui, |ui| {
+                        ui.menu_button(self.modulator_index.to_string(), |ui| {
+                            for index in 0..modulators.len() {
+                                if ui.button(index.to_string()).clicked() {
+                                    self.modulator_index = index;
+                                    ui.close_menu();
+                                }
+                            }
+                        });
+                        ui.separator();
+                    });
+                });
             }
         });
+
+        if self.modulation_active {
+            return true;
+        }
         changed
     }
 }

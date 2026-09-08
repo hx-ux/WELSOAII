@@ -9,8 +9,8 @@ use crate::{
     timecode::TimeCode,
 };
 use anyhow::Result;
-use nannou::prelude::*;
-use nannou_egui::egui::{self};
+use nannou::{image::Rgb, prelude::*, wgpu::Color};
+use nannou_egui::egui::{self, Color32};
 use strum::IntoEnumIterator;
 pub mod animation_type;
 mod animators;
@@ -232,10 +232,13 @@ impl Animator {
     pub fn animator_layer_ui(&mut self, ui: &mut egui::Ui, win_rect: &Rect) {
         let mut index_to_remove = None;
 
-        ui.vertical(|ui| {
-            ui.label(egui::RichText::new("LAYERS"));
-
-            ui.add_space(2.0);
+        ui.horizontal_top(|ui| {
+            ui.label(
+                egui::RichText::new("LAYERS")
+                    .size(15.00)
+                    .color(Color32::WHITE),
+            );
+            ui.add_space(5.0);
             ui.menu_button(egui::RichText::new("+"), |ui| {
                 for direction in AnimationType::iter() {
                     if ui
@@ -247,7 +250,11 @@ impl Animator {
                     }
                 }
             });
+        });
 
+        ui.separator();
+
+        ui.vertical(|ui| {
             for index in 0..self.active_animations.len() {
                 let is_selected = self.current_animation_index == Some(index);
                 let anim_name = format!("{}", self.active_animations[index].animation_type());
