@@ -1,4 +1,3 @@
-use crate::ui::controls::single_slider_styled;
 use nannou_egui::egui::{self};
 use serde::{Deserialize, Serialize};
 
@@ -59,10 +58,7 @@ impl<T> ConstantParam<T> {
         let mut changed = false;
         ui.horizontal(|ui| {
             changed |= ui
-                .add(single_slider_styled(
-                    &mut self.value,
-                    self.lower..=self.upper,
-                ))
+                .add(egui::Slider::new(&mut self.value, self.lower..=self.upper))
                 .changed();
             if ui.button("↻").clicked() {
                 changed = true;

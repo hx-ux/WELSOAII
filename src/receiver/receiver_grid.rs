@@ -1,6 +1,6 @@
 use crate::receiver::ReceiverDevice;
 use nannou::prelude::*;
-use nannou_egui::egui;
+use nannou_egui::egui::{self, WidgetType::TextEdit};
 use serde::{Deserialize, Serialize};
 
 use crate::ui::controls::monospace_text_edit;

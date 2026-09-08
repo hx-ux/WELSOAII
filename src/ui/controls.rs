@@ -34,7 +34,8 @@ pub struct DualSlider<'a> {
 
 impl<'a> egui::Widget for DualSlider<'a> {
     fn ui(self, ui: &mut egui::Ui) -> egui::Response {
-        let base_cords = vec2(ui.spacing().slider_width, 12.0);
+        let height = 14.0_f32;
+        let base_cords = vec2(ui.spacing().slider_width, height);
         let mut response = ui.allocate_response(base_cords, egui::Sense::drag());
         let base_rect = response.rect;
 
@@ -49,11 +50,8 @@ impl<'a> egui::Widget for DualSlider<'a> {
         value_frac = value_frac.clamp(0.0, 1.0);
 
         // Drag logic
-        let padding = 6.0;
-        let track_rect = base_rect.shrink(padding);
-
         if response.dragged() {
-            let delta = ui.input(|i| i.pointer.delta().x / track_rect.width());
+            let delta = ui.input(|i| i.pointer.delta().x / base_rect.width());
             value_frac += delta;
             value_frac = value_frac.clamp(0.0, 1.0);
             *self.value = min + value_frac * range_size;
@@ -61,7 +59,8 @@ impl<'a> egui::Widget for DualSlider<'a> {
         }
 
         let painter = ui.painter();
-        let rounding = egui::Rounding::ZERO;
+        // Use the same rounding as egui's slider rail
+        let rounding = egui::Rounding::same(base_rect.height() / 2.0);
 
         // ── Background track ──────────────────────────────────────────────
         painter.rect_filled(base_rect, rounding, custom_colors::SLIDER_TRACK_BG);
@@ -78,7 +77,7 @@ impl<'a> egui::Widget for DualSlider<'a> {
                 base_rect.left_top(),
                 egui::vec2(ghost_frac * base_rect.width(), base_rect.height()),
             );
-            // Draw base orange fill behind ghost
+            // Draw base accent fill behind ghost
             let base_fill_rect = egui::Rect::from_min_size(
                 base_rect.left_top(),
                 egui::vec2(value_frac * base_rect.width(), base_rect.height()),
