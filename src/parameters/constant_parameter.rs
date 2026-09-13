@@ -77,3 +77,16 @@ impl<T> ConstantParam<T> {
         self.value = self.default.clone();
     }
 }
+
+// Add this specialized implementation just for booleans
+impl ConstantParam<bool> {
+    pub fn to_checkbox(&mut self, ui: &mut egui::Ui) -> bool {
+        let mut changed = false;
+
+        ui.horizontal(|ui| {
+            changed |= ui.checkbox(&mut self.value, &self.display_text).changed();
+        })
+        .inner;
+        changed
+    }
+}

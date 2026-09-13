@@ -21,7 +21,7 @@ pub struct QuantumTunnelSettings {
     pub depth: ModulatedParam,
     pub twist: ModulatedParam,
     pub line_weight: ModulatedParam,
-
+    pub recursive_line_height: ConstantParam<bool>,
     #[serde(skip)]
     #[serde(default = "default_rect")]
     dimension: Rect,
@@ -40,7 +40,15 @@ impl QuantumTunnelSettings {
             dimension: *win_rect,
             color: ColorParam::default(),
             animator: Vec::new(),
-            line_weight: ModulatedParam::new(1.0, 1.0, 10.0, "Line Wieght", "line_weight"),
+            line_weight: ModulatedParam::new(1.0, 1.0, 10.0, "Line Weight", "line_weight"),
+
+            recursive_line_height: ConstantParam::new(
+                false,
+                false,
+                true,
+                "Recursive Weight",
+                "recursive_weight",
+            ),
         }
     }
 }
@@ -67,6 +75,10 @@ impl AnimatorSettings for QuantumTunnelSettings {
             self.hot_update();
         }
 
+        if self.recursive_line_height.to_checkbox(ui) {
+            self.init();
+        }
+
         if self.color.ui(ui) {
             self.hot_update();
         }
@@ -89,6 +101,7 @@ impl AnimatorSettings for QuantumTunnelSettings {
                 index,
                 self.ring_count.value as usize,
                 *self.line_weight.value(),
+                self.recursive_line_height.value,
             );
             self.animator.push(ani);
         }
@@ -113,6 +126,7 @@ impl AnimatorSettings for QuantumTunnelSettings {
                     index,
                     target_count,
                     *self.line_weight.value(),
+                    *&self.recursive_line_height.value,
                 ));
             }
         } else if target_count < current_count {
@@ -169,6 +183,7 @@ pub struct QuantumTunnelAnimator {
     pub current_z: f32,
     pub center: Vec2,
     pub line_weight: f32,
+    pub r_weight: bool,
 }
 
 impl QuantumTunnelAnimator {
@@ -181,6 +196,7 @@ impl QuantumTunnelAnimator {
         index: usize,
         total: usize,
         line_weight: f32,
+        r_weight: bool,
     ) -> Self {
         let z = (index as f32 / total as f32) * depth;
         Self {
@@ -193,6 +209,7 @@ impl QuantumTunnelAnimator {
             current_z: z,
             center: vec2(win_rect.x(), win_rect.y()),
             line_weight,
+            r_weight,
         }
     }
 }
@@ -221,13 +238,18 @@ impl AnimatedObject for QuantumTunnelAnimator {
     fn draw(&self, draw: &Draw) {
         let z_normalized = self.current_z / self.depth;
         let size = (1.0 - z_normalized).powi(2) * 400.0;
-        let line_weight = (1.0 - z_normalized) * 10.0 + 1.0;
+
+        let mut line_weight = self.line_weight;
+
+        if self.r_weight {
+            line_weight = (z_normalized) * self.line_weight * 2.0;
+        }
 
         draw.ellipse()
             .xy(self.position)
             .radius(size)
             .no_fill()
-            .stroke_weight(self.line_weight)
+            .stroke_weight(line_weight)
             .stroke_color(self.color);
     }
 
