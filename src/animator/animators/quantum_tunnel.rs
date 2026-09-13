@@ -20,6 +20,8 @@ pub struct QuantumTunnelSettings {
     pub speed: ModulatedParam,
     pub depth: ModulatedParam,
     pub twist: ModulatedParam,
+    pub line_weight: ModulatedParam,
+
     #[serde(skip)]
     #[serde(default = "default_rect")]
     dimension: Rect,
@@ -38,6 +40,7 @@ impl QuantumTunnelSettings {
             dimension: *win_rect,
             color: ColorParam::default(),
             animator: Vec::new(),
+            line_weight: ModulatedParam::new(1.0, 1.0, 10.0, "Line Wieght", "line_weight"),
         }
     }
 }
@@ -60,13 +63,13 @@ impl AnimatorSettings for QuantumTunnelSettings {
             self.hot_update();
         }
 
+        if self.line_weight.to_slider_modulate(ui, mods) {
+            self.hot_update();
+        }
+
         if self.color.ui(ui) {
             self.hot_update();
         }
-    }
-
-    fn color_ui(&mut self, ui: &mut egui::Ui) {
-        todo!()
     }
 
     fn animation_type(&self) -> AnimationType {
@@ -85,6 +88,7 @@ impl AnimatorSettings for QuantumTunnelSettings {
                 *self.twist.value(),
                 index,
                 self.ring_count.value as usize,
+                *self.line_weight.value(),
             );
             self.animator.push(ani);
         }
@@ -108,6 +112,7 @@ impl AnimatorSettings for QuantumTunnelSettings {
                     *self.twist.value(),
                     index,
                     target_count,
+                    *self.line_weight.value(),
                 ));
             }
         } else if target_count < current_count {
@@ -119,6 +124,7 @@ impl AnimatorSettings for QuantumTunnelSettings {
             e.color = self.color.clone().value_mapped(e.index);
             e.depth = *self.depth.value();
             e.twist = *self.twist.value();
+            e.line_weight = *self.line_weight.value()
         }
     }
 
@@ -162,6 +168,7 @@ pub struct QuantumTunnelAnimator {
     pub index: usize,
     pub current_z: f32,
     pub center: Vec2,
+    pub line_weight: f32,
 }
 
 impl QuantumTunnelAnimator {
@@ -173,6 +180,7 @@ impl QuantumTunnelAnimator {
         twist: f32,
         index: usize,
         total: usize,
+        line_weight: f32,
     ) -> Self {
         let z = (index as f32 / total as f32) * depth;
         Self {
@@ -184,6 +192,7 @@ impl QuantumTunnelAnimator {
             index,
             current_z: z,
             center: vec2(win_rect.x(), win_rect.y()),
+            line_weight,
         }
     }
 }
@@ -214,17 +223,12 @@ impl AnimatedObject for QuantumTunnelAnimator {
         let size = (1.0 - z_normalized).powi(2) * 400.0;
         let line_weight = (1.0 - z_normalized) * 10.0 + 1.0;
 
-        let mut c = self.color;
-        // avoid subtraction with overflow
-        let alpha = (255.0 * (1.0 - z_normalized)) as u8;
-        c = Rgba8::new(c.red, c.green, c.blue, alpha);
-
         draw.ellipse()
             .xy(self.position)
             .radius(size)
             .no_fill()
-            .stroke_weight(line_weight)
-            .stroke_color(c);
+            .stroke_weight(self.line_weight)
+            .stroke_color(self.color);
     }
 
     fn shape(&self) -> ObjectShape {

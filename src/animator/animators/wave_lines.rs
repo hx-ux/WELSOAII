@@ -181,10 +181,6 @@ impl AnimatorSettings for WaveLinesSettings {
     fn save_preset(&mut self) -> anyhow::Result<()> {
         Ok(())
     }
-
-    fn color_ui(&mut self, ui: &mut egui::Ui) {
-        self.color.ui(ui);
-    }
 }
 
 pub struct WaveLine {
