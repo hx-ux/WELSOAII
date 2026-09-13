@@ -1,5 +1,5 @@
-use egui_plot::{Line, Plot, PlotPoints, Points};
-use nannou_egui::egui::{self, Color32};
+use bevy_egui::egui::{self, Color32};
+// use egui_plot::{Line, Plot, PlotPoints, Points};
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter};
@@ -127,42 +127,42 @@ impl Modulator for WaveModulator {
                 })
                 .collect();
 
-            // Floating line
-            let line = Line::new(PlotPoints::from(samples.clone()))
-                .width(1.5)
-                .color(accent);
+            // // Floating line
+            // let line = Line::new(PlotPoints::from(samples.clone()))
+            //     .width(1.5)
+            //     .color(accent);
 
-            // Point
-            let handle = {
-                let peak_t = 0.5f32.powf(1.0 / (2.0f32).powf(self.skew.value));
-                Points::new(PlotPoints::from(vec![[
-                    peak_t as f64,
-                    self.preview(base_cycles + peak_t) as f64,
-                ]]))
-                .radius(4.0)
-                .color(accent)
-            };
+            // // Point
+            // let handle = {
+            //     let peak_t = 0.5f32.powf(1.0 / (2.0f32).powf(self.skew.value));
+            //     Points::new(PlotPoints::from(vec![[
+            //         peak_t as f64,
+            //         self.preview(base_cycles + peak_t) as f64,
+            //     ]]))
+            //     .radius(4.0)
+            //     .color(accent)
+            // };
 
-            Plot::new(ui.id().with(format!("preview {}", self.index)))
-                .view_aspect(6.0)
-                .height(20.0)
-                .width(200.0)
-                .show_background(false)
-                .show_grid([false; 2])
-                .show_axes([false; 2])
-                .allow_drag(false)
-                .allow_zoom(false)
-                .allow_boxed_zoom(false)
-                .allow_scroll(false)
-                .allow_double_click_reset(false)
-                .include_x(0.0)
-                .include_x(1.0)
-                .include_y(0.0)
-                .include_y(2.0)
-                .show(ui, |plot_ui| {
-                    plot_ui.line(line);
-                    plot_ui.points(handle);
-                });
+            // Plot::new(ui.id().with(format!("preview {}", self.index)))
+            //     .view_aspect(6.0)
+            //     .height(20.0)
+            //     .width(200.0)
+            //     .show_background(false)
+            //     .show_grid([false; 2])
+            //     .show_axes([false; 2])
+            //     .allow_drag(false)
+            //     .allow_zoom(false)
+            //     .allow_boxed_zoom(false)
+            //     .allow_scroll(false)
+            //     .allow_double_click_reset(false)
+            //     .include_x(0.0)
+            //     .include_x(1.0)
+            //     .include_y(0.0)
+            //     .include_y(2.0)
+            //     .show(ui, |plot_ui| {
+            //         plot_ui.line(line);
+            //         plot_ui.points(handle);
+            //     });
 
             ui.horizontal_wrapped(|ui| {
                 ui.add(

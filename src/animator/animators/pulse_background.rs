@@ -184,7 +184,7 @@ impl AnimatorSettings for PulseBackgroundSettings {
 pub struct PulseBackgroundAnimator {
     mode: PulseModes,
     pub shape: PulseShape,
-    pub color: Rgba8,
+    pub color: Srgba,
     pub speed: u8,
     current_size_w: f32,
     current_size_h: f32,
@@ -199,7 +199,7 @@ impl PulseBackgroundAnimator {
     fn new(
         mode: PulseModes,
         shape: PulseShape,
-        color: Rgba8,
+        color: Srgba,
         speed: u8,
         limit: f32,
         rotation_speed: f32,

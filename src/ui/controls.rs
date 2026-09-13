@@ -1,4 +1,4 @@
-use nannou_egui::egui::{self, vec2};
+use bevy_egui::egui::{self, vec2};
 use std::ops::RangeInclusive;
 
 use crate::ui::style_definitions::custom_colors;
@@ -60,10 +60,10 @@ impl<'a> egui::Widget for DualSlider<'a> {
 
         let painter = ui.painter();
         // Use the same rounding as egui's slider rail
-        let rounding = egui::Rounding::same(base_rect.height() / 2.0);
+        // let rounding = egui::Rounding::same(base_rect.height() / 2.0);
 
         // ── Background track ──────────────────────────────────────────────
-        painter.rect_filled(base_rect, rounding, custom_colors::SLIDER_TRACK_BG);
+        painter.rect_filled(base_rect, 20.0, custom_colors::SLIDER_TRACK_BG);
 
         if let Some(ghost_val) = self.ghost_value {
             // Ghost fill (modulated value) — semi-transparent white overlay
@@ -82,15 +82,15 @@ impl<'a> egui::Widget for DualSlider<'a> {
                 base_rect.left_top(),
                 egui::vec2(value_frac * base_rect.width(), base_rect.height()),
             );
-            painter.rect_filled(base_fill_rect, rounding, custom_colors::ACCENT_DIM);
-            painter.rect_filled(ghost_fill_rect, rounding, custom_colors::SLIDER_GHOST_FILL);
+            painter.rect_filled(base_fill_rect, 20.0, custom_colors::ACCENT_DIM);
+            painter.rect_filled(ghost_fill_rect, 20.00, custom_colors::SLIDER_GHOST_FILL);
         } else {
             // Value fill (foreground)
             let value_fill_rect = egui::Rect::from_min_size(
                 base_rect.left_top(),
                 egui::vec2(value_frac * base_rect.width(), base_rect.height()),
             );
-            painter.rect_filled(value_fill_rect, rounding, custom_colors::SLIDER_FILL);
+            painter.rect_filled(value_fill_rect, 20.00, custom_colors::SLIDER_FILL);
         }
 
         // ── Value — always visible ────────────────────────────────────────

@@ -1,5 +1,5 @@
 pub mod polarity;
-use nannou_egui::egui;
+use bevy_egui::egui;
 
 pub mod wave_modulator;
 

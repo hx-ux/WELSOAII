@@ -1,5 +1,5 @@
 use crate::{modulator::Modulator, ui::controls::styled_dual_slider};
-use nannou_egui::egui::{self, Label};
+use bevy_egui::egui::{self, Label};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]

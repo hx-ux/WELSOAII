@@ -9,8 +9,8 @@ use crate::{
     timecode::TimeCode,
 };
 use anyhow::Result;
+use bevy_egui::egui::{self, Color32};
 use nannou::{image::Rgb, prelude::*, wgpu::Color};
-use nannou_egui::egui::{self, Color32};
 use strum::IntoEnumIterator;
 pub mod animation_type;
 mod animators;
