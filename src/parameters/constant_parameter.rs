@@ -13,7 +13,7 @@ pub struct ConstantParam<T> {
     pub identifier: String,
     /// Optional step size used in sliders and drag widgets.
     #[serde(skip_serializing)]
-    pub step: Option<f32>,
+    pub step: Option<f64>,
 }
 
 impl<T> ConstantParam<T> {
@@ -33,7 +33,7 @@ impl<T> ConstantParam<T> {
     }
 
     /// Set a step size for this parameter (builder pattern).
-    pub fn with_step(mut self, step: f32) -> Self {
+    pub fn with_step(mut self, step: f64) -> Self {
         self.step = Some(step);
         self
     }
@@ -43,7 +43,8 @@ impl<T> ConstantParam<T> {
         T: egui::emath::Numeric + Clone,
     {
         let mut changed = false;
-        let speed = self.step.unwrap_or(1.0);
+        // Default to a reasonable speed if no step is provided
+        let speed = self.step.unwrap_or(0.1);
 
         ui.horizontal(|ui| {
             changed |= ui
@@ -70,9 +71,12 @@ impl<T> ConstantParam<T> {
         let mut changed = false;
         ui.horizontal(|ui| {
             let mut slider = single_slider_styled(&mut self.value, self.lower..=self.upper, "");
+
+            // Apply the custom step if defined
             if let Some(step) = self.step {
-                slider = slider.step_by(2.0);
+                slider = slider.step_by(step);
             }
+
             changed |= ui.add(slider).changed();
 
             if ui.button("↻").clicked() {

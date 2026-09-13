@@ -16,15 +16,17 @@ pub struct ModulatedParam {
     pub modulation_active: bool,
     #[serde(skip_serializing)]
     pub ghost_value: Option<f32>,
-    // unique id for routing and persistence
     pub identifier: String,
     #[serde(skip_serializing)]
     pub mod_amount: f32,
     pub modulator_index: usize,
+    #[serde(skip_serializing)]
+    pub step: Option<f64>, // Added step field
 }
 
 impl ModulatedParam {
     const SPACE: f32 = 5.0;
+
     pub fn new(
         default_value: f32,
         lower: f32,
@@ -43,7 +45,13 @@ impl ModulatedParam {
             mod_amount: 1.0,
             identifier: identifier.to_string(),
             modulator_index: 0,
+            step: None,
         }
+    }
+
+    pub fn with_step(mut self, step: f64) -> Self {
+        self.step = Some(step);
+        self
     }
 
     pub fn reset(&mut self) {
@@ -54,7 +62,6 @@ impl ModulatedParam {
         if self.modulation_active {
             if let Some(mod_matrix) = modulators.get(self.modulator_index) {
                 let mod_factor = mod_matrix.modulated_value(beat_pos, self.mod_amount);
-                // Apply the local mod_amount just to the modulation depth (difference from 1.0)
                 let speed = self.value * mod_factor;
                 self.ghost_value = Some(speed);
                 self.modulated_value = speed;
@@ -63,12 +70,8 @@ impl ModulatedParam {
     }
 
     pub fn value(&self) -> &f32 {
-        if self.modulation_active {
-            if let Some(_ghost_val) = self.ghost_value {
-                &self.modulated_value
-            } else {
-                &self.value
-            }
+        if self.modulation_active && self.ghost_value.is_some() {
+            &self.modulated_value
         } else {
             &self.value
         }
@@ -83,21 +86,21 @@ impl ModulatedParam {
         let mut changed = false;
         ui.add(Label::new(self.display_text.to_string()));
 
-        let mut mod_desc = "U";
-
-        if self.modulation_active {
-            mod_desc = "M";
-        }
+        let mod_desc = if self.modulation_active { "M" } else { "U" };
 
         ui.horizontal(|ui| {
-            changed |= ui
-                .add(styled_dual_slider(
-                    &mut self.value,
-                    self.ghost_value,
-                    self.range.0..=self.range.1,
-                    "",
-                ))
-                .changed();
+            let slider = styled_dual_slider(
+                &mut self.value,
+                self.ghost_value,
+                self.range.0..=self.range.1,
+                "",
+            );
+
+            if let Some(step) = self.step {
+                // TODO
+            }
+
+            changed |= ui.add(slider).changed();
 
             if ui.button("↻").clicked() {
                 changed = true;
