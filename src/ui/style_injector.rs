@@ -2,21 +2,17 @@
 //!
 //! This module provides a cohesive dark theme with consistent colors,
 //! spacing, and typography across all UI elements.
-use nannou_egui::egui::{
-    Color32, Context, FontData, FontDefinitions, FontFamily, Style, TextStyle, Visuals,
-};
+use nannou_egui::egui::{Color32, Context, FontData, FontDefinitions, FontFamily, Style, Visuals};
 
-use crate::ui::style_definitions::{custom_colors, custom_rounding, custom_spacing};
+use crate::ui::style_definitions::{custom_colors, custom_rounding};
 
-/// Applies the custom dark theme to the given egui context
 pub fn apply_custom_style(ctx: &Context, opacity: u8) {
-    let mut style = Style {
+    let style = Style {
         visuals: setup_visuals(opacity),
         ..Default::default()
     };
 
     setup_fonts(ctx);
-    inject_spacing(&mut style);
     ctx.set_style(style);
 }
 
@@ -82,11 +78,4 @@ fn inject_widget_rounding(visuals: &mut Visuals) {
     visuals.widgets.hovered.rounding = custom_rounding::hovered();
     visuals.widgets.open.rounding = custom_rounding::open();
     visuals.widgets.noninteractive.rounding = custom_rounding::noninteractive();
-}
-
-fn inject_spacing(style: &mut Style) {
-    style.spacing.item_spacing = custom_spacing::ITEM_SPACING;
-    style.spacing.button_padding = custom_spacing::BUTTON_PADDING;
-    style.spacing.indent = custom_spacing::INDENT;
-    style.spacing.slider_width = custom_spacing::SLIDER_WIDTH;
 }
