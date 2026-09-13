@@ -1,7 +1,10 @@
 use crate::{
     animator::{
         animation_type::AnimationType,
-        animators::{WaveLinesSettings, bouncing_ball, pulse_background, scan_line},
+        animators::{
+            bouncing_ball, pulse_background, quantum_tunnel::QuantumTunnelSettings, scan_line,
+            wave_lines::WaveLinesSettings,
+        },
     },
     modulator::wave_modulator::WaveModulator,
     parameters::ModulatedParam,
@@ -117,8 +120,12 @@ impl Animator {
             AnimationType::WaveLines => {
                 let mut ani = Box::new(WaveLinesSettings::new(win_rect));
                 ani.init();
-                self.active_animations
-                    .push(Box::new(WaveLinesSettings::new(win_rect)));
+                self.active_animations.push(ani);
+            }
+            AnimationType::QuantumTunnel => {
+                let mut ani = Box::new(QuantumTunnelSettings::new(win_rect));
+                ani.init();
+                self.active_animations.push(ani);
             }
         }
         self.current_animation_index = Some(self.active_animations.iter().len() - 1);

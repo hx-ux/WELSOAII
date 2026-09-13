@@ -27,7 +27,7 @@ pub struct BouncingBallSettings {
     dimension: Rect,
     color: ColorParam,
     #[serde(skip)]
-    animator: Vec<BouncingBallAnimator>, // Refactored to concrete type
+    animator: Vec<BouncingBallAnimator>,
 }
 
 impl BouncingBallSettings {

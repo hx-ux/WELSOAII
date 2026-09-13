@@ -30,6 +30,8 @@ pub enum AnimationType {
     ScanLine = 2,
     #[strum(to_string = "Wave Lines")]
     WaveLines = 3,
+    #[strum(to_string = "Quantum Tunnel")]
+    QuantumTunnel = 4,
 }
 
 impl From<usize> for AnimationType {
