@@ -4,7 +4,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::parameters::ConstantParam;
 
-/// Currently read only
 pub struct AblLinkState {
     pub link: AblLink,
     pub session_state: SessionState,

@@ -9,7 +9,7 @@ use crate::{
     timecode::TimeCode,
 };
 use anyhow::Result;
-use nannou::{image::Rgb, prelude::*, wgpu::Color};
+use nannou::prelude::*;
 use nannou_egui::egui::{self, Color32};
 use strum::IntoEnumIterator;
 pub mod animation_type;

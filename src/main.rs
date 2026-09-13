@@ -100,8 +100,6 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
 
     egui::TopBottomPanel::top("MENU").show(&ctx, |ui| {
         ui.horizontal(|ui| {
-            _model.performance_view.ui(ui);
-            ui.separator();
             egui::menu::bar(ui, |ui| {
                 ui.menu_button("Settings", |ui| {
                     if ui.button("Device").clicked() {
@@ -115,6 +113,8 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
                 });
                 ui.separator();
                 _model.animator.timecode.ui(ui);
+                ui.separator();
+                _model.performance_view.ui(ui);
             });
         });
     });

@@ -1,4 +1,4 @@
-use nannou_egui::egui::{Color32, FontFamily, FontId, Rounding, Vec2};
+use nannou_egui::egui::{Color32, Rounding};
 
 pub mod custom_colors {
     use super::Color32;
@@ -38,49 +38,6 @@ pub mod custom_colors {
     pub const SLIDER_GHOST_FILL: Color32 = Color32::from_rgba_premultiplied(200, 200, 200, 100);
 }
 
-/// Typography configuration
-pub mod custom_typography {
-    use super::{FontFamily, FontId};
-
-    pub const HEADING_SIZE: f32 = 14.0;
-
-    pub const BUTTON_SIZE: f32 = 11.0;
-    pub const BODY_SIZE: f32 = 14.0;
-    pub const MONOSPACE_SIZE: f32 = 14.0;
-    pub const SMALL_SIZE: f32 = 9.0;
-
-    pub fn heading() -> FontId {
-        FontId::new(HEADING_SIZE, FontFamily::Monospace)
-    }
-
-    pub fn body() -> FontId {
-        FontId::new(BODY_SIZE, FontFamily::Monospace)
-    }
-
-    pub fn button() -> FontId {
-        FontId::new(BUTTON_SIZE, FontFamily::Monospace)
-    }
-
-    pub fn monospace() -> FontId {
-        FontId::new(MONOSPACE_SIZE, FontFamily::Monospace)
-    }
-
-    pub fn small() -> FontId {
-        FontId::new(SMALL_SIZE, FontFamily::Monospace)
-    }
-}
-
-/// Spacing constants for consistent layout
-pub mod custom_spacing {
-    use super::Vec2;
-
-    pub const ITEM_SPACING: Vec2 = Vec2::new(4.0, 3.0);
-    pub const BUTTON_PADDING: Vec2 = Vec2::new(6.0, 3.0);
-    pub const INDENT: f32 = 10.0;
-    pub const SLIDER_WIDTH: f32 = 140.0;
-}
-
-/// Rounding constants for visual consistency
 pub mod custom_rounding {
     use super::Rounding;
 
