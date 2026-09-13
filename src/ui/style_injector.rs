@@ -3,26 +3,44 @@
 //! This module provides a cohesive dark theme with consistent colors,
 //! spacing, and typography across all UI elements.
 use nannou::glam::bool;
-use nannou_egui::egui::{Color32, Context, Style, TextStyle, Visuals};
+use nannou_egui::egui::{Color32, Context, FontData, FontDefinitions, FontFamily, Style, Visuals};
 
-use crate::ui::style_definitions::{
-    custom_colors, custom_rounding, custom_spacing, custom_typography,
-};
+use crate::ui::style_definitions::{custom_colors, custom_rounding};
 
 /// Applies the custom dark theme to the given egui context
 pub fn apply_custom_style(ctx: &Context, opacity: u8, transparent: bool) {
-    let mut style = Style {
+    let style = Style {
         visuals: setup_visuals(opacity, transparent),
         ..Default::default()
     };
 
-    inject_text_styles(&mut style);
-    inject_spacing(&mut style);
-
+    setup_fonts(ctx);
     ctx.set_style(style);
 }
 
-// inject style into controls
+fn setup_fonts(ctx: &Context) {
+    let mut fonts = FontDefinitions::default();
+
+    fonts.font_data.insert(
+        "sans".to_owned(),
+        FontData::from_static(include_bytes!("../assets/GoogleSans.ttf")),
+    );
+
+    fonts
+        .families
+        .get_mut(&FontFamily::Monospace)
+        .unwrap()
+        .insert(0, "sans".to_owned());
+
+    fonts
+        .families
+        .get_mut(&FontFamily::Proportional)
+        .unwrap()
+        .insert(0, "sans".to_owned());
+
+    ctx.set_fonts(fonts);
+}
+
 fn setup_visuals(opacity: u8, transparent: bool) -> Visuals {
     let mut visuals = Visuals::dark();
 
@@ -71,40 +89,15 @@ fn setup_visuals(opacity: u8, transparent: bool) -> Visuals {
     visuals.faint_bg_color = custom_colors::FILL_BG;
     visuals.extreme_bg_color = custom_colors::EXTREME_BG;
 
-    inject_widget_rounding(&mut visuals);
+    setup_widget_rounding(&mut visuals);
 
     visuals
 }
 
-fn inject_widget_rounding(visuals: &mut Visuals) {
+fn setup_widget_rounding(visuals: &mut Visuals) {
     visuals.widgets.active.rounding = custom_rounding::active();
     visuals.widgets.inactive.rounding = custom_rounding::inactive();
     visuals.widgets.hovered.rounding = custom_rounding::hovered();
     visuals.widgets.open.rounding = custom_rounding::open();
     visuals.widgets.noninteractive.rounding = custom_rounding::noninteractive();
-}
-
-fn inject_text_styles(style: &mut Style) {
-    style
-        .text_styles
-        .insert(TextStyle::Heading, custom_typography::heading());
-    style
-        .text_styles
-        .insert(TextStyle::Body, custom_typography::body());
-    style
-        .text_styles
-        .insert(TextStyle::Button, custom_typography::button());
-    style
-        .text_styles
-        .insert(TextStyle::Monospace, custom_typography::monospace());
-    style
-        .text_styles
-        .insert(TextStyle::Small, custom_typography::small());
-}
-
-fn inject_spacing(style: &mut Style) {
-    style.spacing.item_spacing = custom_spacing::ITEM_SPACING;
-    style.spacing.button_padding = custom_spacing::BUTTON_PADDING;
-    style.spacing.indent = custom_spacing::INDENT;
-    style.spacing.slider_width = custom_spacing::SLIDER_WIDTH;
 }
