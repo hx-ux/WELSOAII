@@ -33,12 +33,14 @@ pub struct BouncingBallSettings {
 impl BouncingBallSettings {
     pub fn new(win_rect: &Rect) -> Self {
         Self {
-            ball_count: ConstantParam::new(20, 1, 400, "Ball Count", "ball_count"),
+            ball_count: ConstantParam::new(20, 1, 400, "Ball Count", "ball_count").with_step(1.0),
             speed: ModulatedParam::new(5.0, 1.0, 20.0, "Speed", "bounce_speed"),
             dimension: *win_rect,
             radius: ModulatedParam::new(10.0, 4.0, 40.0, "Radius", "bounce_radius"),
-            ball_vel_range_x: ConstantParam::new(10.0, 1.0, 200.0, "Range X", "range_x"),
-            ball_vel_range_y: ConstantParam::new(15.0, 1.0, 200.0, "Range Y", "range_y"),
+            ball_vel_range_x: ConstantParam::new(10.0, 1.0, 200.0, "Range X", "range_x")
+                .with_step(1.0),
+            ball_vel_range_y: ConstantParam::new(15.0, 1.0, 200.0, "Range Y", "range_y")
+                .with_step(1.0),
             color: ColorParam::default(),
             animator: Vec::new(),
         }
