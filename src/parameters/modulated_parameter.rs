@@ -61,10 +61,16 @@ impl ModulatedParam {
     pub fn modulate(&mut self, beat_pos: f32, modulators: &mut Vec<Box<dyn Modulator>>) {
         if self.modulation_active {
             if let Some(mod_matrix) = modulators.get(self.modulator_index) {
-                let mod_factor = mod_matrix.modulated_value(beat_pos, self.mod_amount);
-                let speed = self.value * mod_factor;
-                self.ghost_value = Some(speed);
-                self.modulated_value = speed;
+                let mod_signal = mod_matrix.modulated_value(beat_pos, self.mod_amount);
+                
+                let speed = if mod_signal >= 0.0 {
+                    self.value + mod_signal * (self.range.1 - self.value)
+                } else {
+                    self.value + mod_signal * (self.value - self.range.0)
+                };
+                
+                self.ghost_value = Some(speed.clamp(self.range.0, self.range.1));
+                self.modulated_value = speed.clamp(self.range.0, self.range.1);
             }
         }
     }

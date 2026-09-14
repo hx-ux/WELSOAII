@@ -1,4 +1,3 @@
-use egui_plot::{Line, Plot, PlotPoints, Points};
 use nannou_egui::egui::{self, Color32};
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
@@ -25,7 +24,6 @@ pub enum LfoWave {
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct WaveModulator {
-    /// ±1.0 equals ±100% around the base value.
     pub amount: ConstantParam<f32>,
     pub amount_type: Polarity,
     pub wave: LfoWave,
@@ -48,20 +46,11 @@ impl WaveModulator {
             amount_type: Polarity::Plus,
             wave: LfoWave::default(),
             freq_mul: 1.0,
-            skew: ConstantParam::new(0.0, 0.0, 1.0, "Skew", "skew"),
+            skew: ConstantParam::new(0.0, -5.0, 5.0, "Skew", "skew"),
             enabled: true,
         }
     }
 
-    pub fn set_speed_hz(&mut self, hz: f32, bpm: f32) {
-        self.freq_mul = hz * 60.0 / bpm;
-    }
-
-    pub fn speed_hz(&self, bpm: f32) -> f32 {
-        self.freq_mul * bpm / 60.0
-    }
-
-    /// Bipolar -1..=1 waveform value at a (continuous) cycle position.
     fn shaped(&self, cycles: f32) -> f32 {
         let p = cycles.rem_euclid(1.0);
 
@@ -115,49 +104,67 @@ impl Modulator for WaveModulator {
         // blue accent color
         let accent = Color32::from_rgb(0x5A, 0xA9, 0xFF);
 
-        let samples: Vec<[f64; 2]> = (0..=N)
-            .map(|i| {
+        let (rect, _response) =
+            ui.allocate_exact_size(egui::vec2(200.0, 40.0), egui::Sense::hover());
+        if ui.is_rect_visible(rect) {
+            let painter = ui.painter_at(rect);
+
+            let bg_color = Color32::from_rgb(30, 30, 30);
+            painter.rect_filled(rect, 2.0, bg_color);
+
+            let mut mesh = egui::Mesh::default();
+            let mut line_points = Vec::with_capacity(N + 1);
+
+            for i in 0..=N {
                 let t = i as f32 / N as f32;
-                [t as f64, self.preview(base_cycles + t) as f64]
-            })
-            .collect();
+                let v = self.preview(t);
+                let x = rect.left() + t * rect.width();
+                let y = rect.bottom() - (v / 2.0) * rect.height();
+                let pos = egui::pos2(x, y);
+                line_points.push(pos);
 
-        // Floating line
-        let line = Line::new(PlotPoints::from(samples.clone()))
-            .width(1.5)
-            .color(accent);
+                let bottom_pos = egui::pos2(x, rect.bottom());
 
-        // Point
-        let handle = {
-            let peak_t = 0.5f32.powf(1.0 / (2.0f32).powf(self.skew.value)); // where p^e == 0.5
-            Points::new(PlotPoints::from(vec![[
-                peak_t as f64,
-                self.preview(base_cycles + peak_t) as f64,
-            ]]))
-            .radius(4.0)
-            .color(accent)
-        };
+                let top_idx = mesh.vertices.len() as u32;
+                mesh.vertices.push(egui::epaint::Vertex {
+                    pos,
+                    uv: egui::pos2(0.0, 0.0),
+                    color: accent.linear_multiply(0.3),
+                });
 
-        Plot::new(ui.id().with("lfo_preview"))
-            .view_aspect(6.0)
-            .height(20.0)
-            .width(200.0)
-            .show_background(false)
-            .show_grid([false; 2])
-            .show_axes([false; 2])
-            .allow_drag(false)
-            .allow_zoom(false)
-            .allow_boxed_zoom(false)
-            .allow_scroll(false)
-            .allow_double_click_reset(false)
-            .include_x(0.0)
-            .include_x(1.0)
-            .include_y(0.0)
-            .include_y(2.0)
-            .show(ui, |plot_ui| {
-                plot_ui.line(line);
-                plot_ui.points(handle);
-            });
+                let bottom_idx = mesh.vertices.len() as u32;
+                mesh.vertices.push(egui::epaint::Vertex {
+                    pos: bottom_pos,
+                    uv: egui::pos2(0.0, 0.0),
+                    color: accent.linear_multiply(0.0),
+                });
+
+                if i > 0 {
+                    let prev_top = top_idx - 2;
+                    let prev_bottom = bottom_idx - 2;
+                    mesh.indices.extend_from_slice(&[
+                        prev_top,
+                        prev_bottom,
+                        bottom_idx,
+                        prev_top,
+                        bottom_idx,
+                        top_idx,
+                    ]);
+                }
+            }
+
+            painter.add(egui::Shape::mesh(mesh));
+            painter.add(egui::Shape::line(
+                line_points,
+                egui::Stroke::new(1.0, accent),
+            ));
+
+            let current_t = base_cycles.rem_euclid(1.0);
+            let current_v = self.preview(current_t);
+            let cx = rect.left() + current_t * rect.width();
+            let cy = rect.bottom() - (current_v / 2.0) * rect.height();
+            painter.circle_filled(egui::pos2(cx, cy), 4.0, accent);
+        }
 
         ui.horizontal_wrapped(|ui| {
             ui.add(
@@ -190,9 +197,9 @@ impl Modulator for WaveModulator {
         self.skew.to_slider(ui);
     }
 
-    fn modulated_value(&self, beat_pos: f32, anmount: f32) -> f32 {
+    fn modulated_value(&self, beat_pos: f32, mod_amount: f32) -> f32 {
         if !self.enabled {
-            return 1.0;
+            return 0.0;
         }
 
         let cycles = beat_pos * self.freq_mul;
@@ -204,8 +211,6 @@ impl Modulator for WaveModulator {
             Polarity::PlusMinus => result,
         };
 
-        let g = 1.0 + self.amount.value * mapped_result;
-
-        1.0 + (g - 1.0) * anmount
+        mapped_result * self.amount.value * mod_amount
     }
 }
