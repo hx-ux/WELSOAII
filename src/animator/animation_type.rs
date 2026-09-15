@@ -32,10 +32,8 @@ pub enum AnimationType {
     WaveLines = 3,
     #[strum(to_string = "Strobe")]
     Strobe = 4,
-    #[strum(to_string = "Plasma")]
-    Plasma = 5,
     #[strum(to_string = "Quantum Tunnel")]
-    QuantumTunnel = 6,
+    QuantumTunnel = 5,
 }
 
 impl From<usize> for AnimationType {
@@ -46,7 +44,6 @@ impl From<usize> for AnimationType {
             _ if value == AnimationType::ScanLine as usize => AnimationType::ScanLine,
             _ if value == AnimationType::WaveLines as usize => AnimationType::WaveLines,
             _ if value == AnimationType::Strobe as usize => AnimationType::Strobe,
-            _ if value == AnimationType::Plasma as usize => AnimationType::Plasma,
             _ if value == AnimationType::QuantumTunnel as usize => AnimationType::QuantumTunnel,
             _ => AnimationType::BouncingBalls,
         }

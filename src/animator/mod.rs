@@ -2,8 +2,8 @@ use crate::{
     animator::{
         animation_type::{AnimationType, UpdateBehaviour},
         animators::{
-            PlasmaFieldSettings, StrobeSettings, WaveLinesSettings, bouncing_ball,
-            pulse_background, quantum_tunnel, scan_line,
+            StrobeSettings, WaveLinesSettings, bouncing_ball, pulse_background, quantum_tunnel,
+            scan_line,
         },
     },
     modulator::{Modulator, wave_modulator::WaveModulator},
@@ -90,7 +90,6 @@ impl Animator {
             Box::new(ScanLineSettings::new(win_rect)),
             Box::new(WaveLinesSettings::new(win_rect)),
             Box::new(StrobeSettings::new(win_rect)),
-            Box::new(PlasmaFieldSettings::new(win_rect)),
             Box::new(QuantumTunnelSettings::new(win_rect)),
         ];
 
