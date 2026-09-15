@@ -75,11 +75,6 @@ impl AnimatorSettings for StrobeSettings {
         }
     }
 
-    fn reset(&mut self) {
-        self.rate.reset();
-        self.duty_cycle.reset();
-    }
-
     fn save_preset(&mut self) -> anyhow::Result<()> {
         Ok(())
     }

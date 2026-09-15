@@ -182,18 +182,6 @@ impl AnimatorSettings for WaveLinesSettings {
         }
     }
 
-    fn reset(&mut self) {
-        self.line_count.reset();
-        self.amplitude.reset();
-        self.frequency.reset();
-        self.speed.reset();
-        self.thickness.reset();
-        self.phase_spread.reset();
-        self.h_amplitude.reset();
-        self.harmonic.reset();
-        self.decay.reset();
-    }
-
     fn save_preset(&mut self) -> anyhow::Result<()> {
         Ok(())
     }

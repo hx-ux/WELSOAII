@@ -145,14 +145,6 @@ impl AnimatorSettings for PulseBackgroundSettings {
         }
     }
 
-    fn reset(&mut self) {
-        self.ring_count.reset();
-        self.speed.reset();
-        self.limit.reset();
-        self.rotation_speed.reset();
-        self.ring_spread.reset();
-    }
-
     fn save_preset(&mut self) -> anyhow::Result<()> {
         Ok(())
     }

@@ -128,13 +128,6 @@ impl AnimatorSettings for QuantumTunnelSettings {
             }
         }
     }
-
-    fn reset(&mut self) {
-        self.ring_count.reset();
-        self.speed.reset();
-        self.depth.reset();
-        self.twist.reset();
-    }
 }
 
 pub struct TunnelRing {

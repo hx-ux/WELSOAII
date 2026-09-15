@@ -45,10 +45,6 @@ pub trait AnimatorSettings {
     fn create(&self) -> Vec<Box<dyn AnimatedObject>>;
     fn set_dimension(&mut self, _window_rect: &Rect) {}
     fn hot_update(&self, objects: &mut Vec<Box<dyn AnimatedObject>>);
-    fn reset(&mut self);
-    fn force_update(&self) -> UpdateBehaviour {
-        UpdateBehaviour::NeedsReset
-    }
 
     /// Provides references to all modulated parameters of this effect.
     /// Default implementations for modulations use this to eliminate boilerplate.

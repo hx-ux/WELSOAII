@@ -153,15 +153,6 @@ impl AnimatorSettings for ScanLineSettings {
         }
     }
 
-    fn reset(&mut self) {
-        self.line_count.reset();
-        self.speed.reset();
-        self.width.reset();
-        self.wobble_amp.reset();
-        self.wobble_freq.reset();
-        self.tilt.reset();
-    }
-
     fn save_preset(&mut self) -> anyhow::Result<()> {
         Ok(())
     }

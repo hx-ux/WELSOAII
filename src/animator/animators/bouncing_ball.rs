@@ -145,12 +145,6 @@ impl AnimatorSettings for BouncingBallSettings {
         }
     }
 
-    fn reset(&mut self) {
-        self.ball_count.reset();
-        self.speed.reset();
-        self.radius.reset();
-    }
-
     fn save_preset(&mut self) -> anyhow::Result<()> {
         Ok(())
     }
