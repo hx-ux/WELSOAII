@@ -10,10 +10,6 @@ use nannou::prelude::*;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 
-const LINECOUNT: u32 = 14;
-const AMPLITUDE: f32 = 90.00;
-const FREQUENCY: f32 = 0.018;
-
 #[derive(Serialize, Deserialize)]
 pub struct WaveLinesSettings {
     pub line_count: ConstantParam<u32>,
@@ -22,6 +18,9 @@ pub struct WaveLinesSettings {
     pub speed: ModulatedParam,
     pub thickness: ModulatedParam,
     pub phase_spread: ModulatedParam,
+    pub h_amplitude: ModulatedParam,
+    pub harmonic: ModulatedParam,
+    pub decay: ModulatedParam,
     color: ColorParam,
     #[serde(skip)]
     width: f32,
@@ -34,12 +33,15 @@ pub struct WaveLinesSettings {
 impl WaveLinesSettings {
     pub fn new(win_rect: &Rect) -> Self {
         Self {
-            line_count: ConstantParam::new(LINECOUNT, 2, 60, "Lines", "lines"),
-            amplitude: ModulatedParam::new(AMPLITUDE, 5.0, 260.0, "Amplitude", "wave_amplitude"),
-            frequency: ModulatedParam::new(FREQUENCY, 0.003, 0.08, "Frequency", "wave_frequency"),
-            speed: ModulatedParam::new(1.5, 1.0, 6.0, "Speed", "wave_speed"),
-            thickness: ModulatedParam::new(4.0, 1.0, 14.0, "Thickness", "wave_thickness"),
-            phase_spread: ModulatedParam::new(0.0, -2.0, 2.0, "Phase spread", "wave_spread"),
+            line_count: ConstantParam::new(14, 2, 60, "Lines", "lines"),
+            amplitude: ModulatedParam::new(90.0, 5.0, 300.0, "Amplitude", "wave_amplitude"),
+            frequency: ModulatedParam::new(0.018, 0.001, 0.12, "Frequency", "wave_frequency"),
+            speed: ModulatedParam::new(1.5, 0.0, 10.0, "Speed", "wave_speed"),
+            thickness: ModulatedParam::new(4.0, 1.0, 20.0, "Thickness", "wave_thickness"),
+            phase_spread: ModulatedParam::new(0.0, -3.0, 3.0, "Phase Spread", "wave_spread"),
+            h_amplitude: ModulatedParam::new(0.0, 0.0, 200.0, "H-Amplitude", "wave_h_amp"),
+            harmonic: ModulatedParam::new(1.0, 1.0, 8.0, "Harmonic", "wave_harmonic"),
+            decay: ModulatedParam::new(1.0, 0.0, 1.0, "Edge Decay", "wave_decay"),
             color: ColorParam::default(),
             width: win_rect.w(),
             height: win_rect.h(),
@@ -74,6 +76,16 @@ impl AnimatorSettings for WaveLinesSettings {
             self.hot_update();
         }
 
+        if self.h_amplitude.to_slider_modulate(ui, modulators) {
+            self.hot_update();
+        }
+        if self.harmonic.to_slider_modulate(ui, modulators) {
+            self.hot_update();
+        }
+        if self.decay.to_slider_modulate(ui, modulators) {
+            self.hot_update();
+        }
+
         if self.color.ui(ui) {
             self.hot_update();
         }
@@ -96,6 +108,9 @@ impl AnimatorSettings for WaveLinesSettings {
                 *self.speed.value(),
                 *self.thickness.value(),
                 *self.phase_spread.value(),
+                *self.h_amplitude.value(),
+                *self.harmonic.value(),
+                *self.decay.value(),
                 self.color.clone().value_mapped(idx as usize),
             ));
         }
@@ -122,6 +137,9 @@ impl AnimatorSettings for WaveLinesSettings {
                     *self.speed.value(),
                     *self.thickness.value(),
                     *self.phase_spread.value(),
+                    *self.h_amplitude.value(),
+                    *self.harmonic.value(),
+                    *self.decay.value(),
                     self.color.clone().value_mapped(idx),
                 ));
             }
@@ -134,10 +152,14 @@ impl AnimatorSettings for WaveLinesSettings {
             line.width = self.width;
             line.height = self.height;
             line.amplitude_base = *self.amplitude.value();
+            line.amplitude_current = *self.amplitude.value();
             line.frequency = *self.frequency.value();
             line.speed = *self.speed.value();
             line.thickness = *self.thickness.value();
             line.phase_spread = *self.phase_spread.value();
+            line.h_amplitude = *self.h_amplitude.value();
+            line.harmonic = (*self.harmonic.value()).round() as u32;
+            line.decay = *self.decay.value();
             line.color = self.color.clone().value_mapped(line.index);
         }
     }
@@ -194,6 +216,9 @@ pub struct WaveLine {
     pub speed: f32,
     pub thickness: f32,
     pub phase_spread: f32,
+    pub h_amplitude: f32,
+    pub harmonic: u32,
+    pub decay: f32,
     phase: f32,
     color: Rgba8,
 }
@@ -209,6 +234,9 @@ impl WaveLine {
         speed: f32,
         thickness: f32,
         phase_spread: f32,
+        h_amplitude: f32,
+        harmonic: f32,
+        decay: f32,
         color: Rgba8,
     ) -> Self {
         Self {
@@ -222,8 +250,11 @@ impl WaveLine {
             speed,
             thickness,
             phase_spread,
-            color,
+            harmonic: harmonic.round() as u32,
+            decay,
             phase: random_range(0.0, TAU),
+            color,
+            h_amplitude,
         }
     }
 
@@ -240,11 +271,9 @@ impl AnimatedObject for WaveLine {
     fn update(&mut self, win_rect: &Rect, timecode: &TimeCode) {
         self.width = win_rect.w();
         self.height = win_rect.h();
-        let beat = timecode.get_beat_progress();
-        let beat_amp = 1.0 + (beat * TAU).sin() * 0.12;
 
         self.phase += timecode.get_delta_time() * self.speed * TAU;
-        self.amplitude_current = self.amplitude_base * beat_amp;
+        self.amplitude_current = self.amplitude_base;
     }
 
     fn draw(&self, draw: &Draw) {
@@ -252,13 +281,32 @@ impl AnimatedObject for WaveLine {
         let y_min = -self.height / 2.0;
         let y_max = self.height / 2.0;
         let base_x = self.base_x();
+        let harm = self.harmonic.max(1) as f32;
 
         let points = (0..=y_steps).map(|i| {
             let t = i as f32 / y_steps as f32;
             let y = y_min + (y_max - y_min) * t;
+
+            // Edge decay envelope — amplitude tapers off at top and bottom
+            let decay_t = if self.decay < 1.0 {
+                // smoothstep at edges
+                let edge = 0.15;
+                let lower = smoothstep(0.0, edge, t);
+                let upper = smoothstep(1.0, 1.0 - edge, t);
+                lower * upper
+            } else {
+                1.0
+            };
+            let decay_env = 1.0 - (1.0 - decay_t) * (1.0 - self.decay);
             let phase_offset = self.phase + self.phase_spread * self.index as f32;
-            let x = base_x + (y * self.frequency + phase_offset).sin() * self.amplitude_current;
-            pt2(x, y)
+            // Primary vertical wave (with harmonic multiplier)
+            let x_v = (y * self.frequency * harm + phase_offset).sin()
+                * self.amplitude_current
+                * decay_env;
+            // Secondary horizontal / Lissajous axis
+            let x_h = (y * phase_offset * 0.5).cos() * self.h_amplitude;
+
+            pt2(base_x + x_v + x_h, y)
         });
 
         draw.polyline()
@@ -280,4 +328,9 @@ impl AnimatedObject for WaveLine {
     fn color(&self) -> Rgba8 {
         self.color
     }
+}
+
+fn smoothstep(edge0: f32, edge1: f32, x: f32) -> f32 {
+    let t = ((x - edge0) / (edge1 - edge0)).clamp(0.0, 1.0);
+    t * t * (3.0 - 2.0 * t)
 }
