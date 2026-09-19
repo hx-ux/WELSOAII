@@ -56,23 +56,23 @@ impl AnimatorSettings for ScanLineSettings {
             self.init();
         }
 
-        if self.speed.to_slider_modulate(ui, modulators) {
+        if self.speed.to_slider(ui, modulators) {
             self.hot_update();
         }
 
-        if self.width.to_slider_modulate(ui, modulators) {
+        if self.width.to_slider(ui, modulators) {
             self.hot_update();
         }
 
-        if self.wobble_amp.to_slider_modulate(ui, modulators) {
+        if self.wobble_amp.to_slider(ui, modulators) {
             self.hot_update();
         }
 
-        if self.wobble_freq.to_slider_modulate(ui, modulators) {
+        if self.wobble_freq.to_slider(ui, modulators) {
             self.hot_update();
         }
 
-        if self.tilt.to_slider_modulate(ui, modulators) {
+        if self.tilt.to_slider(ui, modulators) {
             self.hot_update();
         }
 

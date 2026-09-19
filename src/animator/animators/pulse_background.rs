@@ -71,7 +71,7 @@ impl AnimatorSettings for PulseBackgroundSettings {
         if self.speed.to_slider(ui) {
             self.hot_update();
         }
-        if self.limit.to_slider_modulate(ui, modulators) {
+        if self.limit.to_slider(ui, modulators) {
             self.hot_update();
         }
 
@@ -79,11 +79,11 @@ impl AnimatorSettings for PulseBackgroundSettings {
             self.init();
         }
 
-        if self.ring_spread.to_slider_modulate(ui, modulators) {
+        if self.ring_spread.to_slider(ui, modulators) {
             self.hot_update();
         }
 
-        if self.rotation_speed.to_slider_modulate(ui, modulators) {
+        if self.rotation_speed.to_slider(ui, modulators) {
             self.hot_update();
         }
 

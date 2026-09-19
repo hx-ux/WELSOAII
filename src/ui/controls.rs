@@ -49,9 +49,13 @@ impl<'a> egui::Widget for DualSlider<'a> {
         };
         value_frac = value_frac.clamp(0.0, 1.0);
 
+        // Add padding so the knob stays visually within the track
+        let padding = 8.0; // Adjust as needed for knob radius + margin
+        let track_rect = base_rect.shrink(padding);
+
         // Drag logic
         if response.dragged() {
-            let delta = ui.input(|i| i.pointer.delta().x / base_rect.width());
+            let delta = ui.input(|i| i.pointer.delta().x / track_rect.width());
             value_frac += delta;
             value_frac = value_frac.clamp(0.0, 1.0);
             *self.value = min + value_frac * range_size;
@@ -72,11 +76,15 @@ impl<'a> egui::Widget for DualSlider<'a> {
             } else {
                 0.0
             };
+
             let ghost_frac = ghost_frac.clamp(0.0, 1.0);
+
+            // Color for the moving animated value
             let ghost_fill_rect = egui::Rect::from_min_size(
                 base_rect.left_top(),
                 egui::vec2(ghost_frac * base_rect.width(), base_rect.height()),
             );
+
             // Draw base accent fill behind ghost
             let base_fill_rect = egui::Rect::from_min_size(
                 base_rect.left_top(),
@@ -93,6 +101,22 @@ impl<'a> egui::Widget for DualSlider<'a> {
             painter.rect_filled(value_fill_rect, rounding, custom_colors::SLIDER_FILL);
         }
 
+        // Knob (interactive)
+        let knob_x = track_rect.left() + value_frac * track_rect.width();
+        let knob_center = egui::pos2(knob_x, track_rect.center().y);
+        let knob_radius = 8.0;
+        // Paint the Knob
+
+        // Inside
+        painter.circle_filled(knob_center, knob_radius, egui::Color32::LIGHT_GRAY);
+
+        //Outline
+        painter.circle_stroke(
+            knob_center,
+            knob_radius,
+            egui::Stroke::new(1.5, egui::Color32::WHITE),
+        );
+
         // ── Value — always visible ────────────────────────────────────────
         let text = format!("{:.2}", *self.value);
         painter.text(
@@ -107,7 +131,7 @@ impl<'a> egui::Widget for DualSlider<'a> {
     }
 }
 
-pub fn styled_dual_slider<'a>(
+pub fn modulate_able_slider<'a>(
     value: &'a mut f32,
     ghost_value: Option<f32>,
     range: std::ops::RangeInclusive<f32>,

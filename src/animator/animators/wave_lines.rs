@@ -56,33 +56,33 @@ impl AnimatorSettings for WaveLinesSettings {
             self.hot_update();
         }
 
-        if self.amplitude.to_slider_modulate(ui, modulators) {
+        if self.amplitude.to_slider(ui, modulators) {
             self.hot_update();
         }
 
-        if self.frequency.to_slider_modulate(ui, modulators) {
+        if self.frequency.to_slider(ui, modulators) {
             self.hot_update();
         }
 
-        if self.speed.to_slider_modulate(ui, modulators) {
+        if self.speed.to_slider(ui, modulators) {
             self.hot_update();
         }
 
-        if self.thickness.to_slider_modulate(ui, modulators) {
+        if self.thickness.to_slider(ui, modulators) {
             self.hot_update();
         }
 
-        if self.phase_spread.to_slider_modulate(ui, modulators) {
+        if self.phase_spread.to_slider(ui, modulators) {
             self.hot_update();
         }
 
-        if self.h_amplitude.to_slider_modulate(ui, modulators) {
+        if self.h_amplitude.to_slider(ui, modulators) {
             self.hot_update();
         }
-        if self.harmonic.to_slider_modulate(ui, modulators) {
+        if self.harmonic.to_slider(ui, modulators) {
             self.hot_update();
         }
-        if self.decay.to_slider_modulate(ui, modulators) {
+        if self.decay.to_slider(ui, modulators) {
             self.hot_update();
         }
 

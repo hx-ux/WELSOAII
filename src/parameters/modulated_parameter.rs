@@ -1,6 +1,9 @@
-use crate::{modulator::Modulator, ui::controls::styled_dual_slider};
+use crate::{modulator::Modulator, ui::controls::modulate_able_slider};
 use nannou_egui::egui::{self, Label};
 use serde::{Deserialize, Serialize};
+
+const FLAG_MOD_ACTIVE: &'static str = "M";
+const FLAG_MOD_DISABLED: &'static str = "U";
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct ModulatedParam {
@@ -58,23 +61,23 @@ impl ModulatedParam {
                 let speed = self.value * mod_factor;
                 self.ghost_value = Some(speed);
                 self.modulated_value = speed;
+
+                // Optional Override to set the modulation span betwenn 0 to 1
+                // self.ghost_value = Some(speed.clamp(self.range.0, self.range.1));
+                // self.modulated_value = speed.clamp(self.range.0, self.range.1);
             }
         }
     }
 
     pub fn value(&self) -> &f32 {
-        if self.modulation_active {
-            if let Some(_ghost_val) = self.ghost_value {
-                &self.modulated_value
-            } else {
-                &self.value
-            }
+        if self.modulation_active && self.ghost_value.is_some() {
+            &self.modulated_value
         } else {
             &self.value
         }
     }
 
-    pub fn to_slider_modulate(
+    pub fn to_slider(
         &mut self,
         ui: &mut egui::Ui,
         modulators: &mut Vec<Box<dyn Modulator>>,
@@ -83,15 +86,15 @@ impl ModulatedParam {
         let mut changed = false;
         ui.add(Label::new(self.display_text.to_string()));
 
-        let mut mod_desc = "U";
-
-        if self.modulation_active {
-            mod_desc = "M";
-        }
+        let mod_desc = if self.modulation_active {
+            FLAG_MOD_ACTIVE
+        } else {
+            FLAG_MOD_DISABLED
+        };
 
         ui.horizontal(|ui| {
             changed |= ui
-                .add(styled_dual_slider(
+                .add(modulate_able_slider(
                     &mut self.value,
                     self.ghost_value,
                     self.range.0..=self.range.1,
@@ -109,13 +112,14 @@ impl ModulatedParam {
             }
 
             if self.ghost_value.is_some() {
+                // TODO Insert step
                 ui.add(
                     egui::DragValue::new(&mut self.mod_amount)
                         .speed(0.1)
                         .clamp_range(0.000..=1.000),
                 );
 
-                ui.label("Target:");
+                ui.label("LFO:");
                 ui.horizontal(|ui| {
                     ui.separator();
                     egui::menu::bar(ui, |ui| {
@@ -127,7 +131,6 @@ impl ModulatedParam {
                                 }
                             }
                         });
-                        ui.separator();
                     });
                 });
             }

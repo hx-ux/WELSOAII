@@ -59,19 +59,19 @@ impl AnimatorSettings for QuantumTunnelSettings {
             self.init();
         }
 
-        if self.speed.to_slider_modulate(ui, mods) {
+        if self.speed.to_slider(ui, mods) {
             self.hot_update();
         }
 
-        if self.depth.to_slider_modulate(ui, mods) {
+        if self.depth.to_slider(ui, mods) {
             self.hot_update();
         }
 
-        if self.twist.to_slider_modulate(ui, mods) {
+        if self.twist.to_slider(ui, mods) {
             self.hot_update();
         }
 
-        if self.line_weight.to_slider_modulate(ui, mods) {
+        if self.line_weight.to_slider(ui, mods) {
             self.hot_update();
         }
 

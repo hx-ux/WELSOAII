@@ -50,10 +50,10 @@ impl AnimatorSettings for BouncingBallSettings {
         if self.ball_count.to_slider(ui) {
             self.hot_update();
         }
-        if self.radius.to_slider_modulate(ui, mods) {
+        if self.radius.to_slider(ui, mods) {
             self.hot_update();
         }
-        if self.speed.to_slider_modulate(ui, mods) {
+        if self.speed.to_slider(ui, mods) {
             self.hot_update();
         }
 
