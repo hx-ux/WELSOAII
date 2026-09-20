@@ -17,8 +17,8 @@ mod utils;
 // Re-exports for public API
 pub use utils::AppMode;
 
+use crate::animator::animator::Animator;
 // Core component imports
-use crate::animator::Animator;
 use crate::receiver::{LayoutMode, ReceiverGrid};
 use crate::ui::performance_view::PerfStats;
 use crate::utils::GlobalSettings;
@@ -136,7 +136,7 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
             ui.add_space(1.0);
             ui.separator();
             ui.horizontal(|ui| {
-                _model.animator.modulators_ui(ui, &win_rect);
+                _model.animator.modulators_ui(ui);
             });
         });
 

@@ -34,18 +34,6 @@ pub enum AnimationType {
     QuantumTunnel = 4,
 }
 
-impl From<usize> for AnimationType {
-    fn from(value: usize) -> Self {
-        match value {
-            _ if value == AnimationType::BouncingBalls as usize => AnimationType::BouncingBalls,
-            _ if value == AnimationType::PulseBackground as usize => AnimationType::PulseBackground,
-            _ if value == AnimationType::ScanLine as usize => AnimationType::ScanLine,
-            _ if value == AnimationType::WaveLines as usize => AnimationType::WaveLines,
-            _ => AnimationType::BouncingBalls,
-        }
-    }
-}
-
 #[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize, Default, Display, EnumIter)]
 pub enum ScanLineModes {
     #[default]
