@@ -1,6 +1,6 @@
 use crate::{
     animator::animation_type::{AnimationType, UpdateBehaviour},
-    utils::PathManager,
+    utils::SettingsManager,
 };
 
 use chrono::prelude::*;
@@ -128,7 +128,7 @@ impl<T> PresetManager<T> {
     {
         match self.preset_mode {
             PresetMode::Grid => {
-                let path = PathManager::get_devices_folder()
+                let path = SettingsManager::get_devices_folder()
                     .join(&self.generate_filename(custom_file_name));
 
                 nannou::io::save_to_json(path, data)?;
@@ -136,7 +136,7 @@ impl<T> PresetManager<T> {
             PresetMode::Settings => return Err(anyhow::anyhow!("Missing attribute:")),
             PresetMode::Animator => match self.animation_type {
                 Some(atype) => {
-                    let path = PathManager::get_preset_folder(&atype)
+                    let path = SettingsManager::get_preset_folder(&atype)
                         .join(&self.generate_filename(custom_file_name));
                     nannou::io::save_to_json(path, data)?;
                 }
@@ -175,7 +175,7 @@ impl<T> PresetManager<T> {
         match self.preset_mode {
             PresetMode::Animator => match self.animation_type {
                 Some(atype) => {
-                    let path = PathManager::get_preset_folder(&atype);
+                    let path = SettingsManager::get_preset_folder(&atype);
                     let mut entries: Vec<Preset<T>> = Vec::new();
 
                     if path.exists() {

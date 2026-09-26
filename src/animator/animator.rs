@@ -26,8 +26,8 @@ pub struct Animator {
 
 impl Animator {
     pub fn new(win_rect: &Rect, grid: ReceiverGrid) -> Self {
-        let mut active_animations: Vec<Box<dyn AnimatorSettings>> = Vec::new();
-        active_animations.push(Box::new(BouncingBallSettings::new(win_rect)));
+        let active_animations: Vec<Box<dyn AnimatorSettings>> =
+            vec![Box::new(BouncingBallSettings::new(win_rect))];
 
         let modulators: Vec<Box<dyn Modulator>> = vec![
             Box::new(WaveModulator::new(0)),
@@ -44,34 +44,17 @@ impl Animator {
     }
 
     pub fn add_animator(&mut self, win_rect: &Rect, animation_type: AnimationType) {
-        match animation_type {
-            AnimationType::BouncingBalls => {
-                let mut ani = Box::new(BouncingBallSettings::new(win_rect));
-                ani.init();
-                self.active_animations.push(ani);
-            }
-            AnimationType::PulseBackground => {
-                let mut ani = Box::new(PulseBackgroundSettings::new(win_rect));
-                ani.init();
-                self.active_animations.push(ani);
-            }
-            AnimationType::ScanLine => {
-                let mut ani = Box::new(ScanLineSettings::new(win_rect));
-                ani.init();
-                self.active_animations.push(ani);
-            }
-            AnimationType::WaveLines => {
-                let mut ani = Box::new(WaveLinesSettings::new(win_rect));
-                ani.init();
-                self.active_animations.push(ani);
-            }
-            AnimationType::QuantumTunnel => {
-                let mut ani = Box::new(QuantumTunnelSettings::new(win_rect));
-                ani.init();
-                self.active_animations.push(ani);
-            }
-        }
-        self.current_animation_index = Some(self.active_animations.iter().len() - 1);
+        let mut animator: Box<dyn AnimatorSettings> = match animation_type {
+            AnimationType::BouncingBalls => Box::new(BouncingBallSettings::new(win_rect)),
+            AnimationType::PulseBackground => Box::new(PulseBackgroundSettings::new(win_rect)),
+            AnimationType::ScanLine => Box::new(ScanLineSettings::new(win_rect)),
+            AnimationType::WaveLines => Box::new(WaveLinesSettings::new(win_rect)),
+            AnimationType::QuantumTunnel => Box::new(QuantumTunnelSettings::new(win_rect)),
+        };
+
+        animator.init();
+        self.active_animations.push(animator);
+        self.current_animation_index = Some(self.active_animations.len() - 1);
     }
 
     pub fn init_all_layers(&mut self, win_rect: &Rect) {
@@ -162,7 +145,8 @@ impl Animator {
     }
 
     fn apply_modulations(&mut self) {
-        // self.clear_mod_ghosts();
+        //
+        self.clear_mod_ghosts();
         let beat_pos = self.timecode.get_beats();
         for effect in &mut self.active_animations {
             effect.update_modulations(beat_pos, &mut self.modulators);
@@ -262,7 +246,7 @@ impl Animator {
         });
     }
 
-    pub fn control_ui(&mut self, ui: &mut egui::Ui) {
+    pub fn animator_ui(&mut self, ui: &mut egui::Ui) {
         ui.vertical(|ui| {
             if let Some(index) = self.current_animation_index {
                 if let Some(animator) = self.active_animations.get_mut(index) {

@@ -1,6 +1,6 @@
+pub mod file_manager;
 pub mod global_settings;
-pub mod path_manager;
 
+pub use file_manager::SettingsManager;
 pub use global_settings::AppMode;
 pub use global_settings::GlobalSettings;
-pub use path_manager::PathManager;

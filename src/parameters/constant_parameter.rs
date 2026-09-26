@@ -80,7 +80,7 @@ impl<T> ConstantParam<T> {
     }
 }
 
-// Add this specialized implementation just for booleans
+// just for booleans
 impl ConstantParam<bool> {
     pub fn to_checkbox(&mut self, ui: &mut egui::Ui) -> bool {
         let mut changed = false;

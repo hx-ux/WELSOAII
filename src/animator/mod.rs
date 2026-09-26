@@ -14,16 +14,11 @@ use crate::{
 };
 use anyhow::Result;
 use nannou::prelude::*;
-use nannou_egui::egui::{self, Color32};
-use strum::IntoEnumIterator;
+use nannou_egui::egui::{self};
 pub mod animation_type;
 mod animators;
 use crate::modulator::Modulator;
 pub mod animator;
-
-use bouncing_ball::BouncingBallSettings;
-use pulse_background::PulseBackgroundSettings;
-use scan_line::ScanLineSettings;
 
 pub enum ObjectShape {
     Circle(Vec2, f32),

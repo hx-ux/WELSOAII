@@ -1,4 +1,4 @@
-use crate::utils::PathManager;
+use crate::utils::SettingsManager;
 use crate::{animator::animation_type::AnimationType, parameters::ConstantParam};
 use anyhow::Result;
 use nannou_egui::egui;
@@ -39,7 +39,7 @@ impl GlobalSettings {
     }
 
     pub fn create_settings_folder() -> Result<bool> {
-        let z: PathBuf = PathManager::get_preset_path();
+        let z: PathBuf = SettingsManager::get_preset_path();
         fs::create_dir_all(&z)?;
 
         for animation in AnimationType::iter() {
@@ -51,7 +51,7 @@ impl GlobalSettings {
     }
 
     pub fn load_or_default() -> Self {
-        match Self::load(PathManager::settings_path()) {
+        match Self::load(SettingsManager::app_settings_path()) {
             Ok(c) => c,
             Err(_) => Self::new(),
         }
@@ -66,7 +66,7 @@ impl GlobalSettings {
 
     // todo refactor
     pub fn save(&self) -> Result<bool> {
-        nannou::io::save_to_json(PathManager::settings_path(), self)?;
+        nannou::io::save_to_json(SettingsManager::app_settings_path(), self)?;
         Ok(true)
     }
     pub fn ui(&mut self, ui: &mut egui::Ui) -> bool {

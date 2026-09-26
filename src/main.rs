@@ -127,7 +127,7 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
         .show_animated(&ctx, true, |ui| {
             ui.add_space(1.0);
             _model.animator.animator_layer_ui(ui, &win_rect);
-            _model.animator.control_ui(ui);
+            _model.animator.animator_ui(ui);
         });
 
     egui::TopBottomPanel::bottom("Modulators")
