@@ -21,7 +21,7 @@ use crate::animator::animator::Animator;
 // Core component imports
 use crate::receiver::{LayoutMode, ReceiverGrid};
 use crate::ui::performance_view::PerfStats;
-use crate::utils::GlobalSettings;
+use crate::utils::AppSettings;
 
 fn main() {
     nannou::app(model).update(update).run();
@@ -30,20 +30,20 @@ fn main() {
 struct Model {
     animator: Animator,
     egui: Egui,
-    global_settings: GlobalSettings,
+    global_settings: AppSettings,
     device_modal_open: bool,
     settings_modal_open: bool,
     performance_view: PerfStats,
 }
 
 fn model(app: &App) -> Model {
-    let global_settings = GlobalSettings::load_or_default();
+    let global_settings = AppSettings::load_or_default();
 
     app.set_loop_mode(LoopMode::rate_fps(global_settings.framerate));
 
     let view_window_id = app
         .new_window()
-        .title(GlobalSettings::APP_NAME)
+        .title(AppSettings::APP_NAME)
         .size(
             global_settings.view_window_size.0,
             global_settings.view_window_size.1,
@@ -63,7 +63,7 @@ fn model(app: &App) -> Model {
         20,
         20,
         false,
-        LayoutMode::FollowColum,
+        LayoutMode::Colum,
     );
 
     let mut animator = Animator::new(&win_rect, receiver_grid);

@@ -3,7 +3,6 @@ use std::ops::RangeInclusive;
 
 use crate::ui::style_definitions::custom_colors;
 
-/// Styled single-line text edit with monospace font and code editor look
 pub fn monospace_text_edit<'a>(text: &'a mut String, hint: &'a str) -> egui::TextEdit<'a> {
     egui::TextEdit::singleline(text)
         .hint_text(hint)

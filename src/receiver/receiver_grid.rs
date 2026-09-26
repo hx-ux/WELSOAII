@@ -1,18 +1,19 @@
 use crate::receiver::ReceiverDevice;
 use nannou::prelude::*;
-use nannou_egui::egui::{self, WidgetType::TextEdit};
+use nannou_egui::egui::{self};
 use serde::{Deserialize, Serialize};
+use strum::IntoEnumIterator;
+use strum_macros::{Display, EnumIter};
 
 use crate::ui::controls::monospace_text_edit;
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, EnumIter, Display)]
 pub enum LayoutMode {
-    FollowRow = 0,   //  0 1 2 3 / 4 5 6 7
-    FollowColum = 1, //  0 4 / 1 5 / 2 6 / 3 7
+    Row,
+    Colum,
 }
 
 #[derive(Clone)]
-/// the single cell, which interacts with the animator
 pub struct GridCell {
     pub rect: Rect,
     pub display_color: Rgba8,
@@ -25,7 +26,7 @@ impl GridCell {
         GridCell {
             rect,
             is_active: false,
-            display_color: Rgba8::new(10, 10, 10, 10),
+            display_color: Rgba8::new(0, 0, 10, 10),
             pos_string: pos.to_string(), // Cache the string
         }
     }
@@ -50,7 +51,6 @@ impl GridCell {
     }
 }
 
-// #[derive(Serialize, Deserialize, Default)]
 #[derive(Clone, Serialize)]
 pub struct ReceiverGrid {
     #[serde(skip)]
@@ -60,7 +60,6 @@ pub struct ReceiverGrid {
     pub cols: u32,
     pub rows: u32,
     device: ReceiverDevice,
-    show_debug_info: bool,
     show_grid: bool,
     #[serde(skip)]
     led_buffer: Vec<u8>, // Pre-allocated buffer for LED data
@@ -94,7 +93,6 @@ impl ReceiverGrid {
             cols,
             rows,
             device: ReceiverDevice::default(),
-            show_debug_info: debug,
             led_buffer,
             cell_w: 0.0,
             cell_h: 0.0,
@@ -170,11 +168,11 @@ impl ReceiverGrid {
     /// This accounts for the current layout mode
     pub fn get_cell_index(&self, row: u32, col: u32) -> usize {
         match self.layout_mode {
-            LayoutMode::FollowRow => {
+            LayoutMode::Row => {
                 // Row-major: index = row * cols + col
                 (row * self.cols + col) as usize
             }
-            LayoutMode::FollowColum => {
+            LayoutMode::Colum => {
                 // Column-major: index = col * rows + row
                 (col * self.rows + row) as usize
             }
@@ -198,7 +196,7 @@ impl ReceiverGrid {
         let start_y = dimension.top() - cell_h / 2.0;
 
         match layout_mode {
-            LayoutMode::FollowRow => {
+            LayoutMode::Row => {
                 let mut _pos = 0;
                 for r in 0..rows {
                     for c in 0..cols {
@@ -210,7 +208,7 @@ impl ReceiverGrid {
                     }
                 }
             }
-            LayoutMode::FollowColum => {
+            LayoutMode::Colum => {
                 let mut _pos = 0;
                 for c in 0..cols {
                     for r in 0..rows {
@@ -240,7 +238,7 @@ impl ReceiverGrid {
                 .stroke_weight(1.0)
                 .color(cell.get_display_color());
 
-            if self.show_debug_info {
+            if self.show_grid {
                 let mut size = 12;
                 if self.cells.len() >= 100 {
                     size = 10;
@@ -325,28 +323,31 @@ impl ReceiverGrid {
         ui.add_space(5.0);
 
         let status = if self.device.establish_conn {
-            "Device connected"
+            "Disconnect"
         } else {
-            "Device not connected"
+            "Connect"
         };
 
-        ui.label(status);
-        ui.add_space(5.0);
-
-        if ui.button("Connect").clicked() {
+        if ui.button(status).clicked() {
             let _ = &self.device.open_connection();
             changed = true;
         }
 
-        ui.checkbox(&mut self.show_debug_info, "Show debug info");
         ui.checkbox(&mut self.show_grid, "Show grid");
 
-        if ui.button("Save Settings").clicked() {
-            //     let _ = self
-            //  .persistence
-            //  .save_to_file(self, Some(self.device.name.clone()));
-            changed = true;
-        }
+        egui::ComboBox::from_label("")
+            .selected_text(format!("{}", self.layout_mode).to_string())
+            .show_ui(ui, |ui| {
+                LayoutMode::iter().for_each(|option| {
+                    changed |= ui
+                        .selectable_value(
+                            &mut self.layout_mode,
+                            option,
+                            format!("{}", option.clone()),
+                        )
+                        .changed();
+                });
+            });
 
         changed
     }
