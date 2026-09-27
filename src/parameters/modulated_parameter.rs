@@ -1,15 +1,12 @@
 use crate::{
     modulator::Modulator,
     ui::{
-        controls::modulate_able_slider,
+        controls::GhostValueSlider,
         icons::{ICON_MOD_CONNECTED, ICON_MOD_NOT_CONNECTED, ICON_REFRESH},
     },
 };
-use nannou_egui::egui::{self, Label};
+use nannou_egui::egui::{self};
 use serde::{Deserialize, Serialize};
-
-const FLAG_MOD_ACTIVE: &'static str = "M";
-const FLAG_MOD_DISABLED: &'static str = "U";
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct ModulatedParam {
@@ -18,7 +15,8 @@ pub struct ModulatedParam {
     pub modulated_value: f32,
     #[serde(skip_serializing)]
     pub default_value: f32,
-    pub range: (f32, f32),
+    pub lower: f32,
+    pub upper: f32,
     #[serde(skip_serializing)]
     pub display_text: String,
     #[serde(skip_serializing)]
@@ -33,7 +31,6 @@ pub struct ModulatedParam {
 }
 
 impl ModulatedParam {
-    const SPACE: f32 = 5.0;
     pub fn new(
         default_value: f32,
         lower: f32,
@@ -45,7 +42,8 @@ impl ModulatedParam {
             value: default_value,
             modulated_value: default_value,
             default_value,
-            range: (lower, upper),
+            lower,
+            upper,
             display_text: display_text.to_string(),
             ghost_value: None,
             modulation_active: false,
@@ -88,9 +86,7 @@ impl ModulatedParam {
         ui: &mut egui::Ui,
         modulators: &mut Vec<Box<dyn Modulator>>,
     ) -> bool {
-        ui.add_space(Self::SPACE);
         let mut changed = false;
-        ui.add(Label::new(self.display_text.to_string()));
 
         let mod_desc = if self.modulation_active {
             ICON_MOD_CONNECTED
@@ -98,48 +94,60 @@ impl ModulatedParam {
             ICON_MOD_NOT_CONNECTED
         };
 
-        ui.horizontal(|ui| {
-            changed |= ui
-                .add(modulate_able_slider(
-                    &mut self.value,
-                    self.ghost_value,
-                    self.range.0..=self.range.1,
-                    "",
-                ))
-                .changed();
-
-            if ui.button(ICON_REFRESH).clicked() {
-                changed = true;
-                self.reset();
+        ui.vertical(|ui| {
+            if !self.display_text.is_empty() {
+                ui.label(self.display_text.to_string());
             }
-            if ui.button(mod_desc).clicked() {
-                self.modulation_active = !self.modulation_active;
-                changed = true;
-            }
+            ui.horizontal(|ui| {
+                ui.vertical(|ui| {
+                    changed |= ui
+                        .add(egui::Slider::new(&mut self.value, self.lower..=self.upper))
+                        .changed();
 
-            if self.ghost_value.is_some() {
-                // TODO Insert step
-                ui.add(
-                    egui::DragValue::new(&mut self.mod_amount)
-                        .speed(0.1)
-                        .clamp_range(0.000..=1.000),
-                );
+                    if self.ghost_value.is_some() {
+                        changed |= ui
+                            .add(GhostValueSlider::new(
+                                &mut self.value,
+                                self.ghost_value,
+                                self.lower,
+                                self.upper,
+                            ))
+                            .changed();
+                    }
+                });
 
-                ui.label("LFO:");
-                ui.horizontal(|ui| {
-                    ui.separator();
-                    egui::menu::bar(ui, |ui| {
-                        ui.menu_button(self.modulator_index.to_string(), |ui| {
-                            for index in 0..modulators.len() {
-                                if ui.button(index.to_string()).clicked() {
-                                    self.modulator_index = index;
-                                    ui.close_menu();
+                if ui.button(ICON_REFRESH).clicked() {
+                    changed = true;
+                    self.reset();
+                }
+                if ui.button(mod_desc).clicked() {
+                    self.modulation_active = !self.modulation_active;
+                    changed = true;
+                }
+
+                if self.ghost_value.is_some() {
+                    ui.add(
+                        egui::DragValue::new(&mut self.mod_amount)
+                            .speed(0.1)
+                            .clamp_range(0.000..=1.000),
+                    );
+
+                    ui.label("LFO:");
+                    ui.horizontal(|ui| {
+                        ui.separator();
+                        egui::menu::bar(ui, |ui| {
+                            ui.menu_button(self.modulator_index.to_string(), |ui| {
+                                for index in 0..modulators.len() {
+                                    if ui.button(index.to_string()).clicked() {
+                                        self.modulator_index = index;
+                                        ui.close_menu();
+                                    }
                                 }
-                            }
+                            });
                         });
                     });
-                });
-            }
+                }
+            })
         });
 
         if self.modulation_active {

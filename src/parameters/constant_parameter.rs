@@ -34,21 +34,25 @@ impl<T> ConstantParam<T> {
         T: egui::emath::Numeric + Clone,
     {
         let mut changed = false;
-        ui.horizontal(|ui| {
-            changed |= ui
-                .add(
-                    egui::DragValue::new(&mut self.value)
-                        .speed(1)
-                        .clamp_range(self.lower..=self.upper),
-                )
-                .changed();
-            if ui.button(ICON_REFRESH).clicked() {
-                changed = true;
-                self.reset();
+        ui.vertical(|ui| {
+            if !self.display_text.is_empty() {
+                ui.label(self.display_text.to_string());
             }
-            ui.label(self.display_text.to_string());
-        })
-        .inner;
+            ui.horizontal(|ui| {
+                changed |= ui
+                    .add(
+                        egui::DragValue::new(&mut self.value)
+                            .speed(1)
+                            .clamp_range(self.lower..=self.upper),
+                    )
+                    .changed();
+                if ui.button(ICON_REFRESH).clicked() {
+                    changed = true;
+                    self.reset();
+                }
+            })
+            .inner;
+        });
 
         changed
     }
@@ -58,17 +62,22 @@ impl<T> ConstantParam<T> {
         T: egui::emath::Numeric + Clone,
     {
         let mut changed = false;
-        ui.horizontal(|ui| {
-            changed |= ui
-                .add(egui::Slider::new(&mut self.value, self.lower..=self.upper))
-                .changed();
-            if ui.button(ICON_REFRESH).clicked() {
-                changed = true;
-                self.reset();
+        ui.vertical(|ui| {
+            if !self.display_text.is_empty() {
+                ui.label(self.display_text.to_string());
             }
-            ui.label(self.display_text.to_string());
-        })
-        .inner;
+            ui.horizontal(|ui| {
+                changed |= ui
+                    .add(egui::Slider::new(&mut self.value, self.lower..=self.upper))
+                    .changed();
+                if ui.button(ICON_REFRESH).clicked() {
+                    changed = true;
+                    self.reset();
+                }
+            })
+            .inner;
+        });
+
         changed
     }
 
@@ -80,7 +89,6 @@ impl<T> ConstantParam<T> {
     }
 }
 
-// just for booleans
 impl ConstantParam<bool> {
     pub fn to_checkbox(&mut self, ui: &mut egui::Ui) -> bool {
         let mut changed = false;
@@ -89,6 +97,7 @@ impl ConstantParam<bool> {
             changed |= ui.checkbox(&mut self.value, &self.display_text).changed();
         })
         .inner;
+
         changed
     }
 }
