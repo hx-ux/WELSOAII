@@ -10,6 +10,7 @@ use crate::{
     parameters::ModulatedParam,
     receiver::ReceiverGrid,
     timecode::TimeCode,
+    ui::icons::{ICON_ADD, ICON_EYE_ACTIVE, ICON_EYE_DISABLED, ICON_REMOVE},
 };
 use anyhow::Result;
 use nannou::prelude::*;
@@ -240,7 +241,7 @@ impl Animator {
                     .color(Color32::WHITE),
             );
             ui.add_space(5.0);
-            ui.menu_button(egui::RichText::new("+"), |ui| {
+            ui.menu_button(egui::RichText::new(ICON_ADD), |ui| {
                 for direction in AnimationType::iter() {
                     if ui
                         .button(egui::RichText::new(format!("{}", direction).to_uppercase()))
@@ -260,10 +261,17 @@ impl Animator {
                 let is_selected = self.current_animation_index == Some(index);
                 let name = format!("{}", self.active_animations[index].animation_type());
                 let visible = self.active_animations[index].get_visiblity();
+
                 let selected_color = if is_selected {
                     egui::Color32::from_rgb(255, 102, 0)
                 } else {
                     egui::Color32::WHITE
+                };
+
+                let icon_visibility = if visible {
+                    ICON_EYE_ACTIVE
+                } else {
+                    ICON_EYE_DISABLED
                 };
 
                 ui.horizontal(|ui| {
@@ -274,9 +282,8 @@ impl Animator {
 
                     if ui
                         .add(
-                            egui::Button::new(egui::RichText::new("V"))
-                                .min_size(egui::vec2(12.0, 12.0))
-                                .selected(visible),
+                            egui::Button::new(egui::RichText::new(icon_visibility))
+                                .min_size(egui::vec2(12.0, 12.0)),
                         )
                         .clicked()
                     {
@@ -290,10 +297,7 @@ impl Animator {
                     }
 
                     if ui
-                        .add(
-                            egui::Button::new(egui::RichText::new("×"))
-                                .min_size(egui::vec2(12.0, 12.0)),
-                        )
+                        .add(egui::Button::new(egui::RichText::new(ICON_REMOVE)))
                         .clicked()
                     {
                         index_to_remove = Some(index);

@@ -1,8 +1,11 @@
 use std::ops::RangeInclusive;
+use std::path::Display;
 
 use serde::{Deserialize, Serialize};
 use strum_macros::Display;
 use strum_macros::EnumIter;
+
+use crate::ui::icons::ICON_ADD;
 
 #[derive(Clone, Display, EnumIter, Serialize, Deserialize, PartialEq)]
 pub enum Polarity {

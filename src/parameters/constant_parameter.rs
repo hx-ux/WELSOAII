@@ -1,6 +1,8 @@
 use nannou_egui::egui::{self};
 use serde::{Deserialize, Serialize};
 
+use crate::ui::icons::*;
+
 #[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq, PartialOrd)]
 pub struct ConstantParam<T> {
     pub value: T,
@@ -40,7 +42,7 @@ impl<T> ConstantParam<T> {
                         .clamp_range(self.lower..=self.upper),
                 )
                 .changed();
-            if ui.button("↻").clicked() {
+            if ui.button(ICON_REFRESH).clicked() {
                 changed = true;
                 self.reset();
             }
@@ -60,7 +62,7 @@ impl<T> ConstantParam<T> {
             changed |= ui
                 .add(egui::Slider::new(&mut self.value, self.lower..=self.upper))
                 .changed();
-            if ui.button("↻").clicked() {
+            if ui.button(ICON_REFRESH).clicked() {
                 changed = true;
                 self.reset();
             }

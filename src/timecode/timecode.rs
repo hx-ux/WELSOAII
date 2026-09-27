@@ -2,7 +2,10 @@ use nannou_egui::egui;
 use rusty_link::{AblLink, SessionState};
 use serde::{Deserialize, Serialize};
 
-use crate::parameters::ConstantParam;
+use crate::{
+    parameters::ConstantParam,
+    ui::icons::{ICON_PAUSE, ICON_PLAY, ICON_STOP},
+};
 
 pub struct AblLinkState {
     pub link: AblLink,
@@ -155,7 +158,14 @@ impl TimeCode {
     }
 
     pub fn ui(&mut self, ui: &mut egui::Ui) {
-        if ui.button(if self.is_running { "⏸" } else { "▶" }).clicked() {
+        if ui
+            .button(if self.is_running {
+                ICON_PAUSE
+            } else {
+                ICON_PLAY
+            })
+            .clicked()
+        {
             if self.is_running {
                 self.stop();
             } else {
@@ -163,7 +173,7 @@ impl TimeCode {
             }
         }
 
-        if ui.button("⏹").clicked() {
+        if ui.button(ICON_STOP).clicked() {
             self.stop();
             self.reset();
         }

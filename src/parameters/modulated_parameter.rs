@@ -1,4 +1,10 @@
-use crate::{modulator::Modulator, ui::controls::modulate_able_slider};
+use crate::{
+    modulator::Modulator,
+    ui::{
+        controls::modulate_able_slider,
+        icons::{ICON_MOD_CONNECTED, ICON_MOD_NOT_CONNECTED, ICON_REFRESH},
+    },
+};
 use nannou_egui::egui::{self, Label};
 use serde::{Deserialize, Serialize};
 
@@ -87,9 +93,9 @@ impl ModulatedParam {
         ui.add(Label::new(self.display_text.to_string()));
 
         let mod_desc = if self.modulation_active {
-            FLAG_MOD_ACTIVE
+            ICON_MOD_CONNECTED
         } else {
-            FLAG_MOD_DISABLED
+            ICON_MOD_NOT_CONNECTED
         };
 
         ui.horizontal(|ui| {
@@ -102,7 +108,7 @@ impl ModulatedParam {
                 ))
                 .changed();
 
-            if ui.button("↻").clicked() {
+            if ui.button(ICON_REFRESH).clicked() {
                 changed = true;
                 self.reset();
             }
