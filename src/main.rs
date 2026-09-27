@@ -17,11 +17,11 @@ mod utils;
 // Re-exports for public API
 pub use utils::AppMode;
 
+use crate::animator::animator::Animator;
 // Core component imports
-use crate::animator::Animator;
 use crate::receiver::{LayoutMode, ReceiverGrid};
 use crate::ui::performance_view::PerfStats;
-use crate::utils::GlobalSettings;
+use crate::utils::AppSettings;
 
 fn main() {
     nannou::app(model).update(update).run();
@@ -30,20 +30,20 @@ fn main() {
 struct Model {
     animator: Animator,
     egui: Egui,
-    global_settings: GlobalSettings,
+    global_settings: AppSettings,
     device_modal_open: bool,
     settings_modal_open: bool,
     performance_view: PerfStats,
 }
 
 fn model(app: &App) -> Model {
-    let global_settings = GlobalSettings::load_or_default();
+    let global_settings = AppSettings::load_or_default();
 
     app.set_loop_mode(LoopMode::rate_fps(global_settings.framerate));
 
     let view_window_id = app
         .new_window()
-        .title(GlobalSettings::APP_NAME)
+        .title(AppSettings::APP_NAME)
         .size(
             global_settings.view_window_size.0,
             global_settings.view_window_size.1,
@@ -62,8 +62,7 @@ fn model(app: &App) -> Model {
         Rect::from_x_y_w_h(0.0, 0.0, 400.0, 300.0),
         20,
         20,
-        false,
-        LayoutMode::FollowColum,
+        LayoutMode::Colum,
     );
 
     let mut animator = Animator::new(&win_rect, receiver_grid);
@@ -127,7 +126,7 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
         .show_animated(&ctx, true, |ui| {
             ui.add_space(1.0);
             _model.animator.animator_layer_ui(ui, &win_rect);
-            _model.animator.control_ui(ui);
+            _model.animator.animator_ui(ui);
         });
 
     egui::TopBottomPanel::bottom("Modulators")
@@ -136,7 +135,7 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
             ui.add_space(1.0);
             ui.separator();
             ui.horizontal(|ui| {
-                _model.animator.modulators_ui(ui, &win_rect);
+                _model.animator.modulators_ui(ui);
             });
         });
 

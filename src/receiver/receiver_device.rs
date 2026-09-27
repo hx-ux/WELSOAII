@@ -3,8 +3,6 @@ use ddp_rs::connection::DDPConnection;
 use serde::Serialize;
 use std::sync::{Arc, Mutex};
 
-// https://crates.io/crates/ddp-rs
-
 #[derive(Clone, Serialize)]
 pub struct ReceiverDevice {
     pub ip: String,
