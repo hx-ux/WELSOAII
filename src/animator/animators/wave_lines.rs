@@ -27,7 +27,8 @@ pub struct WaveLinesSettings {
     #[serde(skip)]
     height: f32,
     #[serde(skip)]
-    pub animator: Vec<WaveLine>, // Refactored to concrete type
+    pub animator: Vec<WaveLine>,
+    visible: bool,
 }
 
 impl WaveLinesSettings {
@@ -46,6 +47,7 @@ impl WaveLinesSettings {
             width: win_rect.w(),
             height: win_rect.h(),
             animator: Vec::new(),
+            visible: true,
         }
     }
 }
@@ -112,6 +114,7 @@ impl AnimatorSettings for WaveLinesSettings {
                 *self.harmonic.value(),
                 *self.decay.value(),
                 self.color.clone().value_mapped(idx as usize),
+                self.visible,
             ));
         }
     }
@@ -141,6 +144,7 @@ impl AnimatorSettings for WaveLinesSettings {
                     *self.harmonic.value(),
                     *self.decay.value(),
                     self.color.clone().value_mapped(idx),
+                    self.visible,
                 ));
             }
         } else if target < current {
@@ -161,6 +165,7 @@ impl AnimatorSettings for WaveLinesSettings {
             line.harmonic = (*self.harmonic.value()).round() as u32;
             line.decay = *self.decay.value();
             line.color = self.color.clone().value_mapped(line.index);
+            line.visible = self.visible;
         }
     }
 
@@ -200,8 +205,17 @@ impl AnimatorSettings for WaveLinesSettings {
         ]
     }
 
-    fn save_preset(&mut self) -> anyhow::Result<()> {
+    fn snapshot(&mut self) -> anyhow::Result<()> {
         Ok(())
+    }
+
+    fn set_visiblity(&mut self, state: bool) {
+        self.visible = state;
+        self.hot_update();
+    }
+
+    fn get_visiblity(&self) -> bool {
+        self.visible
     }
 }
 
@@ -221,6 +235,7 @@ pub struct WaveLine {
     pub decay: f32,
     phase: f32,
     color: Rgba8,
+    visible: bool,
 }
 
 impl WaveLine {
@@ -238,6 +253,7 @@ impl WaveLine {
         harmonic: f32,
         decay: f32,
         color: Rgba8,
+        visible: bool,
     ) -> Self {
         Self {
             index,
@@ -255,6 +271,7 @@ impl WaveLine {
             phase: random_range(0.0, TAU),
             color,
             h_amplitude,
+            visible,
         }
     }
 
@@ -309,10 +326,12 @@ impl AnimatedObject for WaveLine {
             pt2(base_x + x_v + x_h, y)
         });
 
-        draw.polyline()
-            .weight(self.thickness)
-            .color(self.color)
-            .points(points);
+        if self.visible {
+            draw.polyline()
+                .weight(self.thickness)
+                .color(self.color)
+                .points(points);
+        }
     }
 
     fn shape(&self) -> ObjectShape {

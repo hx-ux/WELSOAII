@@ -30,6 +30,7 @@ pub struct ScanLineSettings {
     begin_pos: f32,
     #[serde(skip)]
     pub animator: Vec<ScanLineAnimator>,
+    visible: bool,
 }
 
 impl ScanLineSettings {
@@ -46,6 +47,7 @@ impl ScanLineSettings {
             height: win_rect.h(),
             begin_pos: win_rect.left(),
             animator: vec![],
+            visible: true,
         }
     }
 }
@@ -112,6 +114,7 @@ impl AnimatorSettings for ScanLineSettings {
                 *self.wobble_freq.value(),
                 *self.tilt.value(),
                 index,
+                self.visible,
             );
             self.animator.push(g);
         }
@@ -132,6 +135,7 @@ impl AnimatorSettings for ScanLineSettings {
             obj.wobble_freq = *self.wobble_freq.value();
             obj.tilt = *self.tilt.value();
             obj.speed = self.speed.value().abs() * obj.speed.signum();
+            obj.visible = self.visible;
         }
     }
 
@@ -171,8 +175,17 @@ impl AnimatorSettings for ScanLineSettings {
         ]
     }
 
-    fn save_preset(&mut self) -> anyhow::Result<()> {
+    fn snapshot(&mut self) -> anyhow::Result<()> {
         Ok(())
+    }
+
+    fn set_visiblity(&mut self, state: bool) {
+        self.visible = state;
+        self.hot_update();
+    }
+
+    fn get_visiblity(&self) -> bool {
+        self.visible
     }
 }
 
@@ -189,6 +202,7 @@ pub struct ScanLineAnimator {
     time: f32,
     index: usize,
     phase_offset: f32,
+    visible: bool,
 }
 
 impl ScanLineAnimator {
@@ -203,6 +217,7 @@ impl ScanLineAnimator {
         wobble_freq: f32,
         tilt: f32,
         index: usize,
+        visible: bool,
     ) -> Self {
         let half_width = width / 2.0;
         let phase_offset = (index as f32 * std::f32::consts::PI * 2.0) / 10.0;
@@ -221,6 +236,7 @@ impl ScanLineAnimator {
             time: 0.0,
             index,
             phase_offset,
+            visible,
         }
     }
 }
@@ -258,12 +274,14 @@ impl AnimatedObject for ScanLineAnimator {
         }
     }
     fn draw(&self, draw: &Draw) {
-        draw.rect()
-            .xy(self.position)
-            .height(self.height)
-            .width(self.width)
-            .rotate(self.tilt)
-            .color(self.color);
+        if self.visible {
+            draw.rect()
+                .xy(self.position)
+                .height(self.height)
+                .width(self.width)
+                .rotate(self.tilt)
+                .color(self.color);
+        }
     }
 
     fn shape(&self) -> ObjectShape {

@@ -28,6 +28,7 @@ pub struct QuantumTunnelSettings {
     color: ColorParam,
     #[serde(skip)]
     animator: Vec<QuantumTunnelAnimator>,
+    visible: bool,
 }
 
 impl QuantumTunnelSettings {
@@ -49,6 +50,7 @@ impl QuantumTunnelSettings {
                 "Recursive Weight",
                 "recursive_weight",
             ),
+            visible: true,
         }
     }
 }
@@ -102,6 +104,7 @@ impl AnimatorSettings for QuantumTunnelSettings {
                 self.ring_count.value as usize,
                 *self.line_weight.value(),
                 self.recursive_line_height.value,
+                self.visible,
             );
             self.animator.push(ani);
         }
@@ -127,18 +130,20 @@ impl AnimatorSettings for QuantumTunnelSettings {
                     target_count,
                     *self.line_weight.value(),
                     *&self.recursive_line_height.value,
+                    self.visible,
                 ));
             }
         } else if target_count < current_count {
             self.animator.truncate(target_count);
         }
 
-        for e in self.animator.iter_mut() {
-            e.speed = *self.speed.value();
-            e.color = self.color.clone().value_mapped(e.index);
-            e.depth = *self.depth.value();
-            e.twist = *self.twist.value();
-            e.line_weight = *self.line_weight.value()
+        for obj in self.animator.iter_mut() {
+            obj.speed = *self.speed.value();
+            obj.color = self.color.clone().value_mapped(obj.index);
+            obj.depth = *self.depth.value();
+            obj.twist = *self.twist.value();
+            obj.line_weight = *self.line_weight.value();
+            obj.visible = self.visible;
         }
     }
 
@@ -171,6 +176,15 @@ impl AnimatorSettings for QuantumTunnelSettings {
     fn modulated_params_mut(&mut self) -> Vec<&mut ModulatedParam> {
         vec![&mut self.speed, &mut self.depth, &mut self.twist]
     }
+
+    fn set_visiblity(&mut self, state: bool) {
+        self.visible = state;
+        self.hot_update();
+    }
+
+    fn get_visiblity(&self) -> bool {
+        self.visible
+    }
 }
 
 pub struct QuantumTunnelAnimator {
@@ -184,6 +198,7 @@ pub struct QuantumTunnelAnimator {
     pub center: Vec2,
     pub line_weight: f32,
     pub r_weight: bool,
+    visible: bool,
 }
 
 impl QuantumTunnelAnimator {
@@ -197,6 +212,7 @@ impl QuantumTunnelAnimator {
         total: usize,
         line_weight: f32,
         r_weight: bool,
+        visible: bool,
     ) -> Self {
         let z = (index as f32 / total as f32) * depth;
         Self {
@@ -210,6 +226,7 @@ impl QuantumTunnelAnimator {
             center: vec2(win_rect.x(), win_rect.y()),
             line_weight,
             r_weight,
+            visible,
         }
     }
 }
@@ -245,12 +262,14 @@ impl AnimatedObject for QuantumTunnelAnimator {
             line_weight = (z_normalized) * self.line_weight * 2.0;
         }
 
-        draw.ellipse()
-            .xy(self.position)
-            .radius(size)
-            .no_fill()
-            .stroke_weight(line_weight)
-            .stroke_color(self.color);
+        if self.visible {
+            draw.ellipse()
+                .xy(self.position)
+                .radius(size)
+                .no_fill()
+                .stroke_weight(line_weight)
+                .stroke_color(self.color);
+        }
     }
 
     fn shape(&self) -> ObjectShape {

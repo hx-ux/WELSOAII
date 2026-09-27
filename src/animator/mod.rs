@@ -59,9 +59,12 @@ pub trait AnimatorSettings {
         }
     }
 
-    fn save_preset(&mut self) -> Result<()> {
+    fn snapshot(&mut self) -> Result<()> {
         Ok(())
     }
+
+    fn set_visiblity(&mut self, state: bool);
+    fn get_visiblity(&self) -> bool;
 }
 
 pub struct Animator {
@@ -255,26 +258,32 @@ impl Animator {
         ui.vertical(|ui| {
             for index in 0..self.active_animations.len() {
                 let is_selected = self.current_animation_index == Some(index);
-                let anim_name = format!("{}", self.active_animations[index].animation_type());
+                let name = format!("{}", self.active_animations[index].animation_type());
+                let visible = self.active_animations[index].get_visiblity();
+                let selected_color = if is_selected {
+                    egui::Color32::from_rgb(255, 102, 0)
+                } else {
+                    egui::Color32::WHITE
+                };
 
                 ui.horizontal(|ui| {
-                    let indicator_color = if is_selected {
-                        egui::Color32::from_rgb(255, 102, 0)
-                    } else {
-                        egui::Color32::from_gray(55)
-                    };
-
                     let (rect, _) =
                         ui.allocate_exact_size(egui::vec2(3.0, 14.0), egui::Sense::hover());
                     ui.painter()
-                        .rect_filled(rect, egui::Rounding::ZERO, indicator_color);
+                        .rect_filled(rect, egui::Rounding::ZERO, selected_color);
 
-                    let label =
-                        egui::RichText::new(anim_name.to_uppercase()).color(if is_selected {
-                            egui::Color32::from_rgb(255, 102, 0)
-                        } else {
-                            egui::Color32::from_gray(150)
-                        });
+                    if ui
+                        .add(
+                            egui::Button::new(egui::RichText::new("V"))
+                                .min_size(egui::vec2(12.0, 12.0))
+                                .selected(visible),
+                        )
+                        .clicked()
+                    {
+                        self.active_animations[index].set_visiblity(!visible);
+                    }
+
+                    let label = egui::RichText::new(name.to_uppercase()).color(selected_color);
 
                     if ui.button(label).clicked() {
                         self.current_animation_index = Some(index);

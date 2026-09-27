@@ -28,6 +28,7 @@ pub struct BouncingBallSettings {
     color: ColorParam,
     #[serde(skip)]
     animator: Vec<BouncingBallAnimator>,
+    visible: bool,
 }
 
 impl BouncingBallSettings {
@@ -41,6 +42,7 @@ impl BouncingBallSettings {
             ball_vel_range_y: ConstantParam::new(15.0, 1.0, 200.0, "Range Y", "range_y"),
             color: ColorParam::default(),
             animator: Vec::new(),
+            visible: true,
         }
     }
 }
@@ -86,6 +88,7 @@ impl AnimatorSettings for BouncingBallSettings {
                 self.ball_vel_range_y.value,
                 *self.speed.value(),
                 index,
+                self.visible,
             );
             self.animator.push(new_obj);
         }
@@ -109,6 +112,7 @@ impl AnimatorSettings for BouncingBallSettings {
                     self.ball_vel_range_y.value,
                     *self.speed.value(),
                     index,
+                    self.visible,
                 );
                 self.animator.push(new_obj);
             }
@@ -116,11 +120,11 @@ impl AnimatorSettings for BouncingBallSettings {
             self.animator.truncate(target_count);
         }
 
-        // Update existing balls with new parameters directly
         for ball in self.animator.iter_mut() {
             ball.speed = *self.speed.value();
             ball.radius = *self.radius.value();
             ball.color = self.color.clone().value_mapped(ball.index);
+            ball.visible = self.visible;
         }
     }
 
@@ -154,8 +158,17 @@ impl AnimatorSettings for BouncingBallSettings {
         vec![&mut self.speed, &mut self.radius]
     }
 
-    fn save_preset(&mut self) -> anyhow::Result<()> {
+    fn snapshot(&mut self) -> anyhow::Result<()> {
         Ok(())
+    }
+
+    fn set_visiblity(&mut self, state: bool) {
+        self.visible = state;
+        self.hot_update();
+    }
+
+    fn get_visiblity(&self) -> bool {
+        self.visible
     }
 }
 
@@ -166,6 +179,7 @@ pub struct BouncingBallAnimator {
     pub radius: f32,
     pub color: Rgba8,
     pub index: usize,
+    visible: bool,
 }
 
 impl BouncingBallAnimator {
@@ -190,6 +204,7 @@ impl BouncingBallAnimator {
         vertical_velocity: f32,
         speed: f32,
         index: usize,
+        visible: bool,
     ) -> Self {
         BouncingBallAnimator {
             position: Self::randomize_ball_position(win_rect, radius),
@@ -198,6 +213,7 @@ impl BouncingBallAnimator {
             color,
             speed,
             index,
+            visible,
         }
     }
 }
@@ -229,10 +245,12 @@ impl AnimatedObject for BouncingBallAnimator {
     }
 
     fn draw(&self, draw: &Draw) {
-        draw.ellipse()
-            .xy(self.position)
-            .radius(self.radius)
-            .color(self.color);
+        if self.visible {
+            draw.ellipse()
+                .xy(self.position)
+                .radius(self.radius)
+                .color(self.color);
+        }
     }
 
     fn shape(&self) -> ObjectShape {

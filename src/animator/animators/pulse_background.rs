@@ -24,7 +24,8 @@ pub struct PulseBackgroundSettings {
     pub rotation_speed: ModulatedParam,
     pub ring_spread: ModulatedParam,
     #[serde(skip)]
-    pub animator: Vec<PulseBackgroundAnimator>, // Refactored to concrete type
+    pub animator: Vec<PulseBackgroundAnimator>,
+    pub visible: bool,
 }
 
 impl PulseBackgroundSettings {
@@ -39,6 +40,7 @@ impl PulseBackgroundSettings {
             rotation_speed: ModulatedParam::new(1.0, 0.0, 6.0, "Rotation", "pulse_rotation"),
             ring_spread: ModulatedParam::new(1.0, 0.3, 3.0, "Ring Spread", "pulse_ring_spread"),
             animator: Vec::new(),
+            visible: true,
         }
     }
 }
@@ -108,6 +110,7 @@ impl AnimatorSettings for PulseBackgroundSettings {
                 *self.rotation_speed.value(),
                 *self.ring_spread.value(),
                 index,
+                self.visible,
             ));
         }
     }
@@ -123,6 +126,7 @@ impl AnimatorSettings for PulseBackgroundSettings {
             obj.limit = *self.limit.value();
             obj.rotation_speed = *self.rotation_speed.value();
             obj.ring_spread = *self.ring_spread.value();
+            obj.visible = self.visible
         }
     }
 
@@ -160,7 +164,7 @@ impl AnimatorSettings for PulseBackgroundSettings {
         ]
     }
 
-    fn save_preset(&mut self) -> anyhow::Result<()> {
+    fn snapshot(&mut self) -> anyhow::Result<()> {
         Ok(())
     }
 
@@ -174,6 +178,15 @@ impl AnimatorSettings for PulseBackgroundSettings {
         for param in self.modulated_params_mut() {
             param.ghost_value = None;
         }
+    }
+
+    fn set_visiblity(&mut self, state: bool) {
+        self.visible = state;
+        self.hot_update();
+    }
+
+    fn get_visiblity(&self) -> bool {
+        self.visible
     }
 }
 
@@ -189,6 +202,7 @@ pub struct PulseBackgroundAnimator {
     pub rotation_speed: f32,
     pub ring_spread: f32,
     rotation: f32,
+    visible: bool,
 }
 
 impl PulseBackgroundAnimator {
@@ -201,6 +215,7 @@ impl PulseBackgroundAnimator {
         rotation_speed: f32,
         ring_spread: f32,
         index: usize,
+        visible: bool,
     ) -> Self {
         Self {
             mode,
@@ -214,6 +229,7 @@ impl PulseBackgroundAnimator {
             rotation_speed,
             ring_spread,
             rotation: 0.0,
+            visible,
         }
     }
 }
@@ -276,7 +292,9 @@ impl AnimatedObject for PulseBackgroundAnimator {
                 .iter()
                 .map(|&p| rotate(p))
                 .collect();
-                draw.polyline().weight(2.0).color(ring_color).points(pts);
+                if self.visible {
+                    draw.polyline().weight(2.0).color(ring_color).points(pts);
+                }
             }
             PulseShape::Circle => {
                 let segments = 64usize;
@@ -289,7 +307,9 @@ impl AnimatedObject for PulseBackgroundAnimator {
                     })
                     .collect();
                 pts.push(pts[0]);
-                draw.polyline().weight(2.0).color(ring_color).points(pts);
+                if self.visible {
+                    draw.polyline().weight(2.0).color(ring_color).points(pts);
+                }
             }
             PulseShape::Diamond => {
                 let hw = ring_size_w * 0.5;
@@ -304,7 +324,9 @@ impl AnimatedObject for PulseBackgroundAnimator {
                 .iter()
                 .map(|&p| rotate(p))
                 .collect();
-                draw.polyline().weight(2.0).color(ring_color).points(pts);
+                if self.visible {
+                    draw.polyline().weight(2.0).color(ring_color).points(pts);
+                }
             }
         }
     }
