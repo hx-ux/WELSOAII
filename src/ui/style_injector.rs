@@ -23,20 +23,25 @@ fn setup_fonts(ctx: &Context) {
 
     fonts.font_data.insert(
         "sans".to_owned(),
-        FontData::from_static(include_bytes!("../assets/GoogleSans.ttf")),
+        FontData::from_static(include_bytes!("../assets/Lato.ttf")),
     );
 
-    fonts
-        .families
-        .get_mut(&FontFamily::Monospace)
-        .unwrap()
-        .insert(0, "sans".to_owned());
+    if let Some(font_keys) = fonts.families.get_mut(&FontFamily::Proportional) {
+        font_keys.push("sans".into());
+    }
 
-    fonts
-        .families
-        .get_mut(&FontFamily::Proportional)
-        .unwrap()
-        .insert(0, "sans".to_owned());
+    if let Some(font_keys) = fonts.families.get_mut(&FontFamily::Monospace) {
+        font_keys.push("sans".into());
+    }
+
+    fonts.font_data.insert(
+        "nerdfonts".to_owned(),
+        FontData::from_static(include_bytes!("../assets/nerdfonts.ttf")),
+    );
+
+    if let Some(font_keys) = fonts.families.get_mut(&FontFamily::Proportional) {
+        font_keys.push("nerdfonts".into());
+    }
 
     ctx.set_fonts(fonts);
 }
