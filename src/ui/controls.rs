@@ -11,19 +11,6 @@ pub fn monospace_text_edit<'a>(text: &'a mut String, hint: &'a str) -> egui::Tex
         .code_editor()
 }
 
-/// Styled slider with consistent look for egui UI
-pub fn single_slider_styled<'a, T>(value: &'a mut T, range: RangeInclusive<T>) -> egui::Slider<'a>
-where
-    T: egui::emath::Numeric + Copy,
-{
-    egui::Slider::new(value, range)
-        .show_value(true)
-        .smart_aim(true)
-        .trailing_fill(true)
-        .smallest_positive(0.01)
-        .trailing_fill(true)
-}
-
 pub struct DualSlider<'a> {
     value: &'a mut f32,
     ghost_value: Option<f32>,

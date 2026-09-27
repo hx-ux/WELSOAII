@@ -18,7 +18,7 @@ pub struct GridCell {
     pub rect: Rect,
     pub display_color: Rgba8,
     pub is_active: bool,
-    pos_string: String, // Cached string representation
+    pos_string: String,
 }
 
 impl GridCell {
@@ -26,14 +26,14 @@ impl GridCell {
         GridCell {
             rect,
             is_active: false,
-            display_color: Rgba8::new(0, 0, 10, 10),
+            display_color: Rgba8::new(0, 0, 0, 0),
             pos_string: pos.to_string(), // Cache the string
         }
     }
 
     pub fn reset(&mut self) {
         self.is_active = false;
-        self.display_color = Rgba8::new(10, 10, 10, 10);
+        self.display_color = Rgba8::new(0, 0, 0, 0);
     }
 
     pub fn get_send_color(&self) -> Rgba8 {
@@ -47,7 +47,7 @@ impl GridCell {
         if self.is_active {
             return self.display_color;
         }
-        Rgba8::new(10, 10, 10, 10)
+        Rgba8::new(0, 0, 0, 0)
     }
 }
 
@@ -60,28 +60,19 @@ pub struct ReceiverGrid {
     pub cols: u32,
     pub rows: u32,
     device: ReceiverDevice,
-    show_grid: bool,
     #[serde(skip)]
     led_buffer: Vec<u8>, // Pre-allocated buffer for LED data
     #[serde(skip)]
     cell_w: f32,
     #[serde(skip)]
     cell_h: f32,
-    // #[serde(skip)]
     layout_mode: LayoutMode,
-    //persistence: PresetManager<ReceiverGrid>,
     #[serde(skip)]
     pub edit_mode: bool,
 }
 
 impl ReceiverGrid {
-    pub fn new(
-        main_rect: Rect,
-        cols: u32,
-        rows: u32,
-        debug: bool,
-        layout_mode: LayoutMode,
-    ) -> Self {
+    pub fn new(main_rect: Rect, cols: u32, rows: u32, layout_mode: LayoutMode) -> Self {
         let cell_count = (rows * cols) as usize;
 
         // Pre-allocate LED buffer (3 bytes per cell: RGB)
@@ -97,8 +88,6 @@ impl ReceiverGrid {
             cell_w: 0.0,
             cell_h: 0.0,
             layout_mode,
-            //persistence: PresetManager::new_grid(PresetMode::Grid, "Leds 1".to_string()),
-            show_grid: false,
             edit_mode: false,
         };
 
@@ -226,7 +215,7 @@ impl ReceiverGrid {
     }
 
     pub fn draw(&self, draw: &Draw) {
-        if !self.show_grid {
+        if !self.edit_mode {
             return;
         }
 
@@ -237,17 +226,15 @@ impl ReceiverGrid {
                 .stroke_color(SNOW)
                 .stroke_weight(1.0)
                 .color(cell.get_display_color());
-
-            if self.show_grid {
-                let mut size = 12;
-                if self.cells.len() >= 100 {
-                    size = 10;
-                }
-                draw.text(&cell.pos_string)
-                    .xy(cell.rect.xy())
-                    .color(WHITE)
-                    .font_size(size);
+            let mut size = 12;
+            if self.cells.len() >= 100 {
+                size = 10;
             }
+
+            draw.text(&cell.pos_string)
+                .xy(cell.rect.xy())
+                .color(WHITE)
+                .font_size(size);
         }
     }
 
@@ -316,10 +303,6 @@ impl ReceiverGrid {
             changed = true;
         }
 
-        if ui.checkbox(&mut self.edit_mode, "Edit").clicked() {
-            changed = true;
-        }
-
         ui.add_space(5.0);
 
         let status = if self.device.establish_conn {
@@ -333,8 +316,9 @@ impl ReceiverGrid {
             changed = true;
         }
 
-        ui.checkbox(&mut self.show_grid, "Show grid");
-
+        if ui.checkbox(&mut self.edit_mode, "Edit").clicked() {
+            changed = true;
+        }
         egui::ComboBox::from_label("")
             .selected_text(format!("{}", self.layout_mode).to_string())
             .show_ui(ui, |ui| {

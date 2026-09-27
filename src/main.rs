@@ -62,7 +62,6 @@ fn model(app: &App) -> Model {
         Rect::from_x_y_w_h(0.0, 0.0, 400.0, 300.0),
         20,
         20,
-        false,
         LayoutMode::Colum,
     );
 

@@ -3,7 +3,6 @@ use crate::utils::FileManager;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 use std::fs::{self};
-use std::path::PathBuf;
 
 #[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize)]
 pub enum AppMode {
