@@ -81,7 +81,7 @@ impl AnimatorSettings for QuantumTunnelSettings {
             self.init();
         }
 
-        if self.color.ui(ui) {
+        if self.color.ui(ui, mods) {
             self.hot_update();
         }
     }
@@ -174,7 +174,15 @@ impl AnimatorSettings for QuantumTunnelSettings {
     }
 
     fn modulated_params_mut(&mut self) -> Vec<&mut ModulatedParam> {
-        vec![&mut self.speed, &mut self.depth, &mut self.twist]
+        let mut params = vec![
+            &mut self.speed,
+            &mut self.depth,
+            &mut self.twist,
+            &mut self.line_weight,
+        ];
+
+        params.extend(self.color.modulated_params_mut());
+        params
     }
 
     fn set_visiblity(&mut self, state: bool) {

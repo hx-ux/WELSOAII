@@ -90,7 +90,7 @@ impl AnimatorSettings for ScanLineSettings {
             }
         });
 
-        if self.color.ui(ui) {
+        if self.color.ui(ui, modulators) {
             self.hot_update();
         }
     }
@@ -166,13 +166,15 @@ impl AnimatorSettings for ScanLineSettings {
     }
 
     fn modulated_params_mut(&mut self) -> Vec<&mut ModulatedParam> {
-        vec![
+        let mut params = vec![
             &mut self.speed,
             &mut self.width,
             &mut self.wobble_amp,
             &mut self.wobble_freq,
             &mut self.tilt,
-        ]
+        ];
+        params.extend(self.color.modulated_params_mut());
+        params
     }
 
     fn snapshot(&mut self) -> anyhow::Result<()> {

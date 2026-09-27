@@ -67,7 +67,7 @@ impl AnimatorSettings for BouncingBallSettings {
             self.init();
         }
 
-        if self.color.ui(ui) {
+        if self.color.ui(ui, mods) {
             self.hot_update();
         }
     }
@@ -155,7 +155,9 @@ impl AnimatorSettings for BouncingBallSettings {
     }
 
     fn modulated_params_mut(&mut self) -> Vec<&mut ModulatedParam> {
-        vec![&mut self.speed, &mut self.radius]
+        let mut params = vec![&mut self.speed, &mut self.radius];
+        params.extend(self.color.modulated_params_mut());
+        params
     }
 
     fn snapshot(&mut self) -> anyhow::Result<()> {

@@ -89,7 +89,7 @@ impl AnimatorSettings for PulseBackgroundSettings {
             self.hot_update();
         }
 
-        if self.color.ui(ui) {
+        if self.color.ui(ui, modulators) {
             self.hot_update();
         }
     }
@@ -157,11 +157,14 @@ impl AnimatorSettings for PulseBackgroundSettings {
     }
 
     fn modulated_params_mut(&mut self) -> Vec<&mut ModulatedParam> {
-        vec![
+        let mut params = vec![
             &mut self.limit,
             &mut self.rotation_speed,
             &mut self.ring_spread,
-        ]
+        ];
+
+        params.extend(self.color.modulated_params_mut());
+        params
     }
 
     fn snapshot(&mut self) -> anyhow::Result<()> {

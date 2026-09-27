@@ -10,8 +10,9 @@ pub struct ConstantParam<T> {
     pub lower: T,
     pub upper: T,
     #[serde(skip_serializing)]
-    pub display_text: String,
+    display_text: String,
     pub identifier: String,
+    pub steps: Option<f32>,
 }
 
 impl<T> ConstantParam<T> {
@@ -26,9 +27,13 @@ impl<T> ConstantParam<T> {
             upper,
             display_text: display_text.to_string(),
             identifier: identifier.to_string(),
+            steps: None,
         }
     }
-
+    pub fn steps(mut self, steps: f32) -> Self {
+        self.steps = Some(steps);
+        self
+    }
     pub fn to_drag(&mut self, ui: &mut egui::Ui) -> bool
     where
         T: egui::emath::Numeric + Clone,
@@ -67,9 +72,14 @@ impl<T> ConstantParam<T> {
                 ui.label(self.display_text.to_string());
             }
             ui.horizontal(|ui| {
-                changed |= ui
-                    .add(egui::Slider::new(&mut self.value, self.lower..=self.upper))
-                    .changed();
+                let mut slider = egui::Slider::new(&mut self.value, self.lower..=self.upper);
+
+                if let Some(steps) = self.steps {
+                    slider = slider.step_by(steps as f64);
+                }
+
+                changed |= ui.add(slider).changed();
+
                 if ui.button(ICON_REFRESH).clicked() {
                     changed = true;
                     self.reset();

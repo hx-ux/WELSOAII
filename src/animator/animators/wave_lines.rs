@@ -88,7 +88,7 @@ impl AnimatorSettings for WaveLinesSettings {
             self.hot_update();
         }
 
-        if self.color.ui(ui) {
+        if self.color.ui(ui, modulators) {
             self.hot_update();
         }
     }
@@ -196,13 +196,18 @@ impl AnimatorSettings for WaveLinesSettings {
     }
 
     fn modulated_params_mut(&mut self) -> Vec<&mut ModulatedParam> {
-        vec![
+        let mut params = vec![
             &mut self.amplitude,
             &mut self.frequency,
             &mut self.speed,
             &mut self.thickness,
             &mut self.phase_spread,
-        ]
+            &mut self.h_amplitude,
+            &mut self.harmonic,
+            &mut self.decay,
+        ];
+        params.extend(self.color.modulated_params_mut());
+        params
     }
 
     fn snapshot(&mut self) -> anyhow::Result<()> {

@@ -1,4 +1,4 @@
-use crate::color::ColorPalette;
+use crate::{color::ColorPalette, modulator::Modulator, parameters::ModulatedParam};
 use nannou::color::Rgba8;
 use nannou::math::clamp;
 use nannou_egui::egui;
@@ -13,13 +13,29 @@ pub enum ColorMode {
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct ColorParam {
-    pub single_color: Rgba8,
+    pub col_r: ModulatedParam,
+    pub col_g: ModulatedParam,
+    pub col_b: ModulatedParam,
+    pub col_a: ModulatedParam,
     pub mode: ColorMode,
     pub palette: ColorPalette,
 }
 
+impl Default for ColorParam {
+    fn default() -> Self {
+        Self {
+            col_r: ModulatedParam::new(255.0, 0.0, 255.0, "Red", "red"),
+            col_g: ModulatedParam::new(0.0, 0.0, 255.0, "Green", "green"),
+            col_b: ModulatedParam::new(0.0, 0.0, 255.0, "Blue", "blue"),
+            col_a: ModulatedParam::new(255.0, 0.0, 255.0, "Alpha", "alpha"),
+            mode: ColorMode::Solid,
+            palette: ColorPalette::default(),
+        }
+    }
+}
+
 impl ColorParam {
-    pub fn ui(&mut self, ui: &mut egui::Ui) -> bool {
+    pub fn ui(&mut self, ui: &mut egui::Ui, mods: &mut Vec<Box<dyn Modulator>>) -> bool {
         let mut changed = false;
 
         ui.horizontal(|ui| {
@@ -33,33 +49,25 @@ impl ColorParam {
 
         match self.mode {
             ColorMode::Solid => {
-                changed |= ui
-                    .add(egui::Slider::new(&mut self.single_color.red, 0..=255).text("R"))
-                    .changed();
-                changed |= ui
-                    .add(egui::Slider::new(&mut self.single_color.green, 0..=255).text("G"))
-                    .changed();
-                changed |= ui
-                    .add(egui::Slider::new(&mut self.single_color.blue, 0..=255).text("B"))
-                    .changed();
-                changed |= ui
-                    .add(egui::Slider::new(&mut self.single_color.alpha, 0..=255).text("A"))
-                    .changed();
+                changed |= self.col_r.to_slider(ui, mods);
+                changed |= self.col_g.to_slider(ui, mods);
+                changed |= self.col_b.to_slider(ui, mods);
+                changed |= self.col_a.to_slider(ui, mods);
 
-                let (color_preview, _) =
-                    ui.allocate_exact_size(egui::vec2(60.0, 24.0), egui::Sense::hover());
-                ui.vertical(|ui| {
-                    ui.painter().rect_filled(
-                        color_preview,
-                        4.0,
-                        egui::Color32::from_rgba_premultiplied(
-                            self.single_color.red,
-                            self.single_color.green,
-                            self.single_color.blue,
-                            self.single_color.alpha,
-                        ),
-                    );
-                });
+                // let (color_preview, _) =
+                //     ui.allocate_exact_size(egui::vec2(60.0, 24.0), egui::Sense::hover());
+                // ui.vertical(|ui| {
+                //     ui.painter().rect_filled(
+                //         color_preview,
+                //         4.0,
+                //         egui::Color32::from_rgba_premultiplied(
+                //             self.col_r.value() as u8,
+                //             self.col_g.base as u8,
+                //             self.col_b.base as u8,
+                //             self.col_a.base as u8,
+                //         ),
+                //     );
+                // });
             }
 
             ColorMode::Palette => {
@@ -78,22 +86,26 @@ impl ColorParam {
         changed
     }
 
-    pub fn value_mapped(self, index: usize) -> Rgba8 {
+    pub fn value_mapped(&self, index: usize) -> Rgba8 {
         if self.mode == ColorMode::Solid {
-            return self.single_color;
+            return Rgba8::new(
+                self.col_r.value().clone() as u8,
+                self.col_g.value().clone() as u8,
+                self.col_b.value().clone() as u8,
+                self.col_a.value().clone() as u8,
+            );
         }
 
         let palette = self.palette.as_slice();
         palette[clamp(index % palette.len(), 0, palette.len() - 1)]
     }
-}
 
-impl Default for ColorParam {
-    fn default() -> Self {
-        Self {
-            single_color: Rgba8::new(255, 0, 0, 255),
-            mode: ColorMode::Solid,
-            palette: ColorPalette::default(),
-        }
+    pub fn modulated_params_mut(&mut self) -> Vec<&mut ModulatedParam> {
+        vec![
+            &mut self.col_r,
+            &mut self.col_g,
+            &mut self.col_b,
+            &mut self.col_a,
+        ]
     }
 }
