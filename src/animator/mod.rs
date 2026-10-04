@@ -1,16 +1,5 @@
 use crate::{
-    animator::{
-        animation_type::AnimationType,
-        animators::{
-            bouncing_ball, pulse_background, quantum_tunnel::QuantumTunnelSettings, scan_line,
-            wave_lines::WaveLinesSettings,
-        },
-    },
-    modulator::wave_modulator::WaveModulator,
-    parameters::ModulatedParam,
-    receiver::ReceiverGrid,
-    timecode::TimeCode,
-    ui::icons::{ICON_ADD, ICON_EYE_ACTIVE, ICON_EYE_DISABLED, ICON_REMOVE},
+    animator::animation_type::AnimationType, parameters::ModulatedParam, timecode::TimeCode,
 };
 use anyhow::Result;
 use nannou::prelude::*;
