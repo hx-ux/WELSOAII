@@ -9,7 +9,7 @@ pub struct ConstantParam<T> {
     pub default: T,
     pub lower: T,
     pub upper: T,
-    #[serde(skip_serializing)]
+    #[serde(skip)]
     display_text: String,
     pub identifier: String,
     pub steps: Option<f32>,

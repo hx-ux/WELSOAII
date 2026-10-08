@@ -1,4 +1,4 @@
-use nannou_egui::egui::{self, Color32, vec2};
+use nannou_egui::egui::{self, vec2};
 
 use crate::ui::style_definitions::custom_colors;
 
