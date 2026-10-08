@@ -171,18 +171,6 @@ impl AnimatorSettings for PulseBackgroundSettings {
         Ok(())
     }
 
-    fn update_modulations(&mut self, beat_pos: f32, modulators: &mut Vec<Box<dyn Modulator>>) {
-        for param in self.modulated_params_mut() {
-            param.modulate(beat_pos, modulators);
-        }
-    }
-
-    fn reset_modulations(&mut self) {
-        for param in self.modulated_params_mut() {
-            param.ghost_value = None;
-        }
-    }
-
     fn set_visiblity(&mut self, state: bool) {
         self.visible = state;
         self.hot_update();

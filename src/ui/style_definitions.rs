@@ -19,7 +19,6 @@ pub mod custom_colors {
 
     // Accent
     pub const ACCENT: Color32 = Color32::from_rgb(255, 102, 0);
-    pub const ACCENT_DIM: Color32 = Color32::from_rgb(160, 64, 0);
 
     // Text
     pub const TEXT_NORMAL: Color32 = Color32::from_gray(170);
@@ -32,9 +31,6 @@ pub mod custom_colors {
     pub const SELECTION_BG: Color32 = Color32::from_rgb(100, 40, 0);
     pub const SELECTION_STROKE: Color32 = Color32::from_rgb(255, 102, 0);
 
-    // Slider track
-    pub const SLIDER_TRACK_BG: Color32 = Color32::from_rgb(38, 38, 38);
-    pub const SLIDER_FILL: Color32 = Color32::from_rgb(255, 102, 0);
     pub const SLIDER_GHOST_FILL: Color32 = Color32::from_rgba_premultiplied(200, 200, 200, 100);
 }
 

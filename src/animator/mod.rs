@@ -1,16 +1,5 @@
 use crate::{
-    animator::{
-        animation_type::AnimationType,
-        animators::{
-            bouncing_ball, pulse_background, quantum_tunnel::QuantumTunnelSettings, scan_line,
-            wave_lines::WaveLinesSettings,
-        },
-    },
-    modulator::wave_modulator::WaveModulator,
-    parameters::ModulatedParam,
-    receiver::ReceiverGrid,
-    timecode::TimeCode,
-    ui::icons::{ICON_ADD, ICON_EYE_ACTIVE, ICON_EYE_DISABLED, ICON_REMOVE},
+    animator::animation_type::AnimationType, parameters::ModulatedParam, timecode::TimeCode,
 };
 use anyhow::Result;
 use nannou::prelude::*;
@@ -45,8 +34,15 @@ pub trait AnimatorSettings {
     fn modulated_params_mut(&mut self) -> Vec<&mut ModulatedParam>;
 
     fn update_modulations(&mut self, beat_pos: f32, modulators: &mut Vec<Box<dyn Modulator>>) {
+        let mut any_modulated = false;
         for param in self.modulated_params_mut() {
             param.modulate(beat_pos, modulators);
+            if param.modulation_active {
+                any_modulated = true;
+            }
+        }
+        if any_modulated {
+            self.hot_update();
         }
     }
 
