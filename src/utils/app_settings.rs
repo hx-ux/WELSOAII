@@ -1,5 +1,5 @@
-use crate::parameters::ConstantParam;
-use crate::utils::FileManager;
+use crate::utils::{FileManager, Severity};
+use crate::{parameters::ConstantParam, utils::AppLogger};
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 use std::fs::{self};
@@ -35,13 +35,54 @@ impl Default for AppSettings {
 impl AppSettings {
     pub const APP_NAME: &str = "Welosa2";
 
-    pub fn load_or_default() -> Self {
-        FileManager::app_settings_path()
-            .and_then(|p| fs::File::open(p).map_err(|_| ()))
-            .and_then(|f| serde_json::from_reader(f).map_err(|_| ()))
-            .unwrap_or_default()
+    pub fn load_or_default(logger: &AppLogger) -> Self {
+        let path = match FileManager::app_settings_path() {
+            Ok(p) => p,
+            Err(_) => {
+                logger.log(
+                    "Warning: Could not determine app settings path. Using defaults.",
+                    Severity::Error,
+                );
+                return Self::default();
+            }
+        };
+
+        let file = match fs::File::open(&path) {
+            Ok(f) => f,
+            Err(e) => {
+                logger.log(
+                    &format!(
+                        "No existing settings found at {:?} ({}). Using defaults.",
+                        path, e
+                    ),
+                    Severity::Error,
+                );
+                return Self::default();
+            }
+        };
+
+        match serde_json::from_reader(file) {
+            Ok(settings) => {
+                logger.log(
+                    "Global settings successfully loaded from file.",
+                    Severity::Info,
+                );
+                settings
+            }
+            Err(e) => {
+                logger.log(
+                    &format!(
+                        "Error parsing settings file: {}. Falling back to defaults.",
+                        e
+                    ),
+                    Severity::Error,
+                );
+                Self::default()
+            }
+        }
     }
-    pub fn ui(&mut self, ui: &mut egui::Ui) -> bool {
+
+    pub fn ui(&mut self, ui: &mut egui::Ui, logger: &AppLogger) -> bool {
         let mut changed = false;
         ui.separator();
         ui.horizontal(|ui| {
@@ -58,7 +99,17 @@ impl AppSettings {
         ui.checkbox(&mut self.fully_transparent, "transparent");
 
         if ui.button("Save Settings").clicked() {
-            let _ = FileManager::save_app_settings(self);
+            match FileManager::save_app_settings(self) {
+                Ok(_) => {
+                    logger.log("Saved Settings file", Severity::Info);
+                }
+                Err(err) => {
+                    logger.log(
+                        &format!("Error saving settings file {}", err),
+                        Severity::Error,
+                    );
+                }
+            }
         }
         changed
     }

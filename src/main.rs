@@ -21,7 +21,7 @@ use crate::animator::animator::Animator;
 // Core component imports
 use crate::receiver::{LayoutMode, ReceiverGrid};
 use crate::ui::performance_view::PerfStats;
-use crate::utils::AppSettings;
+use crate::utils::{AppLogger, AppSettings, Severity};
 
 fn main() {
     nannou::app(model).update(update).run();
@@ -34,10 +34,14 @@ struct Model {
     device_modal_open: bool,
     settings_modal_open: bool,
     performance_view: PerfStats,
+    logger: AppLogger,
+    log_modal_open: bool,
 }
 
 fn model(app: &App) -> Model {
-    let global_settings = AppSettings::load_or_default();
+    let logger = AppLogger::default();
+
+    let global_settings = AppSettings::load_or_default(&logger);
 
     app.set_loop_mode(LoopMode::rate_fps(global_settings.framerate));
 
@@ -53,6 +57,7 @@ fn model(app: &App) -> Model {
         .raw_event(settings_window_event)
         .build()
         .unwrap();
+    logger.log("Application started", Severity::Info);
 
     let window = app.window(view_window_id).unwrap();
     let settings_egui = Egui::from_window(&window);
@@ -65,10 +70,8 @@ fn model(app: &App) -> Model {
         LayoutMode::Colum,
     );
 
-    let mut animator = Animator::new(&win_rect, receiver_grid);
+    let mut animator = Animator::new(&win_rect, receiver_grid, logger.clone());
     animator.init_all_layers(&win_rect);
-
-    app.set_loop_mode(LoopMode::RefreshSync);
 
     Model {
         animator,
@@ -77,6 +80,8 @@ fn model(app: &App) -> Model {
         device_modal_open: false,
         settings_modal_open: false,
         performance_view: PerfStats::new(),
+        logger,
+        log_modal_open: false,
     }
 }
 
@@ -107,6 +112,11 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
                     }
                     if ui.button("Settings").clicked() {
                         _model.settings_modal_open = true;
+                        ui.close_menu();
+                    }
+
+                    if ui.button("Log").clicked() {
+                        _model.log_modal_open = true;
                         ui.close_menu();
                     }
                 });
@@ -144,7 +154,7 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
         .default_open(true)
         .open(&mut _model.settings_modal_open)
         .show(&ctx, |ui| {
-            _model.global_settings.ui(ui);
+            _model.global_settings.ui(ui, &_model.logger);
         });
 
     egui::Window::new("DEVICE")
@@ -153,6 +163,14 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
         .open(&mut _model.device_modal_open)
         .show(&ctx, |ui| {
             _model.animator.grid.ui(ui);
+        });
+
+    egui::Window::new("LOG")
+        .resizable(true)
+        .default_open(true)
+        .open(&mut _model.log_modal_open)
+        .show(&ctx, |ui| {
+            _model.logger.ui(ui);
         });
 
     _model

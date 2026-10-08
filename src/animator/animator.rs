@@ -11,6 +11,7 @@ use crate::{
     modulator::{Modulator, wave_modulator::WaveModulator},
     receiver::ReceiverGrid,
     timecode::TimeCode,
+    utils::AppLogger,
 };
 use nannou::prelude::*;
 use nannou_egui::egui::{self, Color32};
@@ -22,10 +23,11 @@ pub struct Animator {
     pub modulators: Vec<Box<dyn Modulator>>,
     pub active_animations: Vec<Box<dyn AnimatorSettings>>,
     pub current_animation_index: Option<usize>,
+    pub logger: AppLogger,
 }
 
 impl Animator {
-    pub fn new(win_rect: &Rect, grid: ReceiverGrid) -> Self {
+    pub fn new(win_rect: &Rect, grid: ReceiverGrid, logger: AppLogger) -> Self {
         let active_animations: Vec<Box<dyn AnimatorSettings>> =
             vec![Box::new(BouncingBallSettings::new(win_rect))];
 
@@ -40,6 +42,7 @@ impl Animator {
             grid,
             active_animations,
             current_animation_index: Some(0),
+            logger,
         }
     }
 
