@@ -21,7 +21,7 @@ use crate::animator::animator::Animator;
 // Core component imports
 use crate::receiver::{LayoutMode, ReceiverGrid};
 use crate::ui::performance_view::PerfStats;
-use crate::utils::{AppLogger, AppSettings};
+use crate::utils::{AppLogger, AppSettings, Severity};
 
 fn main() {
     nannou::app(model).update(update).run();
@@ -57,7 +57,7 @@ fn model(app: &App) -> Model {
         .raw_event(settings_window_event)
         .build()
         .unwrap();
-    logger.log("Application started");
+    logger.log("Application started", Severity::Info);
 
     let window = app.window(view_window_id).unwrap();
     let settings_egui = Egui::from_window(&window);
@@ -81,7 +81,7 @@ fn model(app: &App) -> Model {
         settings_modal_open: false,
         performance_view: PerfStats::new(),
         logger,
-        log_modal_open: true,
+        log_modal_open: false,
     }
 }
 
@@ -116,7 +116,7 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
                     }
 
                     if ui.button("Log").clicked() {
-                        _model.settings_modal_open = true;
+                        _model.log_modal_open = true;
                         ui.close_menu();
                     }
                 });
@@ -165,11 +165,13 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
             _model.animator.grid.ui(ui);
         });
 
-    if _model.settings_modal_open {
-        _model
-            .logger
-            .show_window(&ctx, &mut _model.settings_modal_open);
-    }
+    egui::Window::new("LOG")
+        .resizable(true)
+        .default_open(true)
+        .open(&mut _model.log_modal_open)
+        .show(&ctx, |ui| {
+            _model.logger.ui(ui);
+        });
 
     _model
         .animator

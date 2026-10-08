@@ -5,3 +5,4 @@ pub use app_settings::AppMode;
 pub use app_settings::AppSettings;
 pub use file_manager::FileManager;
 pub use log::AppLogger;
+pub use log::Severity;

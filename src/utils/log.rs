@@ -1,7 +1,8 @@
 use chrono::Local;
 use nannou_egui::egui;
 use std::sync::{Arc, Mutex};
-enum Severity {
+#[derive(Clone, Debug)]
+pub enum Severity {
     Info,
     Error,
 }
@@ -10,6 +11,7 @@ enum Severity {
 pub struct LogMessage {
     pub timestamp: String,
     pub message: String,
+    pub severity: Severity,
 }
 
 #[derive(Clone, Debug)]
@@ -26,11 +28,12 @@ impl Default for AppLogger {
 }
 
 impl AppLogger {
-    pub fn log(&self, message: &str) {
+    pub fn log(&self, message: &str, severity: Severity) {
         if let Ok(mut logs) = self.logs.lock() {
             logs.push(LogMessage {
                 timestamp: Local::now().format("%H:%M:%S").to_string(),
                 message: message.to_string(),
+                severity,
             });
             if logs.len() > 200 {
                 logs.remove(0);
@@ -38,35 +41,31 @@ impl AppLogger {
         }
     }
 
-    pub fn show_window(&self, ctx: &egui::Context, is_open: &mut bool) {
-        egui::Window::new("System Log")
-            .open(is_open)
-            .resizable(true)
-            .default_size([400.0, 250.0])
-            .show(ctx, |ui| {
-                if ui.button("Clear").clicked() {
-                    if let Ok(mut logs) = self.logs.lock() {
-                        logs.clear();
+    pub fn ui(&self, ui: &mut egui::Ui) {
+        if ui.button("Clear").clicked() {
+            if let Ok(mut logs) = self.logs.lock() {
+                logs.clear();
+            }
+        }
+        ui.separator();
+
+        egui::ScrollArea::vertical()
+            .auto_shrink([false, false])
+            .stick_to_bottom(true)
+            .show(ui, |ui| {
+                if let Ok(logs) = self.logs.lock() {
+                    for log in logs.iter() {
+                        let text_color = match log.severity {
+                            Severity::Info => egui::Color32::GREEN,
+                            Severity::Error => egui::Color32::RED,
+                        };
+
+                        ui.horizontal(|ui| {
+                            ui.label(egui::RichText::new(&log.timestamp).color(text_color));
+                            ui.label(egui::RichText::new(&log.message).color(text_color));
+                        });
                     }
                 }
-                ui.separator();
-
-                egui::ScrollArea::vertical()
-                    .auto_shrink([false, false])
-                    .stick_to_bottom(true)
-                    .show(ui, |ui| {
-                        if let Ok(logs) = self.logs.lock() {
-                            for log in logs.iter() {
-                                ui.horizontal(|ui| {
-                                    ui.label(
-                                        egui::RichText::new(&log.timestamp)
-                                            .color(egui::Color32::DARK_GRAY),
-                                    );
-                                    ui.label(&log.message);
-                                });
-                            }
-                        }
-                    });
             });
     }
 }

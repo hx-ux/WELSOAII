@@ -1,4 +1,4 @@
-use crate::utils::FileManager;
+use crate::utils::{FileManager, Severity};
 use crate::{parameters::ConstantParam, utils::AppLogger};
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
@@ -18,8 +18,6 @@ pub struct AppSettings {
     pub app_mode: AppMode,
     pub control_windows_opacity: ConstantParam<u8>,
     pub fully_transparent: bool,
-    #[serde(skip)]
-    pub logger: Option<AppLogger>,
 }
 
 impl Default for AppSettings {
@@ -30,7 +28,6 @@ impl Default for AppSettings {
             app_mode: AppMode::Edit,
             control_windows_opacity: ConstantParam::new(200, 1, 255, "Opacity", "opactity"),
             fully_transparent: false,
-            logger: None,
         }
     }
 }
@@ -42,7 +39,10 @@ impl AppSettings {
         let path = match FileManager::app_settings_path() {
             Ok(p) => p,
             Err(_) => {
-                logger.log("Warning: Could not determine app settings path. Using defaults.");
+                logger.log(
+                    "Warning: Could not determine app settings path. Using defaults.",
+                    Severity::Error,
+                );
                 return Self::default();
             }
         };
@@ -50,24 +50,33 @@ impl AppSettings {
         let file = match fs::File::open(&path) {
             Ok(f) => f,
             Err(e) => {
-                logger.log(&format!(
-                    "No existing settings found at {:?} ({}). Using defaults.",
-                    path, e
-                ));
+                logger.log(
+                    &format!(
+                        "No existing settings found at {:?} ({}). Using defaults.",
+                        path, e
+                    ),
+                    Severity::Error,
+                );
                 return Self::default();
             }
         };
 
         match serde_json::from_reader(file) {
             Ok(settings) => {
-                logger.log("Global settings successfully loaded from file.");
+                logger.log(
+                    "Global settings successfully loaded from file.",
+                    Severity::Info,
+                );
                 settings
             }
             Err(e) => {
-                logger.log(&format!(
-                    "Error parsing settings file: {}. Falling back to defaults.",
-                    e
-                ));
+                logger.log(
+                    &format!(
+                        "Error parsing settings file: {}. Falling back to defaults.",
+                        e
+                    ),
+                    Severity::Error,
+                );
                 Self::default()
             }
         }
@@ -92,13 +101,13 @@ impl AppSettings {
         if ui.button("Save Settings").clicked() {
             match FileManager::save_app_settings(self) {
                 Ok(_) => {
-                    logger.log("Saved Settings file");
+                    logger.log("Saved Settings file", Severity::Info);
                 }
                 Err(err) => {
-                    logger.log(&format!(
-                        "Error parsing settings file: {}. Falling back to defaults.",
-                        err
-                    ));
+                    logger.log(
+                        &format!("Error saving settings file {}", err),
+                        Severity::Error,
+                    );
                 }
             }
         }
