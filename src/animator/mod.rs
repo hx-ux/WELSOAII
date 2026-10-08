@@ -34,8 +34,15 @@ pub trait AnimatorSettings {
     fn modulated_params_mut(&mut self) -> Vec<&mut ModulatedParam>;
 
     fn update_modulations(&mut self, beat_pos: f32, modulators: &mut Vec<Box<dyn Modulator>>) {
+        let mut any_modulated = false;
         for param in self.modulated_params_mut() {
             param.modulate(beat_pos, modulators);
+            if param.modulation_active {
+                any_modulated = true;
+            }
+        }
+        if any_modulated {
+            self.hot_update();
         }
     }
 

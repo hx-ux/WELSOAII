@@ -150,9 +150,6 @@ impl ModulatedParam {
             })
         });
 
-        if self.modulation_active {
-            return true;
-        }
         changed
     }
 }
