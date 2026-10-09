@@ -1,5 +1,6 @@
-mod receiver_device;
-mod receiver_grid;
+pub mod grid_cell;
+pub mod layout_mode;
+pub mod receiver_grid;
 
-pub use receiver_device::ReceiverDevice;
-pub use receiver_grid::{LayoutMode, ReceiverGrid};
+pub use layout_mode::LayoutMode;
+pub use receiver_grid::ReceiverGrid;

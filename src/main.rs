@@ -10,6 +10,7 @@ mod modulator;
 mod parameters;
 mod presets;
 mod receiver;
+mod sender;
 mod timecode;
 mod ui;
 mod utils;
