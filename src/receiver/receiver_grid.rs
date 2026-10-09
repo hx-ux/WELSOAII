@@ -1,22 +1,12 @@
+use crate::sender::wled_sender::WLEDSender;
+use crate::ui::controls::monospace_text_edit;
 use nannou::prelude::*;
 use nannou_egui::egui;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use strum::IntoEnumIterator;
-use strum_macros::{Display, EnumIter};
 
-use crate::{
-    receiver::cell::GridCell,
-    sender::WLEDSender,
-    ui::controls::monospace_text_edit,
-    utils::{AppLogger, Severity},
-};
-
-#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, EnumIter, Display)]
-pub enum LayoutMode {
-    Row,
-    #[serde(alias = "Colum")]
-    Column,
-}
+use crate::receiver::grid_cell::GridCell;
+use crate::receiver::layout_mode::LayoutMode;
 
 #[derive(Clone, Serialize)]
 pub struct ReceiverGrid {
@@ -26,14 +16,14 @@ pub struct ReceiverGrid {
     pub cells: Vec<GridCell>,
     pub cols: u32,
     pub rows: u32,
-    device: WLEDSender,
+    pub device: WLEDSender,
     #[serde(skip)]
     led_buffer: Vec<u8>,
     #[serde(skip)]
     cell_w: f32,
     #[serde(skip)]
     cell_h: f32,
-    layout_mode: LayoutMode,
+    pub layout_mode: LayoutMode,
     #[serde(skip)]
     pub edit_mode: bool,
 }
@@ -41,10 +31,7 @@ pub struct ReceiverGrid {
 impl ReceiverGrid {
     pub fn new(main_rect: Rect, cols: u32, rows: u32, layout_mode: LayoutMode) -> Self {
         let cell_count = (rows * cols) as usize;
-
-        // Pre-allocate LED buffer (3 bytes per cell: RGB)
         let led_buffer = vec![0u8; cell_count * 3];
-
         let mut grid = ReceiverGrid {
             main_rect,
             cells: Vec::new(),
@@ -247,7 +234,7 @@ impl ReceiverGrid {
         }
     }
 
-    pub fn ui(&mut self, ui: &mut egui::Ui, logger: &AppLogger) -> bool {
+    pub fn ui(&mut self, ui: &mut egui::Ui) -> bool {
         let mut changed = false;
 
         let mut name = self.device.name.clone();
