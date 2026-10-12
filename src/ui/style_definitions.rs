@@ -3,9 +3,7 @@ use nannou_egui::egui::{Color32, Rounding};
 pub mod custom_colors {
     use super::Color32;
 
-    // Base surfaces
-    pub const FILL_BG: Color32 = Color32::from_rgb(26, 26, 26);
-    pub const EXTREME_BG: Color32 = Color32::from_rgb(10, 10, 10);
+    pub const SURFACE: Color32 = Color32::from_rgb(46, 46, 56);
 
     // Widget states — charcoal-based
     pub const BUTTON_NORMAL: Color32 = Color32::from_rgb(50, 50, 50);
@@ -15,7 +13,6 @@ pub mod custom_colors {
     // Ableton orange
     pub const NONINTERACTIVE_BG: Color32 = Color32::from_rgb(30, 30, 30);
     pub const OPEN_BG: Color32 = Color32::from_rgb(55, 55, 55);
-    pub const WINDOW_BORDER: Color32 = Color32::from_rgb(55, 55, 55);
 
     // Accent
     pub const ACCENT: Color32 = Color32::from_rgb(255, 102, 0);

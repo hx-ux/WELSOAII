@@ -49,17 +49,17 @@ fn setup_fonts(ctx: &Context) {
 fn setup_visuals(opacity: u8, transparent: bool) -> Visuals {
     let mut visuals = Visuals::dark();
 
-    if (transparent) {
-        visuals.window_fill = Color32::TRANSPARENT;
+    if transparent {
         visuals.panel_fill = Color32::TRANSPARENT;
     } else {
-        visuals.window_fill = Color32::from_rgba_premultiplied(12, 14, 18, opacity);
         visuals.panel_fill = Color32::from_rgba_premultiplied(12, 14, 18, opacity);
+        visuals.widgets.noninteractive.bg_fill =
+            Color32::from_rgba_premultiplied(12, 14, 18, opacity);
     }
 
-    visuals.window_stroke.color = custom_colors::WINDOW_BORDER;
-    visuals.window_stroke.width = 1.0;
     visuals.window_rounding = custom_rounding::window();
+
+    visuals.widgets.noninteractive.bg_fill = custom_colors::SURFACE;
 
     // Widget fill states
     visuals.widgets.inactive.bg_fill = custom_colors::BUTTON_NORMAL;
@@ -90,9 +90,6 @@ fn setup_visuals(opacity: u8, transparent: bool) -> Visuals {
     visuals.selection.bg_fill = custom_colors::SELECTION_BG;
     visuals.selection.stroke.color = custom_colors::SELECTION_STROKE;
     visuals.selection.stroke.width = 1.0;
-
-    visuals.faint_bg_color = custom_colors::FILL_BG;
-    visuals.extreme_bg_color = custom_colors::EXTREME_BG;
 
     setup_widget_rounding(&mut visuals);
 
