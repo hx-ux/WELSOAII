@@ -1,54 +1,15 @@
-use crate::receiver::ReceiverDevice;
 use nannou::prelude::*;
 use nannou_egui::egui::{self};
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter};
 
-use crate::ui::controls::monospace_text_edit;
+use crate::{receiver::cell::GridCell, sender::WLEDSender, ui::controls::monospace_text_edit};
 
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq, EnumIter, Display)]
 pub enum LayoutMode {
     Row,
     Colum,
-}
-
-#[derive(Clone)]
-pub struct GridCell {
-    pub rect: Rect,
-    pub display_color: Rgba8,
-    pub is_active: bool,
-    pos_string: String,
-}
-
-impl GridCell {
-    pub fn new_from_rect(rect: Rect, pos: u32) -> Self {
-        GridCell {
-            rect,
-            is_active: false,
-            display_color: Rgba8::new(0, 0, 0, 0),
-            pos_string: pos.to_string(), // Cache the string
-        }
-    }
-
-    pub fn reset(&mut self) {
-        self.is_active = false;
-        self.display_color = Rgba8::new(0, 0, 0, 0);
-    }
-
-    pub fn get_send_color(&self) -> Rgba8 {
-        if self.is_active {
-            return self.display_color;
-        }
-        Rgba8::new(0, 0, 0, 0)
-    }
-
-    pub fn get_display_color(&self) -> Rgba8 {
-        if self.is_active {
-            return self.display_color;
-        }
-        Rgba8::new(0, 0, 0, 0)
-    }
 }
 
 #[derive(Clone, Serialize)]
@@ -59,9 +20,9 @@ pub struct ReceiverGrid {
     pub cells: Vec<GridCell>,
     pub cols: u32,
     pub rows: u32,
-    device: ReceiverDevice,
+    device: WLEDSender,
     #[serde(skip)]
-    led_buffer: Vec<u8>, // Pre-allocated buffer for LED data
+    led_buffer: Vec<u8>, 
     #[serde(skip)]
     cell_w: f32,
     #[serde(skip)]
@@ -83,7 +44,7 @@ impl ReceiverGrid {
             cells: Vec::new(),
             cols,
             rows,
-            device: ReceiverDevice::default(),
+            device: WLEDSender::default(),
             led_buffer,
             cell_w: 0.0,
             cell_h: 0.0,

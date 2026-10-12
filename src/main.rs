@@ -10,10 +10,10 @@ mod modulator;
 mod parameters;
 mod presets;
 mod receiver;
+mod sender;
 mod timecode;
 mod ui;
 mod utils;
-
 // Re-exports for public API
 pub use utils::AppMode;
 

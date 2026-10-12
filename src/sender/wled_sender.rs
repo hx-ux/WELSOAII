@@ -4,7 +4,7 @@ use serde::Serialize;
 use std::sync::{Arc, Mutex};
 
 #[derive(Clone, Serialize)]
-pub struct ReceiverDevice {
+pub struct WLEDSender {
     pub ip: String,
     pub name: String,
     pub max_len: usize,
@@ -14,7 +14,7 @@ pub struct ReceiverDevice {
     pub establish_conn: bool,
 }
 
-impl ReceiverDevice {
+impl WLEDSender {
     const RECIVER_PORT: &str = "4048";
 
     pub fn new(ip: &str, name: &str, max_len: usize) -> Self {
@@ -40,7 +40,7 @@ impl ReceiverDevice {
     }
 
     pub fn open_connection(&mut self) -> Result<bool> {
-        let target_address = format!("{}:{}", self.ip, ReceiverDevice::RECIVER_PORT);
+        let target_address = format!("{}:{}", self.ip, WLEDSender::RECIVER_PORT);
 
         match std::net::UdpSocket::bind("0.0.0.0:4048") {
             Ok(socket) => {
@@ -71,7 +71,7 @@ impl ReceiverDevice {
     }
 }
 
-impl Default for ReceiverDevice {
+impl Default for WLEDSender {
     fn default() -> Self {
         Self {
             ip: "192.168.178.102".to_string(),
