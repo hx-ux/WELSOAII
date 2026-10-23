@@ -1,12 +1,20 @@
-use crate::sender::wled_sender::WLEDSender;
-use crate::ui::controls::monospace_text_edit;
+use crate::{
+    receiver::cell::GridCell,
+    sender::WLEDSender,
+    ui::controls::monospace_text_edit,
+    utils::{AppLogger, Severity},
+};
 use nannou::prelude::*;
 use nannou_egui::egui;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
+use strum_macros::{Display, EnumIter};
 
-use crate::receiver::grid_cell::GridCell;
-use crate::receiver::layout_mode::LayoutMode;
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, EnumIter, Display)]
+pub enum LayoutMode {
+    Row,
+    Colum,
+}
 
 #[derive(Clone, Serialize)]
 pub struct ReceiverGrid {
@@ -50,12 +58,8 @@ impl ReceiverGrid {
     }
 
     pub fn update_cells(&mut self) {
-        self.cells = ReceiverGrid::create_grid(
-            &self.main_rect,
-            self.rows,
-            self.cols,
-            self.layout_mode,
-        );
+        self.cells =
+            ReceiverGrid::create_grid(&self.main_rect, self.rows, self.cols, self.layout_mode);
 
         if self.cols == 0 || self.rows == 0 {
             self.cell_w = 0.0;
@@ -114,7 +118,7 @@ impl ReceiverGrid {
                 // Row-major: index = row * cols + col
                 (row * self.cols + col) as usize
             }
-            LayoutMode::Column => {
+            LayoutMode::Colum => {
                 // Column-major: index = col * rows + row
                 (col * self.rows + row) as usize
             }
@@ -150,7 +154,7 @@ impl ReceiverGrid {
                     }
                 }
             }
-            LayoutMode::Column => {
+            LayoutMode::Colum => {
                 let mut pos = 0;
                 for c in 0..cols {
                     for r in 0..rows {
@@ -234,7 +238,7 @@ impl ReceiverGrid {
         }
     }
 
-    pub fn ui(&mut self, ui: &mut egui::Ui) -> bool {
+    pub fn ui(&mut self, ui: &mut egui::Ui, logger: &AppLogger) -> bool {
         let mut changed = false;
 
         let mut name = self.device.name.clone();
@@ -301,4 +305,3 @@ impl ReceiverGrid {
         changed
     }
 }
-

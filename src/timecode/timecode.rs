@@ -1,7 +1,10 @@
-use crate::parameters::ConstantParam;
+use crate::{
+    parameters::ConstantParam,
+    timecode::link_state::LinkState,
+    ui::icons::{ICON_PAUSE, ICON_PLAY, ICON_STOP},
+};
+use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
-
-use crate::timecode::abl_link::LinkState;
 
 /// Master Clock for syncing all effects
 #[derive(Serialize, Deserialize, Default)]
@@ -149,7 +152,7 @@ impl TimeCode {
 
         ui.add_space(4.0);
 
-        if self.sync_active {
+        if self.link_active {
             ui.label(format!("{:.1}", self.tempo.value));
         } else {
             self.tempo.drag_ui(ui);
@@ -167,14 +170,14 @@ impl TimeCode {
 
         let mut link_text = egui::RichText::new("LINK");
 
-        if self.sync_active {
+        if self.link_active {
             let peers = self.abl_sync_state.link.num_peers();
             link_text = egui::RichText::new(format!("LINK: {}", peers));
             link_text = link_text.color(egui::Color32::BLUE);
         }
 
         if ui.button(link_text).clicked() {
-            if self.sync_active {
+            if self.link_active {
                 self.stop_link();
             } else {
                 self.start_link();
