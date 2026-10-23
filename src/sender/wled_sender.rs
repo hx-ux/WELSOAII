@@ -3,6 +3,8 @@ use ddp_rs::connection::DDPConnection;
 use serde::Serialize;
 use std::sync::{Arc, Mutex};
 
+use crate::utils::AppLogger;
+
 #[derive(Clone, Serialize)]
 pub struct WLEDSender {
     pub ip: String,
@@ -12,19 +14,22 @@ pub struct WLEDSender {
     connection: Option<Arc<Mutex<DDPConnection>>>,
     #[serde(skip)]
     pub establish_conn: bool,
+    #[serde(skip)]
+    pub logger: AppLogger,
 }
 
 impl WLEDSender {
     const RECEIVER_PORT: &str = "4048";
 
     #[allow(dead_code)]
-    pub fn new(ip: &str, name: &str, max_len: usize) -> Self {
+    pub fn new(ip: &str, name: &str, max_len: usize, logger: AppLogger) -> Self {
         Self {
             ip: ip.to_string(),
             name: name.to_string(),
             connection: None,
             max_len,
             establish_conn: false,
+            logger,
         }
     }
 
@@ -52,15 +57,27 @@ impl WLEDSender {
                     Ok(conn) => {
                         self.connection = Some(Arc::new(Mutex::new(conn)));
                         self.establish_conn = true;
+                        self.logger.log(
+                            format!("Connected to {} ", self.ip),
+                            crate::utils::Severity::Info,
+                        );
                     }
                     Err(err) => {
                         self.establish_conn = false;
+                        self.logger.log(
+                            format!("Error creating DDP connection: {} {}", self.ip, err),
+                            crate::utils::Severity::Error,
+                        );
                         anyhow::bail!("Error creating DDP connection: {}", err);
                     }
                 };
             }
             Err(err) => {
                 self.establish_conn = false;
+                self.logger.log(
+                    format!("Error opening UDP socket: {}", err),
+                    crate::utils::Severity::Error,
+                );
                 anyhow::bail!("Error opening UDP socket: {}", err);
             }
         }
@@ -73,16 +90,3 @@ impl WLEDSender {
         self.establish_conn = false;
     }
 }
-
-impl Default for WLEDSender {
-    fn default() -> Self {
-        Self {
-            ip: "192.168.178.102".to_string(),
-            name: "Default".to_string(),
-            max_len: 400,
-            connection: None,
-            establish_conn: false,
-        }
-    }
-}
-

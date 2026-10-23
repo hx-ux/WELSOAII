@@ -34,23 +34,38 @@ pub struct ReceiverGrid {
     pub layout_mode: LayoutMode,
     #[serde(skip)]
     pub edit_mode: bool,
+    #[serde(skip)]
+    pub logger: AppLogger,
 }
 
 impl ReceiverGrid {
-    pub fn new(main_rect: Rect, cols: u32, rows: u32, layout_mode: LayoutMode) -> Self {
+    pub fn new(
+        main_rect: Rect,
+        cols: u32,
+        rows: u32,
+        layout_mode: LayoutMode,
+        logger: AppLogger,
+    ) -> Self {
         let cell_count = (rows * cols) as usize;
         let led_buffer = vec![0u8; cell_count * 3];
+        // ip: "192.168.178.102".to_string(),
+        // name: "Default".to_string(),
+        // max_len: 400,
+        // connection: None,
+        // establish_conn: false,
+        let sender = WLEDSender::new("192.168.178.102", "Default", 400, logger.clone());
         let mut grid = ReceiverGrid {
             main_rect,
             cells: Vec::new(),
             cols,
             rows,
-            device: WLEDSender::default(),
+            device: sender,
             led_buffer,
             cell_w: 0.0,
             cell_h: 0.0,
             layout_mode,
             edit_mode: false,
+            logger,
         };
 
         grid.update_cells();
@@ -238,7 +253,7 @@ impl ReceiverGrid {
         }
     }
 
-    pub fn ui(&mut self, ui: &mut egui::Ui, logger: &AppLogger) -> bool {
+    pub fn ui(&mut self, ui: &mut egui::Ui) -> bool {
         let mut changed = false;
 
         let mut name = self.device.name.clone();
@@ -269,14 +284,15 @@ impl ReceiverGrid {
         if ui.button(status).clicked() {
             if self.device.establish_conn {
                 self.device.close_connection();
-                logger.log("Disconnected from WLED device", Severity::Info);
+                self.logger
+                    .log("Disconnected from WLED device", Severity::Info);
             } else {
                 match self.device.open_connection() {
-                    Ok(_) => logger.log(
+                    Ok(_) => self.logger.log(
                         format!("Connected to WLED device at {}", self.device.ip),
                         Severity::Info,
                     ),
-                    Err(e) => logger.log(format!("{e}"), Severity::Error),
+                    Err(e) => self.logger.log(format!("{e}"), Severity::Error),
                 }
             }
             changed = true;
