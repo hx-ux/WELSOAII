@@ -17,7 +17,7 @@ impl SceneManager {
         ui.add_space(5.0);
 
         let _update_behaviour = (false, UpdateBehaviour::None);
-        ui.collapsing("Preset Management", |ui| {
+        ui.collapsing("Scene Manager", |ui| {
             if ui.button("Save As New Preset").clicked() {
                 changed = true;
             }
@@ -37,4 +37,3 @@ impl SceneManager {
         Ok(true)
     }
 }
-

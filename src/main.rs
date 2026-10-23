@@ -8,7 +8,7 @@ mod animator;
 mod color;
 mod modulator;
 mod parameters;
-mod presets;
+mod scene;
 mod receiver;
 mod sender;
 mod timecode;
@@ -36,6 +36,7 @@ struct Model {
     performance_view: PerfStats,
     logger: AppLogger,
     log_modal_open: bool,
+    scene_manager_open: bool,
 }
 
 fn model(app: &App) -> Model {
@@ -82,6 +83,7 @@ fn model(app: &App) -> Model {
         performance_view: PerfStats::new(),
         logger,
         log_modal_open: false,
+        scene_manager_open: false,
     }
 }
 
@@ -117,6 +119,11 @@ fn update(app: &App, model: &mut Model, update: Update) {
 
                     if ui.button("Log").clicked() {
                         model.log_modal_open = true;
+                        ui.close_menu();
+                    }
+
+                    if ui.button("Scene").clicked() {
+                        model.scene_manager_open = true;
                         ui.close_menu();
                     }
                 });
@@ -166,6 +173,14 @@ fn update(app: &App, model: &mut Model, update: Update) {
         });
 
     egui::Window::new("LOG")
+        .resizable(true)
+        .default_open(true)
+        .open(&mut model.log_modal_open)
+        .show(&ctx, |ui| {
+            model.logger.ui(ui);
+        });
+
+    egui::Window::new("SCENE")
         .resizable(true)
         .default_open(true)
         .open(&mut model.log_modal_open)
@@ -235,4 +250,3 @@ fn view(app: &App, model: &Model, frame: Frame) {
         AppMode::Edit => model.egui.draw_to_frame(&frame).unwrap(),
     }
 }
-
