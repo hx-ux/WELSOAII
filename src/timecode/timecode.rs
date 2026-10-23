@@ -121,6 +121,7 @@ impl TimeCode {
         self.current_time = (self.total_beats * 60.0) / self.tempo.value;
     }
 
+    #[allow(dead_code)]
     pub fn get_time(&self) -> f32 {
         self.current_time
     }
@@ -137,6 +138,7 @@ impl TimeCode {
         self.total_beats.fract()
     }
 
+    #[allow(dead_code)]
     pub fn get_formatted_time(&self) -> String {
         let minutes = (self.current_time / 60.0).floor() as i32;
         let seconds = (self.current_time % 60.0).floor() as i32;
@@ -176,7 +178,7 @@ impl TimeCode {
         if self.sync_active {
             ui.label(format!("{:.1}", self.tempo.value));
         } else {
-            self.tempo.to_drag(ui);
+            self.tempo.drag_ui(ui);
         }
 
         for i in 1..=4 {

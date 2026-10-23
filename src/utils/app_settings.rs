@@ -2,16 +2,15 @@ use crate::utils::{FileManager, Severity};
 use crate::{parameters::ConstantParam, utils::AppLogger};
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
-use std::fs::{self};
+use std::fs;
 
-#[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize, Deserialize)]
 pub enum AppMode {
     Presentation,
     Edit,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-
 pub struct AppSettings {
     pub framerate: f64,
     pub view_window_size: (u32, u32),
@@ -26,7 +25,7 @@ impl Default for AppSettings {
             framerate: 60.0,
             view_window_size: (1000, 1000),
             app_mode: AppMode::Edit,
-            control_windows_opacity: ConstantParam::new(200, 1, 255, "Opacity", "opactity"),
+            control_windows_opacity: ConstantParam::new(200, 1, 255, "Opacity", "opacity"),
             fully_transparent: false,
         }
     }
@@ -38,9 +37,9 @@ impl AppSettings {
     pub fn load_or_default(logger: &AppLogger) -> Self {
         let path = match FileManager::app_settings_path() {
             Ok(p) => p,
-            Err(_) => {
+            Err(e) => {
                 logger.log(
-                    "Warning: Could not determine app settings path. Using defaults.",
+                    format!("Warning: Could not determine app settings path ({e}). Using defaults."),
                     Severity::Error,
                 );
                 return Self::default();
@@ -51,7 +50,7 @@ impl AppSettings {
             Ok(f) => f,
             Err(e) => {
                 logger.log(
-                    &format!(
+                    format!(
                         "No existing settings found at {:?} ({}). Using defaults.",
                         path, e
                     ),
@@ -71,7 +70,7 @@ impl AppSettings {
             }
             Err(e) => {
                 logger.log(
-                    &format!(
+                    format!(
                         "Error parsing settings file: {}. Falling back to defaults.",
                         e
                     ),
@@ -94,9 +93,11 @@ impl AppSettings {
                 .changed();
         });
 
-        self.control_windows_opacity.to_slider(ui);
+        changed |= self.control_windows_opacity.slider_ui(ui);
 
-        ui.checkbox(&mut self.fully_transparent, "transparent");
+        changed |= ui
+            .checkbox(&mut self.fully_transparent, "transparent")
+            .changed();
 
         if ui.button("Save Settings").clicked() {
             match FileManager::save_app_settings(self) {
@@ -105,7 +106,7 @@ impl AppSettings {
                 }
                 Err(err) => {
                     logger.log(
-                        &format!("Error saving settings file {}", err),
+                        format!("Error saving settings file: {}", err),
                         Severity::Error,
                     );
                 }
@@ -114,3 +115,4 @@ impl AppSettings {
         changed
     }
 }
+

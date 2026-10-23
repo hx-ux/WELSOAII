@@ -48,22 +48,22 @@ impl BouncingBallSettings {
 }
 
 impl AnimatorSettings for BouncingBallSettings {
-    fn control_ui(&mut self, ui: &mut egui::Ui, mods: &mut Vec<Box<dyn Modulator>>) {
-        if self.ball_count.to_slider(ui) {
+    fn control_ui(&mut self, ui: &mut egui::Ui, mods: &[Box<dyn Modulator>]) {
+        if self.ball_count.slider_ui(ui) {
             self.hot_update();
         }
-        if self.radius.to_slider(ui, mods) {
+        if self.radius.slider_ui(ui, mods) {
             self.hot_update();
         }
-        if self.speed.to_slider(ui, mods) {
+        if self.speed.slider_ui(ui, mods) {
             self.hot_update();
         }
 
-        if ui.horizontal(|ui| self.ball_vel_range_x.to_drag(ui)).inner {
+        if ui.horizontal(|ui| self.ball_vel_range_x.drag_ui(ui)).inner {
             self.init();
         }
 
-        if ui.horizontal(|ui| self.ball_vel_range_y.to_drag(ui)).inner {
+        if ui.horizontal(|ui| self.ball_vel_range_y.drag_ui(ui)).inner {
             self.init();
         }
 
@@ -80,17 +80,8 @@ impl AnimatorSettings for BouncingBallSettings {
         self.animator.clear();
 
         for index in 0..self.ball_count.value as usize {
-            let new_obj = BouncingBallAnimator::new(
-                &self.dimension,
-                self.color.clone().value_mapped(index),
-                *self.radius.value(),
-                self.ball_vel_range_x.value,
-                self.ball_vel_range_y.value,
-                *self.speed.value(),
-                index,
-                self.visible,
-            );
-            self.animator.push(new_obj);
+            self.animator
+                .push(BouncingBallAnimator::from_settings(self, index));
         }
     }
 
@@ -104,26 +95,19 @@ impl AnimatorSettings for BouncingBallSettings {
 
         if target_count > current_count {
             for index in current_count..target_count {
-                let new_obj = BouncingBallAnimator::new(
-                    &self.dimension,
-                    self.color.clone().value_mapped(index),
-                    *self.radius.value(),
-                    self.ball_vel_range_x.value,
-                    self.ball_vel_range_y.value,
-                    *self.speed.value(),
-                    index,
-                    self.visible,
-                );
-                self.animator.push(new_obj);
+                self.animator
+                    .push(BouncingBallAnimator::from_settings(self, index));
             }
         } else if target_count < current_count {
             self.animator.truncate(target_count);
         }
 
+        let speed = self.speed.value();
+        let radius = self.radius.value();
         for ball in self.animator.iter_mut() {
-            ball.speed = *self.speed.value();
-            ball.radius = *self.radius.value();
-            ball.color = self.color.clone().value_mapped(ball.index);
+            ball.speed = speed;
+            ball.radius = radius;
+            ball.color = self.color.value_mapped(ball.index);
             ball.visible = self.visible;
         }
     }
@@ -164,12 +148,12 @@ impl AnimatorSettings for BouncingBallSettings {
         Ok(())
     }
 
-    fn set_visiblity(&mut self, state: bool) {
+    fn set_visibility(&mut self, state: bool) {
         self.visible = state;
         self.hot_update();
     }
 
-    fn get_visiblity(&self) -> bool {
+    fn get_visibility(&self) -> bool {
         self.visible
     }
 }
@@ -198,27 +182,23 @@ impl BouncingBallAnimator {
         )
     }
 
-    pub fn new(
-        win_rect: &Rect,
-        color: Rgba8,
-        radius: f32,
-        horizontal_velocity: f32,
-        vertical_velocity: f32,
-        speed: f32,
-        index: usize,
-        visible: bool,
-    ) -> Self {
+    pub fn from_settings(settings: &BouncingBallSettings, index: usize) -> Self {
+        let radius = settings.radius.value();
         BouncingBallAnimator {
-            position: Self::randomize_ball_position(win_rect, radius),
-            velocity: Self::randomize_ball_spread(horizontal_velocity, vertical_velocity),
+            position: Self::randomize_ball_position(&settings.dimension, radius),
+            velocity: Self::randomize_ball_spread(
+                settings.ball_vel_range_x.value,
+                settings.ball_vel_range_y.value,
+            ),
             radius,
-            color,
-            speed,
+            color: settings.color.value_mapped(index),
+            speed: settings.speed.value(),
             index,
-            visible,
+            visible: settings.visible,
         }
     }
 }
+
 
 impl AnimatedObject for BouncingBallAnimator {
     fn update(&mut self, win_rect: &Rect, timecode: &TimeCode) {

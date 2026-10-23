@@ -1,35 +1,31 @@
-use std::{
-    fs::{self},
-    path::PathBuf,
-};
+use std::{fs, path::PathBuf};
+
+use anyhow::{Context, Result};
 
 use crate::utils::AppSettings;
-pub struct FileManager {}
+
+pub struct FileManager;
 
 impl FileManager {
-    fn app_root_path() -> Result<PathBuf, ()> {
-        let mut doc = dirs::document_dir().expect("");
+    fn app_root_path() -> Result<PathBuf> {
+        let mut doc = dirs::document_dir().context("Could not determine user document directory")?;
         doc.push(AppSettings::APP_NAME);
-        let _ = fs::create_dir_all(&doc).map_err(|e| e.to_string());
+        fs::create_dir_all(&doc)
+            .with_context(|| format!("Failed to create app directory at {:?}", doc))?;
         Ok(doc)
     }
 
-    pub fn save_app_settings(app_settings: &AppSettings) -> Result<(), String> {
-        let path = FileManager::app_settings_path().expect("");
-
-        nannou::io::save_to_json(&path, &app_settings)
-            .map_err(|e| format!("Failed to save settings: {}", e))?;
-
+    pub fn save_app_settings(app_settings: &AppSettings) -> Result<()> {
+        let path = Self::app_settings_path()?;
+        nannou::io::save_to_json(&path, app_settings)
+            .with_context(|| format!("Failed to save settings to {:?}", path))?;
         Ok(())
     }
 
-    pub fn app_settings_path() -> Result<PathBuf, ()> {
-        match FileManager::app_root_path() {
-            Ok(mut path) => {
-                path.push("settings.json");
-                Ok(path)
-            }
-            Err(_) => Err(()),
-        }
+    pub fn app_settings_path() -> Result<PathBuf> {
+        let mut path = Self::app_root_path()?;
+        path.push("settings.json");
+        Ok(path)
     }
 }
+

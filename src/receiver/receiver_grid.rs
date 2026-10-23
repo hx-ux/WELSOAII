@@ -1,15 +1,21 @@
 use nannou::prelude::*;
-use nannou_egui::egui::{self};
+use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter};
 
-use crate::{receiver::cell::GridCell, sender::WLEDSender, ui::controls::monospace_text_edit};
+use crate::{
+    receiver::cell::GridCell,
+    sender::WLEDSender,
+    ui::controls::monospace_text_edit,
+    utils::{AppLogger, Severity},
+};
 
-#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, EnumIter, Display)]
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, EnumIter, Display)]
 pub enum LayoutMode {
     Row,
-    Colum,
+    #[serde(alias = "Colum")]
+    Column,
 }
 
 #[derive(Clone, Serialize)]
@@ -22,7 +28,7 @@ pub struct ReceiverGrid {
     pub rows: u32,
     device: WLEDSender,
     #[serde(skip)]
-    led_buffer: Vec<u8>, 
+    led_buffer: Vec<u8>,
     #[serde(skip)]
     cell_w: f32,
     #[serde(skip)]
@@ -61,7 +67,7 @@ impl ReceiverGrid {
             &self.main_rect,
             self.rows,
             self.cols,
-            self.layout_mode.clone(),
+            self.layout_mode,
         );
 
         if self.cols == 0 || self.rows == 0 {
@@ -79,7 +85,6 @@ impl ReceiverGrid {
     }
 
     /// Returns the range of cells (col_min, col_max, row_min, row_max) that could intersect
-
     pub fn get_cell_range(
         &self,
         left: f32,
@@ -122,7 +127,7 @@ impl ReceiverGrid {
                 // Row-major: index = row * cols + col
                 (row * self.cols + col) as usize
             }
-            LayoutMode::Colum => {
+            LayoutMode::Column => {
                 // Column-major: index = col * rows + row
                 (col * self.rows + row) as usize
             }
@@ -135,7 +140,7 @@ impl ReceiverGrid {
         cols: u32,
         layout_mode: LayoutMode,
     ) -> Vec<GridCell> {
-        let mut grid: Vec<GridCell> = Vec::new();
+        let mut grid: Vec<GridCell> = Vec::with_capacity((rows * cols) as usize);
         if cols == 0 || rows == 0 {
             return grid;
         }
@@ -147,26 +152,26 @@ impl ReceiverGrid {
 
         match layout_mode {
             LayoutMode::Row => {
-                let mut _pos = 0;
+                let mut pos = 0;
                 for r in 0..rows {
                     for c in 0..cols {
                         let x = start_x + c as f32 * cell_w;
                         let y = start_y - r as f32 * cell_h;
                         let cell_rect = Rect::from_x_y_w_h(x, y, cell_w, cell_h);
-                        grid.push(GridCell::new_from_rect(cell_rect, _pos));
-                        _pos += 1;
+                        grid.push(GridCell::new_from_rect(cell_rect, pos));
+                        pos += 1;
                     }
                 }
             }
-            LayoutMode::Colum => {
-                let mut _pos = 0;
+            LayoutMode::Column => {
+                let mut pos = 0;
                 for c in 0..cols {
                     for r in 0..rows {
                         let x = start_x + c as f32 * cell_w;
                         let y = start_y - r as f32 * cell_h;
                         let cell_rect = Rect::from_x_y_w_h(x, y, cell_w, cell_h);
-                        grid.push(GridCell::new_from_rect(cell_rect, _pos));
-                        _pos += 1;
+                        grid.push(GridCell::new_from_rect(cell_rect, pos));
+                        pos += 1;
                     }
                 }
             }
@@ -180,6 +185,8 @@ impl ReceiverGrid {
             return;
         }
 
+        let font_size = if self.cells.len() >= 100 { 10 } else { 12 };
+
         for cell in &self.cells {
             draw.rect()
                 .xy(cell.rect.xy())
@@ -187,15 +194,11 @@ impl ReceiverGrid {
                 .stroke_color(SNOW)
                 .stroke_weight(1.0)
                 .color(cell.get_display_color());
-            let mut size = 12;
-            if self.cells.len() >= 100 {
-                size = 10;
-            }
 
             draw.text(&cell.pos_string)
                 .xy(cell.rect.xy())
                 .color(WHITE)
-                .font_size(size);
+                .font_size(font_size);
         }
     }
 
@@ -243,7 +246,8 @@ impl ReceiverGrid {
             self.update_cells();
         }
     }
-    pub fn ui(&mut self, ui: &mut egui::Ui) -> bool {
+
+    pub fn ui(&mut self, ui: &mut egui::Ui, logger: &AppLogger) -> bool {
         let mut changed = false;
 
         let mut name = self.device.name.clone();
@@ -259,7 +263,6 @@ impl ReceiverGrid {
 
         let mut ip = self.device.ip.clone();
         if ui.add(monospace_text_edit(&mut ip, "IP Address")).changed() {
-            // TODO validate IP
             self.device.ip = ip;
             changed = true;
         }
@@ -273,27 +276,42 @@ impl ReceiverGrid {
         };
 
         if ui.button(status).clicked() {
-            let _ = &self.device.open_connection();
+            if self.device.establish_conn {
+                self.device.close_connection();
+                logger.log("Disconnected from WLED device", Severity::Info);
+            } else {
+                match self.device.open_connection() {
+                    Ok(_) => logger.log(
+                        format!("Connected to WLED device at {}", self.device.ip),
+                        Severity::Info,
+                    ),
+                    Err(e) => logger.log(format!("{e}"), Severity::Error),
+                }
+            }
             changed = true;
         }
 
         if ui.checkbox(&mut self.edit_mode, "Edit").clicked() {
             changed = true;
         }
+
+        let mut layout_changed = false;
         egui::ComboBox::from_label("")
-            .selected_text(format!("{}", self.layout_mode).to_string())
+            .selected_text(self.layout_mode.to_string())
             .show_ui(ui, |ui| {
-                LayoutMode::iter().for_each(|option| {
-                    changed |= ui
-                        .selectable_value(
-                            &mut self.layout_mode,
-                            option,
-                            format!("{}", option.clone()),
-                        )
+                for option in LayoutMode::iter() {
+                    layout_changed |= ui
+                        .selectable_value(&mut self.layout_mode, option, option.to_string())
                         .changed();
-                });
+                }
             });
+
+        if layout_changed {
+            self.update_cells();
+            changed = true;
+        }
 
         changed
     }
 }
+

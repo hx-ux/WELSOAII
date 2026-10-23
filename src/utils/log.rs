@@ -1,7 +1,13 @@
 use chrono::Local;
 use nannou_egui::egui;
-use std::sync::{Arc, Mutex};
-#[derive(Clone, Debug)]
+use std::{
+    collections::VecDeque,
+    sync::{Arc, Mutex},
+};
+
+const MAX_LOG_MESSAGES: usize = 200;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Severity {
     Info,
     Error,
@@ -14,38 +20,30 @@ pub struct LogMessage {
     pub severity: Severity,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct AppLogger {
-    logs: Arc<Mutex<Vec<LogMessage>>>,
-}
-
-impl Default for AppLogger {
-    fn default() -> Self {
-        Self {
-            logs: Arc::new(Mutex::new(Vec::new())),
-        }
-    }
+    logs: Arc<Mutex<VecDeque<LogMessage>>>,
 }
 
 impl AppLogger {
-    pub fn log(&self, message: &str, severity: Severity) {
+    pub fn log(&self, message: impl Into<String>, severity: Severity) {
         if let Ok(mut logs) = self.logs.lock() {
-            logs.push(LogMessage {
+            if logs.len() >= MAX_LOG_MESSAGES {
+                logs.pop_front();
+            }
+            logs.push_back(LogMessage {
                 timestamp: Local::now().format("%H:%M:%S").to_string(),
-                message: message.to_string(),
+                message: message.into(),
                 severity,
             });
-            if logs.len() > 200 {
-                logs.remove(0);
-            }
         }
     }
 
     pub fn ui(&self, ui: &mut egui::Ui) {
-        if ui.button("Clear").clicked() {
-            if let Ok(mut logs) = self.logs.lock() {
-                logs.clear();
-            }
+        if ui.button("Clear").clicked()
+            && let Ok(mut logs) = self.logs.lock()
+        {
+            logs.clear();
         }
         ui.separator();
 
@@ -69,3 +67,4 @@ impl AppLogger {
             });
     }
 }
+

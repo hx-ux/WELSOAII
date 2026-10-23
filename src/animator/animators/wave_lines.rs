@@ -53,38 +53,38 @@ impl WaveLinesSettings {
 }
 
 impl AnimatorSettings for WaveLinesSettings {
-    fn control_ui(&mut self, ui: &mut egui::Ui, modulators: &mut Vec<Box<dyn Modulator>>) {
-        if self.line_count.to_slider(ui) {
+    fn control_ui(&mut self, ui: &mut egui::Ui, modulators: &[Box<dyn Modulator>]) {
+        if self.line_count.slider_ui(ui) {
             self.hot_update();
         }
 
-        if self.amplitude.to_slider(ui, modulators) {
+        if self.amplitude.slider_ui(ui, modulators) {
             self.hot_update();
         }
 
-        if self.frequency.to_slider(ui, modulators) {
+        if self.frequency.slider_ui(ui, modulators) {
             self.hot_update();
         }
 
-        if self.speed.to_slider(ui, modulators) {
+        if self.speed.slider_ui(ui, modulators) {
             self.hot_update();
         }
 
-        if self.thickness.to_slider(ui, modulators) {
+        if self.thickness.slider_ui(ui, modulators) {
             self.hot_update();
         }
 
-        if self.phase_spread.to_slider(ui, modulators) {
+        if self.phase_spread.slider_ui(ui, modulators) {
             self.hot_update();
         }
 
-        if self.h_amplitude.to_slider(ui, modulators) {
+        if self.h_amplitude.slider_ui(ui, modulators) {
             self.hot_update();
         }
-        if self.harmonic.to_slider(ui, modulators) {
+        if self.harmonic.slider_ui(ui, modulators) {
             self.hot_update();
         }
-        if self.decay.to_slider(ui, modulators) {
+        if self.decay.slider_ui(ui, modulators) {
             self.hot_update();
         }
 
@@ -99,23 +99,8 @@ impl AnimatorSettings for WaveLinesSettings {
 
     fn init(&mut self) {
         self.animator.clear();
-        for idx in 0..self.line_count.value {
-            self.animator.push(WaveLine::new(
-                idx as usize,
-                self.line_count.value,
-                self.width,
-                self.height,
-                *self.amplitude.value(),
-                *self.frequency.value(),
-                *self.speed.value(),
-                *self.thickness.value(),
-                *self.phase_spread.value(),
-                *self.h_amplitude.value(),
-                *self.harmonic.value(),
-                *self.decay.value(),
-                self.color.clone().value_mapped(idx as usize),
-                self.visible,
-            ));
+        for idx in 0..self.line_count.value as usize {
+            self.animator.push(WaveLine::from_settings(self, idx));
         }
     }
 
@@ -130,41 +115,35 @@ impl AnimatorSettings for WaveLinesSettings {
 
         if target > current {
             for idx in current..target {
-                self.animator.push(WaveLine::new(
-                    idx,
-                    self.line_count.value,
-                    self.width,
-                    self.height,
-                    *self.amplitude.value(),
-                    *self.frequency.value(),
-                    *self.speed.value(),
-                    *self.thickness.value(),
-                    *self.phase_spread.value(),
-                    *self.h_amplitude.value(),
-                    *self.harmonic.value(),
-                    *self.decay.value(),
-                    self.color.clone().value_mapped(idx),
-                    self.visible,
-                ));
+                self.animator.push(WaveLine::from_settings(self, idx));
             }
         } else if target < current {
             self.animator.truncate(target);
         }
 
+        let amplitude = self.amplitude.value();
+        let frequency = self.frequency.value();
+        let speed = self.speed.value();
+        let thickness = self.thickness.value();
+        let phase_spread = self.phase_spread.value();
+        let h_amplitude = self.h_amplitude.value();
+        let harmonic = self.harmonic.value().round() as u32;
+        let decay = self.decay.value();
+
         for line in self.animator.iter_mut() {
             line.total_lines = self.line_count.value;
             line.width = self.width;
             line.height = self.height;
-            line.amplitude_base = *self.amplitude.value();
-            line.amplitude_current = *self.amplitude.value();
-            line.frequency = *self.frequency.value();
-            line.speed = *self.speed.value();
-            line.thickness = *self.thickness.value();
-            line.phase_spread = *self.phase_spread.value();
-            line.h_amplitude = *self.h_amplitude.value();
-            line.harmonic = (*self.harmonic.value()).round() as u32;
-            line.decay = *self.decay.value();
-            line.color = self.color.clone().value_mapped(line.index);
+            line.amplitude_base = amplitude;
+            line.amplitude_current = amplitude;
+            line.frequency = frequency;
+            line.speed = speed;
+            line.thickness = thickness;
+            line.phase_spread = phase_spread;
+            line.h_amplitude = h_amplitude;
+            line.harmonic = harmonic;
+            line.decay = decay;
+            line.color = self.color.value_mapped(line.index);
             line.visible = self.visible;
         }
     }
@@ -214,12 +193,12 @@ impl AnimatorSettings for WaveLinesSettings {
         Ok(())
     }
 
-    fn set_visiblity(&mut self, state: bool) {
+    fn set_visibility(&mut self, state: bool) {
         self.visible = state;
         self.hot_update();
     }
 
-    fn get_visiblity(&self) -> bool {
+    fn get_visibility(&self) -> bool {
         self.visible
     }
 }
@@ -244,39 +223,25 @@ pub struct WaveLine {
 }
 
 impl WaveLine {
-    fn new(
-        index: usize,
-        total_lines: u32,
-        width: f32,
-        height: f32,
-        amplitude: f32,
-        frequency: f32,
-        speed: f32,
-        thickness: f32,
-        phase_spread: f32,
-        h_amplitude: f32,
-        harmonic: f32,
-        decay: f32,
-        color: Rgba8,
-        visible: bool,
-    ) -> Self {
+    fn from_settings(settings: &WaveLinesSettings, index: usize) -> Self {
+        let amplitude = settings.amplitude.value();
         Self {
             index,
-            total_lines,
-            width,
-            height,
+            total_lines: settings.line_count.value,
+            width: settings.width,
+            height: settings.height,
             amplitude_base: amplitude,
             amplitude_current: amplitude,
-            frequency,
-            speed,
-            thickness,
-            phase_spread,
-            harmonic: harmonic.round() as u32,
-            decay,
+            frequency: settings.frequency.value(),
+            speed: settings.speed.value(),
+            thickness: settings.thickness.value(),
+            phase_spread: settings.phase_spread.value(),
+            harmonic: settings.harmonic.value().round() as u32,
+            decay: settings.decay.value(),
             phase: random_range(0.0, TAU),
-            color,
-            h_amplitude,
-            visible,
+            color: settings.color.value_mapped(index),
+            h_amplitude: settings.h_amplitude.value(),
+            visible: settings.visible,
         }
     }
 

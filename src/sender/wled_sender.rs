@@ -15,8 +15,9 @@ pub struct WLEDSender {
 }
 
 impl WLEDSender {
-    const RECIVER_PORT: &str = "4048";
+    const RECEIVER_PORT: &str = "4048";
 
+    #[allow(dead_code)]
     pub fn new(ip: &str, name: &str, max_len: usize) -> Self {
         Self {
             ip: ip.to_string(),
@@ -28,19 +29,17 @@ impl WLEDSender {
     }
 
     pub fn send_data(&self, data: &[u8]) -> Result<()> {
-        if self.establish_conn {
-            if let Some(con) = &self.connection {
-                let mut connection = con
-                    .lock()
-                    .expect("Failed to acquire DDPConnection mutex lock");
-                connection.write_offset(data, 0)?;
-            }
+        if self.establish_conn
+            && let Some(con) = &self.connection
+            && let Ok(mut connection) = con.lock()
+        {
+            connection.write_offset(data, 0)?;
         }
         Ok(())
     }
 
     pub fn open_connection(&mut self) -> Result<bool> {
-        let target_address = format!("{}:{}", self.ip, WLEDSender::RECIVER_PORT);
+        let target_address = format!("{}:{}", self.ip, Self::RECEIVER_PORT);
 
         match std::net::UdpSocket::bind("0.0.0.0:4048") {
             Ok(socket) => {
@@ -51,23 +50,27 @@ impl WLEDSender {
                     socket,
                 ) {
                     Ok(conn) => {
-                        println!("open connection ");
                         self.connection = Some(Arc::new(Mutex::new(conn)));
                         self.establish_conn = true;
                     }
                     Err(err) => {
-                        println!("Error creating DDP connection: {}", err);
                         self.establish_conn = false;
+                        anyhow::bail!("Error creating DDP connection: {}", err);
                     }
                 };
             }
             Err(err) => {
-                println!("error opening socket: {}", err);
                 self.establish_conn = false;
+                anyhow::bail!("Error opening UDP socket: {}", err);
             }
         }
 
         Ok(self.establish_conn)
+    }
+
+    pub fn close_connection(&mut self) {
+        self.connection = None;
+        self.establish_conn = false;
     }
 }
 
@@ -82,3 +85,4 @@ impl Default for WLEDSender {
         }
     }
 }
+

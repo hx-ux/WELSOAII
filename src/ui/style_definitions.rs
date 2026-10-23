@@ -3,7 +3,9 @@ use nannou_egui::egui::{Color32, Rounding};
 pub mod custom_colors {
     use super::Color32;
 
+    #[allow(dead_code)]
     pub const SURFACE: Color32 = Color32::from_rgb(46, 46, 56);
+
 
     // Widget states — charcoal-based
     pub const BUTTON_NORMAL: Color32 = Color32::from_rgb(50, 50, 50);

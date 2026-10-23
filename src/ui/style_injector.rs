@@ -2,23 +2,29 @@
 //!
 //! This module provides a cohesive dark theme with consistent colors,
 //! spacing, and typography across all UI elements.
-use nannou::glam::bool;
+use std::sync::Once;
+
 use nannou_egui::egui::{Color32, Context, FontData, FontDefinitions, FontFamily, Style, Visuals};
 
 use crate::ui::style_definitions::{custom_colors, custom_rounding};
 
+static FONTS_INIT: Once = Once::new();
+
 /// Applies the custom dark theme to the given egui context
 pub fn apply_custom_style(ctx: &Context, opacity: u8, transparent: bool) {
+    FONTS_INIT.call_once(|| {
+        setup_fonts(ctx);
+    });
+
     let style = Style {
         visuals: setup_visuals(opacity, transparent),
         ..Default::default()
     };
 
-    setup_fonts(ctx);
     ctx.set_style(style);
 }
 
-fn setup_fonts(ctx: &Context) {
+pub fn setup_fonts(ctx: &Context) {
     let mut fonts = FontDefinitions::default();
 
     fonts.font_data.insert(
@@ -53,13 +59,9 @@ fn setup_visuals(opacity: u8, transparent: bool) -> Visuals {
         visuals.panel_fill = Color32::TRANSPARENT;
     } else {
         visuals.panel_fill = Color32::from_rgba_premultiplied(12, 14, 18, opacity);
-        visuals.widgets.noninteractive.bg_fill =
-            Color32::from_rgba_premultiplied(12, 14, 18, opacity);
     }
 
     visuals.window_rounding = custom_rounding::window();
-
-    visuals.widgets.noninteractive.bg_fill = custom_colors::SURFACE;
 
     // Widget fill states
     visuals.widgets.inactive.bg_fill = custom_colors::BUTTON_NORMAL;
@@ -103,3 +105,4 @@ fn setup_widget_rounding(visuals: &mut Visuals) {
     visuals.widgets.open.rounding = custom_rounding::open();
     visuals.widgets.noninteractive.rounding = custom_rounding::noninteractive();
 }
+

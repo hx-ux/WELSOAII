@@ -6,6 +6,12 @@ pub struct PerfStats {
     frame_history: egui::util::History<f32>,
 }
 
+impl Default for PerfStats {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PerfStats {
     pub fn new() -> Self {
         Self {
@@ -28,3 +34,4 @@ impl PerfStats {
         }
     }
 }
+

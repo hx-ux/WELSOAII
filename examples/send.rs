@@ -9,10 +9,8 @@ fn main() -> Result<()> {
         "192.168.178.102:4048",
         protocol::PixelConfig::default(),
         protocol::ID::Default,
-        std::net::UdpSocket::bind("0.0.0.0:4048").unwrap(),
+        std::net::UdpSocket::bind("0.0.0.0:4048")?,
     )?;
-
-    // let clr = argen(1200)?;
 
     let framerate = 60;
     let c: u64 = 1000 / framerate;
@@ -28,30 +26,33 @@ fn main() -> Result<()> {
         std::thread::sleep(std::time::Duration::from_millis(c));
     }
 }
+
+#[allow(dead_code)]
 fn testfill_all(len: u64) -> Result<Vec<u8>> {
-    let mut vec = Vec::new();
+    let mut vec = Vec::with_capacity((len * 3) as usize);
     for _ in 0..len {
-        vec.push(255 as u8);
-        vec.push(0 as u8);
-        vec.push(0 as u8);
+        vec.push(255_u8);
+        vec.push(0_u8);
+        vec.push(0_u8);
     }
     Ok(vec)
 }
 
-fn test_section(curr_Sec: u64, len: u64) -> Result<Vec<u8>> {
-    let mut vec = Vec::new();
+fn test_section(curr_sec: u64, len: u64) -> Result<Vec<u8>> {
+    let mut vec = Vec::with_capacity((len * 3) as usize);
 
     for i in 0..len {
-        if i == curr_Sec || i == curr_Sec + 3 {
-            vec.push(255 as u8);
-            vec.push(0 as u8);
-            vec.push(0 as u8);
+        if i == curr_sec || i == curr_sec + 3 {
+            vec.push(255_u8);
+            vec.push(0_u8);
+            vec.push(0_u8);
         } else {
-            vec.push(0 as u8);
-            vec.push(0 as u8);
-            vec.push(0 as u8);
+            vec.push(0_u8);
+            vec.push(0_u8);
+            vec.push(0_u8);
         }
     }
 
     Ok(vec)
 }
+

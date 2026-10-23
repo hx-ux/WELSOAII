@@ -8,7 +8,7 @@ use crate::modulator::Modulator;
 use crate::modulator::polarity::Polarity;
 use crate::parameters::ConstantParam;
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Default, Display, EnumIter)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default, Display, EnumIter)]
 pub enum LfoWave {
     #[default]
     Sine,
@@ -39,13 +39,7 @@ pub struct WaveModulator {
 impl WaveModulator {
     pub fn new(index: usize) -> Self {
         Self {
-            amount: ConstantParam::new(
-                0.25,
-                0.0,
-                1.0,
-                &"amount.".to_string(),
-                &"amount".to_string(),
-            ),
+            amount: ConstantParam::new(0.25, 0.0, 1.0, "amount.", "amount"),
             amount_type: Polarity::Plus,
             wave: LfoWave::default(),
             freq_mul: 1.0,
@@ -55,10 +49,12 @@ impl WaveModulator {
         }
     }
 
+    #[allow(dead_code)]
     pub fn set_speed_hz(&mut self, hz: f32, bpm: f32) {
         self.freq_mul = hz * 60.0 / bpm;
     }
 
+    #[allow(dead_code)]
     pub fn speed_hz(&self, bpm: f32) -> f32 {
         self.freq_mul * bpm / 60.0
     }
@@ -109,7 +105,7 @@ impl Modulator for WaveModulator {
 
         ui.vertical(|ui| {
             egui::ComboBox::from_id_source(format!("Wave {}", self.index))
-                .selected_text(format!("{}", self.wave))
+                .selected_text(self.wave.to_string())
                 .show_ui(ui, |ui| {
                     for w in LfoWave::iter() {
                         ui.selectable_value(&mut self.wave, w, format!("{}", w));
@@ -128,8 +124,8 @@ impl Modulator for WaveModulator {
                 .collect();
 
             // Floating line
-            let line = Line::new(PlotPoints::from(samples.clone()))
-                .width(1.5)
+            let line = Line::new(PlotPoints::from(samples))
+                .width(1.5_f32)
                 .color(accent);
 
             // Point
@@ -139,7 +135,7 @@ impl Modulator for WaveModulator {
                     peak_t as f64,
                     self.preview(base_cycles + peak_t) as f64,
                 ]]))
-                .radius(4.0)
+                .radius(4.0_f32)
                 .color(accent)
             };
 
@@ -172,19 +168,15 @@ impl Modulator for WaveModulator {
                 );
             });
 
-            self.amount.to_slider(ui);
+            self.amount.slider_ui(ui);
 
             ui.horizontal(|ui| {
                 for options in Polarity::iter() {
-                    ui.radio_value(
-                        &mut self.amount_type,
-                        options.clone(),
-                        format!("{}", options),
-                    );
+                    ui.radio_value(&mut self.amount_type, options, options.to_string());
                 }
             });
 
-            self.skew.to_slider(ui);
+            self.skew.slider_ui(ui);
         });
     }
 
@@ -194,16 +186,10 @@ impl Modulator for WaveModulator {
         }
 
         let cycles = beat_pos * self.freq_mul;
-        let result = self.shaped(cycles);
-
-        let mapped_result = match self.amount_type {
-            Polarity::Plus => (result + 1.0) / 2.0,
-            Polarity::Minus => (result - 1.0) / 2.0,
-            Polarity::PlusMinus => result,
-        };
-
+        let mapped_result = self.shaped_mapped(cycles);
         let g = 1.0 + self.amount.value * mapped_result;
 
         1.0 + (g - 1.0) * amount
     }
 }
+

@@ -1,13 +1,17 @@
 use crate::{
-    animator::animation_type::AnimationType, parameters::ModulatedParam, timecode::TimeCode,
+    animator::animation_type::AnimationType, modulator::Modulator, parameters::ModulatedParam,
+    timecode::TimeCode,
 };
 use anyhow::Result;
 use nannou::prelude::*;
-use nannou_egui::egui::{self};
+use nannou_egui::egui;
+
 pub mod animation_type;
-mod animators;
-use crate::modulator::Modulator;
+#[allow(clippy::module_inception)]
 pub mod animator;
+mod animators;
+
+pub use animator::Animator;
 
 pub enum ObjectShape {
     Circle(Vec2, f32),
@@ -22,7 +26,7 @@ pub trait AnimatedObject {
 }
 
 pub trait AnimatorSettings {
-    fn control_ui(&mut self, ui: &mut egui::Ui, mods: &mut Vec<Box<dyn Modulator>>);
+    fn control_ui(&mut self, ui: &mut egui::Ui, mods: &[Box<dyn Modulator>]);
     fn animation_type(&self) -> AnimationType;
     fn init(&mut self);
     fn set_dimension(&mut self, _window_rect: &Rect) {}
@@ -30,10 +34,11 @@ pub trait AnimatorSettings {
     fn draw(&self, draw: &Draw);
     fn update(&mut self, win_rect: &Rect, timecode: &TimeCode);
     fn get_objects(&self) -> Vec<&dyn AnimatedObject>;
+    #[allow(dead_code)]
     fn get_objects_mut(&mut self) -> Vec<&mut dyn AnimatedObject>;
     fn modulated_params_mut(&mut self) -> Vec<&mut ModulatedParam>;
 
-    fn update_modulations(&mut self, beat_pos: f32, modulators: &mut Vec<Box<dyn Modulator>>) {
+    fn update_modulations(&mut self, beat_pos: f32, modulators: &[Box<dyn Modulator>]) {
         let mut any_modulated = false;
         for param in self.modulated_params_mut() {
             param.modulate(beat_pos, modulators);
@@ -52,10 +57,12 @@ pub trait AnimatorSettings {
         }
     }
 
+    #[allow(dead_code)]
     fn snapshot(&mut self) -> Result<()> {
         Ok(())
     }
 
-    fn set_visiblity(&mut self, state: bool);
-    fn get_visiblity(&self) -> bool;
+    fn set_visibility(&mut self, state: bool);
+    fn get_visibility(&self) -> bool;
 }
+

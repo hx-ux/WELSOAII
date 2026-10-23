@@ -53,28 +53,28 @@ impl ScanLineSettings {
 }
 
 impl AnimatorSettings for ScanLineSettings {
-    fn control_ui(&mut self, ui: &mut egui::Ui, modulators: &mut Vec<Box<dyn Modulator>>) {
-        if self.line_count.to_slider(ui) {
+    fn control_ui(&mut self, ui: &mut egui::Ui, modulators: &[Box<dyn Modulator>]) {
+        if self.line_count.slider_ui(ui) {
             self.init();
         }
 
-        if self.speed.to_slider(ui, modulators) {
+        if self.speed.slider_ui(ui, modulators) {
             self.hot_update();
         }
 
-        if self.width.to_slider(ui, modulators) {
+        if self.width.slider_ui(ui, modulators) {
             self.hot_update();
         }
 
-        if self.wobble_amp.to_slider(ui, modulators) {
+        if self.wobble_amp.slider_ui(ui, modulators) {
             self.hot_update();
         }
 
-        if self.wobble_freq.to_slider(ui, modulators) {
+        if self.wobble_freq.slider_ui(ui, modulators) {
             self.hot_update();
         }
 
-        if self.tilt.to_slider(ui, modulators) {
+        if self.tilt.slider_ui(ui, modulators) {
             self.hot_update();
         }
 
@@ -103,20 +103,8 @@ impl AnimatorSettings for ScanLineSettings {
         self.animator.clear();
 
         for index in 0..self.line_count.value as usize {
-            let g = ScanLineAnimator::new(
-                self.mode,
-                *self.speed.value(),
-                self.color.clone().value_mapped(index as usize),
-                *self.width.value(),
-                self.height,
-                self.begin_pos,
-                *self.wobble_amp.value(),
-                *self.wobble_freq.value(),
-                *self.tilt.value(),
-                index,
-                self.visible,
-            );
-            self.animator.push(g);
+            self.animator
+                .push(ScanLineAnimator::from_settings(self, index));
         }
     }
 
@@ -126,15 +114,21 @@ impl AnimatorSettings for ScanLineSettings {
     }
 
     fn hot_update(&mut self) {
+        let width = self.width.value();
+        let wobble_amp = self.wobble_amp.value();
+        let wobble_freq = self.wobble_freq.value();
+        let tilt = self.tilt.value();
+        let speed_abs = self.speed.value().abs();
+
         for obj in self.animator.iter_mut() {
-            obj.color = self.color.clone().value_mapped(obj.index);
-            obj.width = *self.width.value();
+            obj.color = self.color.value_mapped(obj.index);
+            obj.width = width;
             obj.mode = self.mode;
             obj.height = self.height;
-            obj.wobble_amp = *self.wobble_amp.value();
-            obj.wobble_freq = *self.wobble_freq.value();
-            obj.tilt = *self.tilt.value();
-            obj.speed = self.speed.value().abs() * obj.speed.signum();
+            obj.wobble_amp = wobble_amp;
+            obj.wobble_freq = wobble_freq;
+            obj.tilt = tilt;
+            obj.speed = speed_abs * obj.speed.signum();
             obj.visible = self.visible;
         }
     }
@@ -181,12 +175,12 @@ impl AnimatorSettings for ScanLineSettings {
         Ok(())
     }
 
-    fn set_visiblity(&mut self, state: bool) {
+    fn set_visibility(&mut self, state: bool) {
         self.visible = state;
         self.hot_update();
     }
 
-    fn get_visiblity(&self) -> bool {
+    fn get_visibility(&self) -> bool {
         self.visible
     }
 }
@@ -208,37 +202,26 @@ pub struct ScanLineAnimator {
 }
 
 impl ScanLineAnimator {
-    pub fn new(
-        mode: ScanLineModes,
-        speed: f32,
-        color: Rgba8,
-        width: f32,
-        height: f32,
-        begin_pos: f32,
-        wobble_amp: f32,
-        wobble_freq: f32,
-        tilt: f32,
-        index: usize,
-        visible: bool,
-    ) -> Self {
+    pub fn from_settings(settings: &ScanLineSettings, index: usize) -> Self {
+        let width = settings.width.value();
         let half_width = width / 2.0;
         let phase_offset = (index as f32 * std::f32::consts::PI * 2.0) / 10.0;
-        let position = vec2(begin_pos + half_width + (index as f32 * 50.0), 0.0);
+        let position = vec2(settings.begin_pos + half_width + (index as f32 * 50.0), 0.0);
 
         ScanLineAnimator {
-            mode,
-            speed,
-            color,
+            mode: settings.mode,
+            speed: settings.speed.value(),
+            color: settings.color.value_mapped(index),
             position,
-            height,
+            height: settings.height,
             width,
-            wobble_amp,
-            wobble_freq,
-            tilt,
+            wobble_amp: settings.wobble_amp.value(),
+            wobble_freq: settings.wobble_freq.value(),
+            tilt: settings.tilt.value(),
             time: 0.0,
             index,
             phase_offset,
-            visible,
+            visible: settings.visible,
         }
     }
 }

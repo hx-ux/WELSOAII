@@ -5,7 +5,7 @@ use crate::{
         icons::{ICON_MOD_CONNECTED, ICON_MOD_NOT_CONNECTED, ICON_REFRESH},
     },
 };
-use nannou_egui::egui::{self};
+use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
@@ -57,35 +57,31 @@ impl ModulatedParam {
         self.value = self.default_value;
     }
 
-    pub fn modulate(&mut self, beat_pos: f32, modulators: &mut Vec<Box<dyn Modulator>>) {
-        if self.modulation_active {
-            if let Some(mod_matrix) = modulators.get(self.modulator_index) {
-                let mod_factor = mod_matrix.modulated_value(beat_pos, self.mod_amount);
-                // Apply the local mod_amount just to the modulation depth (difference from 1.0)
-                let speed = self.value * mod_factor;
-                self.ghost_value = Some(speed);
-                self.modulated_value = speed;
+    pub fn modulate(&mut self, beat_pos: f32, modulators: &[Box<dyn Modulator>]) {
+        if self.modulation_active
+            && let Some(mod_matrix) = modulators.get(self.modulator_index)
+        {
+            let mod_factor = mod_matrix.modulated_value(beat_pos, self.mod_amount);
+            // Apply the local mod_amount just to the modulation depth (difference from 1.0)
+            let speed = self.value * mod_factor;
+            self.ghost_value = Some(speed);
+            self.modulated_value = speed;
 
-                // Optional Override to set the modulation span betwenn 0 to 1
-                // self.ghost_value = Some(speed.clamp(self.range.0, self.range.1));
-                // self.modulated_value = speed.clamp(self.range.0, self.range.1);
-            }
+            // Optional Override to set the modulation span between 0 to 1
+            // self.ghost_value = Some(speed.clamp(self.range.0, self.range.1));
+            // self.modulated_value = speed.clamp(self.range.0, self.range.1);
         }
     }
 
-    pub fn value(&self) -> &f32 {
+    pub fn value(&self) -> f32 {
         if self.modulation_active && self.ghost_value.is_some() {
-            &self.modulated_value
+            self.modulated_value
         } else {
-            &self.value
+            self.value
         }
     }
 
-    pub fn to_slider(
-        &mut self,
-        ui: &mut egui::Ui,
-        modulators: &mut Vec<Box<dyn Modulator>>,
-    ) -> bool {
+    pub fn slider_ui(&mut self, ui: &mut egui::Ui, modulators: &[Box<dyn Modulator>]) -> bool {
         let mut changed = false;
 
         let mod_desc = if self.modulation_active {
@@ -96,7 +92,7 @@ impl ModulatedParam {
 
         ui.vertical(|ui| {
             if !self.display_text.is_empty() {
-                ui.label(self.display_text.to_string());
+                ui.label(&self.display_text);
             }
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
@@ -153,3 +149,4 @@ impl ModulatedParam {
         changed
     }
 }
+

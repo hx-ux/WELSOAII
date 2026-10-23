@@ -11,7 +11,8 @@ use crate::{
     modulator::{Modulator, wave_modulator::WaveModulator},
     receiver::ReceiverGrid,
     timecode::TimeCode,
-    utils::AppLogger,
+    ui::icons::{ICON_EYE_ACTIVE, ICON_EYE_DISABLED},
+    utils::{AppLogger, Severity},
 };
 use nannou::prelude::*;
 use nannou_egui::egui::{self, Color32};
@@ -58,6 +59,10 @@ impl Animator {
         animator.init();
         self.active_animations.push(animator);
         self.current_animation_index = Some(self.active_animations.len() - 1);
+        self.logger.log(
+            format!("Added animation layer: {}", animation_type),
+            Severity::Info,
+        );
     }
 
     pub fn init_all_layers(&mut self, win_rect: &Rect) {
@@ -79,8 +84,12 @@ impl Animator {
             cell.reset();
         }
 
-        for all in self.active_animations.iter() {
-            for obj in all.get_objects() {
+        for layer in self.active_animations.iter() {
+            if !layer.get_visibility() {
+                continue;
+            }
+
+            for obj in layer.get_objects() {
                 let obj_shape = obj.shape();
                 let obj_color = obj.color();
 
@@ -148,11 +157,10 @@ impl Animator {
     }
 
     fn apply_modulations(&mut self) {
-        //
         self.clear_mod_ghosts();
         let beat_pos = self.timecode.get_beats();
         for effect in &mut self.active_animations {
-            effect.update_modulations(beat_pos, &mut self.modulators);
+            effect.update_modulations(beat_pos, &self.modulators);
         }
     }
 
@@ -161,8 +169,9 @@ impl Animator {
     }
 
     pub fn modulators_ui(&mut self, ui: &mut egui::Ui) {
+        let current_beat = self.timecode.get_beats();
         for modulator in self.modulators.iter_mut() {
-            modulator.ui(ui, 0.0);
+            modulator.ui(ui, current_beat);
         }
     }
 
@@ -172,17 +181,17 @@ impl Animator {
         ui.horizontal_top(|ui| {
             ui.label(
                 egui::RichText::new("LAYERS")
-                    .size(15.00)
+                    .size(15.0)
                     .color(Color32::WHITE),
             );
             ui.add_space(5.0);
             ui.menu_button(egui::RichText::new("+"), |ui| {
-                for direction in AnimationType::iter() {
+                for anim_type in AnimationType::iter() {
                     if ui
-                        .button(egui::RichText::new(format!("{}", direction).to_uppercase()))
+                        .button(egui::RichText::new(anim_type.to_string().to_uppercase()))
                         .clicked()
                     {
-                        self.add_animator(win_rect, direction);
+                        self.add_animator(win_rect, anim_type);
                         ui.close_menu();
                     }
                 }
@@ -194,7 +203,8 @@ impl Animator {
         ui.vertical(|ui| {
             for index in 0..self.active_animations.len() {
                 let is_selected = self.current_animation_index == Some(index);
-                let anim_name = format!("{}", self.active_animations[index].animation_type());
+                let anim_name = self.active_animations[index].animation_type().to_string();
+                let is_visible = self.active_animations[index].get_visibility();
 
                 ui.horizontal(|ui| {
                     let indicator_color = if is_selected {
@@ -219,6 +229,21 @@ impl Animator {
                         self.current_animation_index = Some(index);
                     }
 
+                    let eye_icon = if is_visible {
+                        ICON_EYE_ACTIVE
+                    } else {
+                        ICON_EYE_DISABLED
+                    };
+                    if ui
+                        .add(
+                            egui::Button::new(egui::RichText::new(eye_icon))
+                                .min_size(egui::vec2(12.0, 12.0)),
+                        )
+                        .clicked()
+                    {
+                        self.active_animations[index].set_visibility(!is_visible);
+                    }
+
                     if ui
                         .add(
                             egui::Button::new(egui::RichText::new("×"))
@@ -232,7 +257,11 @@ impl Animator {
             }
 
             if let Some(remove_idx) = index_to_remove {
-                self.active_animations.remove(remove_idx);
+                let removed = self.active_animations.remove(remove_idx);
+                self.logger.log(
+                    format!("Removed animation layer: {}", removed.animation_type()),
+                    Severity::Info,
+                );
 
                 if let Some(current_idx) = self.current_animation_index {
                     if current_idx == remove_idx {
@@ -254,7 +283,7 @@ impl Animator {
             if let Some(index) = self.current_animation_index {
                 if let Some(animator) = self.active_animations.get_mut(index) {
                     ui.add(egui::Separator::default().spacing(4.0));
-                    animator.control_ui(ui, &mut self.modulators);
+                    animator.control_ui(ui, &self.modulators);
                 }
             } else {
                 ui.label(egui::RichText::new("SELECT A LAYER"));

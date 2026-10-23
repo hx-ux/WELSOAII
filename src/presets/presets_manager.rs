@@ -1,12 +1,15 @@
-use crate::animator::animation_type::{AnimationType, UpdateBehaviour};
+#![allow(dead_code)]
 
-use nannou_egui::egui::{self};
+use crate::animator::animation_type::UpdateBehaviour;
+use anyhow::Result;
+use nannou_egui::egui;
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct SceneManager {
     pub filename: Option<String>,
     desc: String,
 }
+
 impl SceneManager {
     pub fn ui(&mut self, ui: &mut egui::Ui) -> bool {
         let mut changed = false;
@@ -22,14 +25,16 @@ impl SceneManager {
             ui.add_space(10.0);
             ui.separator();
 
-            ui.horizontal(|ui| if ui.button("Apply ").clicked() {});
+            ui.horizontal(|ui| {
+                let _ = ui.button("Apply");
+            });
         });
 
         changed
     }
 
-    pub fn save_to_file(&self, custom_file_name: Option<String>) -> Result<bool, anyhow::Error> {
-        print!("saved");
+    pub fn save_to_file(&self, _custom_file_name: Option<String>) -> Result<bool> {
         Ok(true)
     }
 }
+

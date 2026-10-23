@@ -17,7 +17,7 @@ mod utils;
 // Re-exports for public API
 pub use utils::AppMode;
 
-use crate::animator::animator::Animator;
+use crate::animator::Animator;
 // Core component imports
 use crate::receiver::{LayoutMode, ReceiverGrid};
 use crate::ui::performance_view::PerfStats;
@@ -67,7 +67,7 @@ fn model(app: &App) -> Model {
         Rect::from_x_y_w_h(0.0, 0.0, 400.0, 300.0),
         20,
         20,
-        LayoutMode::Colum,
+        LayoutMode::Column,
     );
 
     let mut animator = Animator::new(&win_rect, receiver_grid, logger.clone());
@@ -85,58 +85,58 @@ fn model(app: &App) -> Model {
     }
 }
 
-fn update(_app: &App, _model: &mut Model, _update: Update) {
-    let win_rect = _app.window_rect();
+fn update(app: &App, model: &mut Model, update: Update) {
+    let win_rect = app.window_rect();
 
-    let egui = &mut _model.egui;
-    egui.set_elapsed_time(_update.since_start);
+    let egui = &mut model.egui;
+    egui.set_elapsed_time(update.since_start);
 
     let ctx = egui.begin_frame();
     crate::ui::style_injector::apply_custom_style(
         &ctx,
-        _model.global_settings.control_windows_opacity.value,
-        _model.global_settings.fully_transparent,
+        model.global_settings.control_windows_opacity.value,
+        model.global_settings.fully_transparent,
     );
 
-    let now_secs = _update.since_start.as_secs_f64();
-    let delta_secs = _app.duration.since_prev_update.as_secs_f32();
-    _model.performance_view.on_new_frame(now_secs, delta_secs);
+    let now_secs = update.since_start.as_secs_f64();
+    let delta_secs = app.duration.since_prev_update.as_secs_f32();
+    model.performance_view.on_new_frame(now_secs, delta_secs);
 
     egui::TopBottomPanel::top("MENU").show(&ctx, |ui| {
         ui.horizontal(|ui| {
             egui::menu::bar(ui, |ui| {
                 ui.menu_button("Settings", |ui| {
                     if ui.button("Device").clicked() {
-                        _model.device_modal_open = true;
+                        model.device_modal_open = true;
                         ui.close_menu();
                     }
                     if ui.button("Settings").clicked() {
-                        _model.settings_modal_open = true;
+                        model.settings_modal_open = true;
                         ui.close_menu();
                     }
 
                     if ui.button("Log").clicked() {
-                        _model.log_modal_open = true;
+                        model.log_modal_open = true;
                         ui.close_menu();
                     }
                 });
                 ui.separator();
-                _model.animator.timecode.ui(ui);
+                model.animator.timecode.ui(ui);
                 ui.separator();
-                _model.performance_view.ui(ui);
+                model.performance_view.ui(ui);
             });
         });
     });
 
     egui::SidePanel::left("control_panel")
         .resizable(true)
-        .min_width(_model.global_settings.view_window_size.1 as f32 * 0.2)
-        .max_width(_model.global_settings.view_window_size.1 as f32)
-        .default_width(_model.global_settings.view_window_size.1 as f32 * 0.1)
+        .min_width(model.global_settings.view_window_size.1 as f32 * 0.2)
+        .max_width(model.global_settings.view_window_size.1 as f32)
+        .default_width(model.global_settings.view_window_size.1 as f32 * 0.1)
         .show_animated(&ctx, true, |ui| {
             ui.add_space(1.0);
-            _model.animator.animator_layer_ui(ui, &win_rect);
-            _model.animator.animator_ui(ui);
+            model.animator.animator_layer_ui(ui, &win_rect);
+            model.animator.animator_ui(ui);
         });
 
     egui::TopBottomPanel::bottom("Modulators")
@@ -145,76 +145,73 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
             ui.add_space(1.0);
             ui.separator();
             ui.horizontal(|ui| {
-                _model.animator.modulators_ui(ui);
+                model.animator.modulators_ui(ui);
             });
         });
 
     egui::Window::new("GLOBAL SETTINGS")
         .resizable(true)
         .default_open(true)
-        .open(&mut _model.settings_modal_open)
+        .open(&mut model.settings_modal_open)
         .show(&ctx, |ui| {
-            _model.global_settings.ui(ui, &_model.logger);
+            model.global_settings.ui(ui, &model.logger);
         });
 
     egui::Window::new("DEVICE")
         .resizable(true)
         .default_open(true)
-        .open(&mut _model.device_modal_open)
+        .open(&mut model.device_modal_open)
         .show(&ctx, |ui| {
-            _model.animator.grid.ui(ui);
+            model.animator.grid.ui(ui, &model.logger);
         });
 
     egui::Window::new("LOG")
         .resizable(true)
         .default_open(true)
-        .open(&mut _model.log_modal_open)
+        .open(&mut model.log_modal_open)
         .show(&ctx, |ui| {
-            _model.logger.ui(ui);
+            model.logger.ui(ui);
         });
 
-    _model
+    model
         .animator
-        .update(&win_rect, _app.duration.since_prev_update.as_secs_f32());
+        .update(&win_rect, app.duration.since_prev_update.as_secs_f32());
 }
 
 fn settings_window_event(_app: &App, model: &mut Model, event: &nannou::winit::event::WindowEvent) {
     model.egui.handle_raw_event(event);
 }
 
-fn event(_app: &App, _model: &mut Model, event: WindowEvent) {
-    let receiver = &mut _model.animator.grid;
-    let win_rect = _app.window_rect();
+fn event(_app: &App, model: &mut Model, event: WindowEvent) {
+    let receiver = &mut model.animator.grid;
 
     match event {
-        KeyPressed(_key) => match _key {
+        KeyPressed(key) => match key {
             Key::Up => {
                 if receiver.edit_mode {
-                    receiver.move_by(vec2(0.0, 10.0))
+                    receiver.move_by(vec2(0.0, 10.0));
                 }
             }
             Key::Down => {
                 if receiver.edit_mode {
-                    receiver.move_by(vec2(0.0, -10.0))
+                    receiver.move_by(vec2(0.0, -10.0));
                 }
             }
             Key::Right => {
                 if receiver.edit_mode {
                     receiver.move_by(vec2(10.0, 0.0));
-                } else {
                 }
             }
             Key::Left => {
                 if receiver.edit_mode {
                     receiver.move_by(vec2(-10.0, 0.0));
-                } else {
                 }
             }
 
             Key::Equals | Key::Plus => receiver.resize_by(vec2(10.0, 10.0)),
             Key::Minus => receiver.resize_by(vec2(-10.0, -10.0)),
-            Key::P => _model.global_settings.app_mode = AppMode::Presentation,
-            Key::E => _model.global_settings.app_mode = AppMode::Edit,
+            Key::P => model.global_settings.app_mode = AppMode::Presentation,
+            Key::E => model.global_settings.app_mode = AppMode::Edit,
             _ => (),
         },
         MousePressed(_button) => {}
@@ -224,17 +221,18 @@ fn event(_app: &App, _model: &mut Model, event: WindowEvent) {
     }
 }
 
-fn view(_app: &App, _model: &Model, frame: Frame) {
-    let draw = _app.draw();
+fn view(app: &App, model: &Model, frame: Frame) {
+    let draw = app.draw();
     draw.background().color(BLACK);
 
-    _model.animator.draw_animator(&draw);
-    _model.animator.draw_grid(&draw);
+    model.animator.draw_animator(&draw);
+    model.animator.draw_grid(&draw);
 
-    draw.to_frame(_app, &frame).unwrap();
+    draw.to_frame(app, &frame).unwrap();
 
-    match _model.global_settings.app_mode {
+    match model.global_settings.app_mode {
         AppMode::Presentation => {}
-        AppMode::Edit => _model.egui.draw_to_frame(&frame).unwrap(),
+        AppMode::Edit => model.egui.draw_to_frame(&frame).unwrap(),
     }
 }
+

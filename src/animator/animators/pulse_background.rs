@@ -46,7 +46,7 @@ impl PulseBackgroundSettings {
 }
 
 impl AnimatorSettings for PulseBackgroundSettings {
-    fn control_ui(&mut self, ui: &mut egui::Ui, modulators: &mut Vec<Box<dyn Modulator>>) {
+    fn control_ui(&mut self, ui: &mut egui::Ui, modulators: &[Box<dyn Modulator>]) {
         ui.horizontal(|ui| {
             for options in PulseModes::iter() {
                 if ui
@@ -70,22 +70,22 @@ impl AnimatorSettings for PulseBackgroundSettings {
             }
         });
 
-        if self.speed.to_slider(ui) {
+        if self.speed.slider_ui(ui) {
             self.hot_update();
         }
-        if self.limit.to_slider(ui, modulators) {
+        if self.limit.slider_ui(ui, modulators) {
             self.hot_update();
         }
 
-        if self.ring_count.to_slider(ui) {
+        if self.ring_count.slider_ui(ui) {
             self.init();
         }
 
-        if self.ring_spread.to_slider(ui, modulators) {
+        if self.ring_spread.slider_ui(ui, modulators) {
             self.hot_update();
         }
 
-        if self.rotation_speed.to_slider(ui, modulators) {
+        if self.rotation_speed.slider_ui(ui, modulators) {
             self.hot_update();
         }
 
@@ -101,32 +101,26 @@ impl AnimatorSettings for PulseBackgroundSettings {
     fn init(&mut self) {
         self.animator.clear();
         for index in 0..self.ring_count.value as usize {
-            self.animator.push(PulseBackgroundAnimator::new(
-                self.mode,
-                self.shape,
-                self.color.clone().value_mapped(index),
-                self.speed.value,
-                *self.limit.value(),
-                *self.rotation_speed.value(),
-                *self.ring_spread.value(),
-                index,
-                self.visible,
-            ));
+            self.animator
+                .push(PulseBackgroundAnimator::from_settings(self, index));
         }
     }
 
     fn set_dimension(&mut self, _window_rect: &Rect) {}
 
     fn hot_update(&mut self) {
+        let limit = self.limit.value();
+        let rotation_speed = self.rotation_speed.value();
+        let ring_spread = self.ring_spread.value();
         for obj in self.animator.iter_mut() {
-            obj.color = self.color.clone().value_mapped(obj.index);
-            obj.speed = *&self.speed.value;
+            obj.color = self.color.value_mapped(obj.index);
+            obj.speed = self.speed.value;
             obj.mode = self.mode;
             obj.shape = self.shape;
-            obj.limit = *self.limit.value();
-            obj.rotation_speed = *self.rotation_speed.value();
-            obj.ring_spread = *self.ring_spread.value();
-            obj.visible = self.visible
+            obj.limit = limit;
+            obj.rotation_speed = rotation_speed;
+            obj.ring_spread = ring_spread;
+            obj.visible = self.visible;
         }
     }
 
@@ -171,12 +165,12 @@ impl AnimatorSettings for PulseBackgroundSettings {
         Ok(())
     }
 
-    fn set_visiblity(&mut self, state: bool) {
+    fn set_visibility(&mut self, state: bool) {
         self.visible = state;
         self.hot_update();
     }
 
-    fn get_visiblity(&self) -> bool {
+    fn get_visibility(&self) -> bool {
         self.visible
     }
 }
@@ -197,30 +191,20 @@ pub struct PulseBackgroundAnimator {
 }
 
 impl PulseBackgroundAnimator {
-    fn new(
-        mode: PulseModes,
-        shape: PulseShape,
-        color: Rgba8,
-        speed: u8,
-        limit: f32,
-        rotation_speed: f32,
-        ring_spread: f32,
-        index: usize,
-        visible: bool,
-    ) -> Self {
+    fn from_settings(settings: &PulseBackgroundSettings, index: usize) -> Self {
         Self {
-            mode,
-            shape,
-            speed,
-            color,
+            mode: settings.mode,
+            shape: settings.shape,
+            speed: settings.speed.value,
+            color: settings.color.value_mapped(index),
             current_size_w: 20.0,
             current_size_h: 20.0,
-            limit,
+            limit: settings.limit.value(),
             index,
-            rotation_speed,
-            ring_spread,
+            rotation_speed: settings.rotation_speed.value(),
+            ring_spread: settings.ring_spread.value(),
             rotation: 0.0,
-            visible,
+            visible: settings.visible,
         }
     }
 }

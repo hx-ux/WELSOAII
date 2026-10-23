@@ -1,7 +1,7 @@
-use nannou_egui::egui::{self};
+use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 
-use crate::ui::icons::*;
+use crate::ui::icons::ICON_REFRESH;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq, PartialOrd)]
 pub struct ConstantParam<T> {
@@ -22,7 +22,7 @@ impl<T> ConstantParam<T> {
     {
         Self {
             value: default.clone(),
-            default: default,
+            default,
             lower,
             upper,
             display_text: display_text.to_string(),
@@ -30,18 +30,21 @@ impl<T> ConstantParam<T> {
             steps: None,
         }
     }
+
+    #[allow(dead_code)]
     pub fn steps(mut self, steps: f32) -> Self {
         self.steps = Some(steps);
         self
     }
-    pub fn to_drag(&mut self, ui: &mut egui::Ui) -> bool
+
+    pub fn drag_ui(&mut self, ui: &mut egui::Ui) -> bool
     where
         T: egui::emath::Numeric + Clone,
     {
         let mut changed = false;
         ui.vertical(|ui| {
             if !self.display_text.is_empty() {
-                ui.label(self.display_text.to_string());
+                ui.label(&self.display_text);
             }
             ui.horizontal(|ui| {
                 changed |= ui
@@ -55,21 +58,20 @@ impl<T> ConstantParam<T> {
                     changed = true;
                     self.reset();
                 }
-            })
-            .inner;
+            });
         });
 
         changed
     }
 
-    pub fn to_slider(&mut self, ui: &mut egui::Ui) -> bool
+    pub fn slider_ui(&mut self, ui: &mut egui::Ui) -> bool
     where
         T: egui::emath::Numeric + Clone,
     {
         let mut changed = false;
         ui.vertical(|ui| {
             if !self.display_text.is_empty() {
-                ui.label(self.display_text.to_string());
+                ui.label(&self.display_text);
             }
             ui.horizontal(|ui| {
                 let mut slider = egui::Slider::new(&mut self.value, self.lower..=self.upper);
@@ -84,8 +86,7 @@ impl<T> ConstantParam<T> {
                     changed = true;
                     self.reset();
                 }
-            })
-            .inner;
+            });
         });
 
         changed
@@ -100,14 +101,14 @@ impl<T> ConstantParam<T> {
 }
 
 impl ConstantParam<bool> {
-    pub fn to_checkbox(&mut self, ui: &mut egui::Ui) -> bool {
+    pub fn checkbox_ui(&mut self, ui: &mut egui::Ui) -> bool {
         let mut changed = false;
 
         ui.horizontal(|ui| {
             changed |= ui.checkbox(&mut self.value, &self.display_text).changed();
-        })
-        .inner;
+        });
 
         changed
     }
 }
+

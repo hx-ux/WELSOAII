@@ -1,4 +1,5 @@
-///SEE https://www.nerdfonts.com/cheat-sheet
+//! SEE https://www.nerdfonts.com/cheat-sheet
+#![allow(dead_code)]
 
 pub const ICON_REFRESH: &str = "\u{F0450}";
 pub const ICON_MOD_CONNECTED: &str = "\u{F1546}";
@@ -13,3 +14,4 @@ pub const ICON_EYE_DISABLED: &str = "\u{F2A8}";
 pub const ICON_PLUS_MINUS: &str = "\u{F0992}";
 pub const ICON_PLUS: &str = "\u{F067}";
 pub const ICON_MINUS: &str = "\u{F0688}";
+

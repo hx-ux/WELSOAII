@@ -56,28 +56,28 @@ impl QuantumTunnelSettings {
 }
 
 impl AnimatorSettings for QuantumTunnelSettings {
-    fn control_ui(&mut self, ui: &mut egui::Ui, mods: &mut Vec<Box<dyn Modulator>>) {
-        if self.ring_count.to_slider(ui) {
+    fn control_ui(&mut self, ui: &mut egui::Ui, mods: &[Box<dyn Modulator>]) {
+        if self.ring_count.slider_ui(ui) {
             self.init();
         }
 
-        if self.speed.to_slider(ui, mods) {
+        if self.speed.slider_ui(ui, mods) {
             self.hot_update();
         }
 
-        if self.depth.to_slider(ui, mods) {
+        if self.depth.slider_ui(ui, mods) {
             self.hot_update();
         }
 
-        if self.twist.to_slider(ui, mods) {
+        if self.twist.slider_ui(ui, mods) {
             self.hot_update();
         }
 
-        if self.line_weight.to_slider(ui, mods) {
+        if self.line_weight.slider_ui(ui, mods) {
             self.hot_update();
         }
 
-        if self.recursive_line_height.to_checkbox(ui) {
+        if self.recursive_line_height.checkbox_ui(ui) {
             self.init();
         }
 
@@ -93,20 +93,10 @@ impl AnimatorSettings for QuantumTunnelSettings {
     fn init(&mut self) {
         self.animator.clear();
 
-        for index in 0..self.ring_count.value as usize {
-            let ani = QuantumTunnelAnimator::new(
-                &self.dimension,
-                self.color.clone().value_mapped(index),
-                *self.speed.value(),
-                *self.depth.value(),
-                *self.twist.value(),
-                index,
-                self.ring_count.value as usize,
-                *self.line_weight.value(),
-                self.recursive_line_height.value,
-                self.visible,
-            );
-            self.animator.push(ani);
+        let total = self.ring_count.value as usize;
+        for index in 0..total {
+            self.animator
+                .push(QuantumTunnelAnimator::from_settings(self, index, total));
         }
     }
 
@@ -120,29 +110,26 @@ impl AnimatorSettings for QuantumTunnelSettings {
 
         if target_count > current_count {
             for index in current_count..target_count {
-                self.animator.push(QuantumTunnelAnimator::new(
-                    &self.dimension,
-                    self.color.clone().value_mapped(index),
-                    *self.speed.value(),
-                    *self.depth.value(),
-                    *self.twist.value(),
+                self.animator.push(QuantumTunnelAnimator::from_settings(
+                    self,
                     index,
                     target_count,
-                    *self.line_weight.value(),
-                    *&self.recursive_line_height.value,
-                    self.visible,
                 ));
             }
         } else if target_count < current_count {
             self.animator.truncate(target_count);
         }
 
+        let speed = self.speed.value();
+        let depth = self.depth.value();
+        let twist = self.twist.value();
+        let line_weight = self.line_weight.value();
         for obj in self.animator.iter_mut() {
-            obj.speed = *self.speed.value();
-            obj.color = self.color.clone().value_mapped(obj.index);
-            obj.depth = *self.depth.value();
-            obj.twist = *self.twist.value();
-            obj.line_weight = *self.line_weight.value();
+            obj.speed = speed;
+            obj.color = self.color.value_mapped(obj.index);
+            obj.depth = depth;
+            obj.twist = twist;
+            obj.line_weight = line_weight;
             obj.visible = self.visible;
         }
     }
@@ -185,12 +172,12 @@ impl AnimatorSettings for QuantumTunnelSettings {
         params
     }
 
-    fn set_visiblity(&mut self, state: bool) {
+    fn set_visibility(&mut self, state: bool) {
         self.visible = state;
         self.hot_update();
     }
 
-    fn get_visiblity(&self) -> bool {
+    fn get_visibility(&self) -> bool {
         self.visible
     }
 }
@@ -210,31 +197,21 @@ pub struct QuantumTunnelAnimator {
 }
 
 impl QuantumTunnelAnimator {
-    pub fn new(
-        win_rect: &Rect,
-        color: Rgba8,
-        speed: f32,
-        depth: f32,
-        twist: f32,
-        index: usize,
-        total: usize,
-        line_weight: f32,
-        r_weight: bool,
-        visible: bool,
-    ) -> Self {
-        let z = (index as f32 / total as f32) * depth;
+    pub fn from_settings(settings: &QuantumTunnelSettings, index: usize, total: usize) -> Self {
+        let depth = settings.depth.value();
+        let z = (index as f32 / total.max(1) as f32) * depth;
         Self {
             position: vec2(0.0, 0.0),
-            speed,
+            speed: settings.speed.value(),
             depth,
-            twist,
-            color,
+            twist: settings.twist.value(),
+            color: settings.color.value_mapped(index),
             index,
             current_z: z,
-            center: vec2(win_rect.x(), win_rect.y()),
-            line_weight,
-            r_weight,
-            visible,
+            center: vec2(settings.dimension.x(), settings.dimension.y()),
+            line_weight: settings.line_weight.value(),
+            r_weight: settings.recursive_line_height.value,
+            visible: settings.visible,
         }
     }
 }
