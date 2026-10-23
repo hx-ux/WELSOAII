@@ -8,8 +8,8 @@ mod animator;
 mod color;
 mod modulator;
 mod parameters;
-mod scene;
 mod receiver;
+mod scene;
 mod sender;
 mod timecode;
 mod ui;
@@ -22,7 +22,6 @@ use crate::animator::Animator;
 use crate::receiver::{LayoutMode, ReceiverGrid};
 use crate::ui::performance_view::PerfStats;
 use crate::utils::{AppLogger, AppSettings, Severity};
-
 fn main() {
     nannou::app(model).update(update).run();
 }
@@ -68,7 +67,7 @@ fn model(app: &App) -> Model {
         Rect::from_x_y_w_h(0.0, 0.0, 400.0, 300.0),
         20,
         20,
-        LayoutMode::Column,
+        LayoutMode::Colum,
     );
 
     let mut animator = Animator::new(&win_rect, receiver_grid, logger.clone());
