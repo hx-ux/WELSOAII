@@ -68,6 +68,7 @@ fn model(app: &App) -> Model {
         20,
         20,
         LayoutMode::Colum,
+        logger.clone(),
     );
 
     let mut animator = Animator::new(&win_rect, receiver_grid, logger.clone());
@@ -168,7 +169,7 @@ fn update(app: &App, model: &mut Model, update: Update) {
         .default_open(true)
         .open(&mut model.device_modal_open)
         .show(&ctx, |ui| {
-            model.animator.grid.ui(ui, &model.logger);
+            model.animator.grid.ui(ui);
         });
 
     egui::Window::new("LOG")
