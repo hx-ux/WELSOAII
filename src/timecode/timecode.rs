@@ -1,37 +1,10 @@
-use nannou_egui::egui;
-use rusty_link::{AblLink, SessionState};
-use serde::{Deserialize, Serialize};
-
 use crate::{
     parameters::ConstantParam,
+    timecode::link_state::LinkState,
     ui::icons::{ICON_PAUSE, ICON_PLAY, ICON_STOP},
 };
-
-pub struct AblLinkState {
-    pub link: AblLink,
-    pub session_state: SessionState,
-    pub quantum: f64,
-}
-
-impl AblLinkState {
-    pub fn new() -> Self {
-        Self {
-            link: AblLink::new(120.),
-            session_state: SessionState::new(),
-            quantum: 4.,
-        }
-    }
-
-    pub fn capture_app_state(&mut self) {
-        self.link.capture_app_session_state(&mut self.session_state);
-    }
-}
-
-impl Default for AblLinkState {
-    fn default() -> Self {
-        Self::new()
-    }
-}
+use nannou_egui::egui;
+use serde::{Deserialize, Serialize};
 
 /// Master Clock for syncing all effects
 #[derive(Serialize, Deserialize, Default)]
@@ -44,8 +17,8 @@ pub struct TimeCode {
     #[serde(skip)]
     pub is_running: bool,
     #[serde(skip)]
-    abl_sync_state: AblLinkState,
-    sync_active: bool,
+    pub abl_sync_state: LinkState,
+    pub link_active: bool,
     #[serde(skip)]
     prev_time: f32,
     #[serde(skip)]
@@ -59,27 +32,31 @@ impl TimeCode {
             current_time: 0.0,
             total_beats: 0.0,
             is_running: true,
-            abl_sync_state: AblLinkState::new(),
-            sync_active: false,
+            abl_sync_state: LinkState::new(),
+            link_active: false,
             prev_time: 0.0,
             delta_time: 0.0,
         }
     }
 
+    // Start Ableton link
     pub fn start_link(&mut self) {
-        self.sync_active = true;
+        self.link_active = true;
         self.abl_sync_state.link.enable(true);
     }
 
+    // Stop Link
     pub fn stop_link(&mut self) {
-        self.sync_active = false;
+        self.link_active = false;
         self.abl_sync_state.link.enable(false);
     }
 
+    // Start thw whole timecode
     pub fn start(&mut self) {
         self.is_running = true;
     }
 
+    // stop the whole timecode
     pub fn stop(&mut self) {
         self.is_running = false;
     }
@@ -93,7 +70,7 @@ impl TimeCode {
 
     pub fn update(&mut self, delta_time: f32) -> f32 {
         if self.is_running {
-            if self.sync_active {
+            if self.link_active {
                 self.update_from_link();
             } else {
                 self.current_time += delta_time;
@@ -175,7 +152,7 @@ impl TimeCode {
 
         ui.add_space(4.0);
 
-        if self.sync_active {
+        if self.link_active {
             ui.label(format!("{:.1}", self.tempo.value));
         } else {
             self.tempo.drag_ui(ui);
@@ -193,14 +170,14 @@ impl TimeCode {
 
         let mut link_text = egui::RichText::new("LINK");
 
-        if self.sync_active {
+        if self.link_active {
             let peers = self.abl_sync_state.link.num_peers();
             link_text = egui::RichText::new(format!("LINK: {}", peers));
             link_text = link_text.color(egui::Color32::BLUE);
         }
 
         if ui.button(link_text).clicked() {
-            if self.sync_active {
+            if self.link_active {
                 self.stop_link();
             } else {
                 self.start_link();
