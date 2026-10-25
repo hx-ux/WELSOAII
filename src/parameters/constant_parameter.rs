@@ -9,7 +9,6 @@ pub struct ConstantParam<T> {
     pub default: T,
     pub lower: T,
     pub upper: T,
-    #[serde(skip)]
     display_text: String,
     pub identifier: String,
     pub steps: Option<f32>,
@@ -111,4 +110,3 @@ impl ConstantParam<bool> {
         changed
     }
 }
-

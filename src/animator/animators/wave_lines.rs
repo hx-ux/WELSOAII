@@ -189,7 +189,7 @@ impl AnimatorSettings for WaveLinesSettings {
         params
     }
 
-    fn snapshot(&mut self) -> anyhow::Result<()> {
+    fn snapshot(&mut self, name: &str) -> anyhow::Result<()> {
         Ok(())
     }
 

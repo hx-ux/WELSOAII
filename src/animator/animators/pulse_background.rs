@@ -161,7 +161,7 @@ impl AnimatorSettings for PulseBackgroundSettings {
         params
     }
 
-    fn snapshot(&mut self) -> anyhow::Result<()> {
+    fn snapshot(&mut self, name: &str) -> anyhow::Result<()> {
         Ok(())
     }
 

@@ -4,6 +4,7 @@ use crate::{
     modulator::Modulator,
     parameters::{ConstantParam, ModulatedParam},
     timecode::TimeCode,
+    utils::FileManager,
 };
 
 use anyhow::Ok;
@@ -69,6 +70,10 @@ impl AnimatorSettings for BouncingBallSettings {
 
         if self.color.ui(ui, mods) {
             self.hot_update();
+        }
+
+        if (ui.button("save")).clicked() {
+            let _ = self.snapshot("idk");
         }
     }
 
@@ -144,7 +149,10 @@ impl AnimatorSettings for BouncingBallSettings {
         params
     }
 
-    fn snapshot(&mut self) -> anyhow::Result<()> {
+    fn snapshot(&mut self, name: &str) -> anyhow::Result<()> {
+        let mut r = FileManager::preset_path(self.animation_type())?;
+        r.push("name.json");
+        nannou::io::save_to_json(r, &self)?;
         Ok(())
     }
 
@@ -198,7 +206,6 @@ impl BouncingBallAnimator {
         }
     }
 }
-
 
 impl AnimatedObject for BouncingBallAnimator {
     fn update(&mut self, win_rect: &Rect, timecode: &TimeCode) {

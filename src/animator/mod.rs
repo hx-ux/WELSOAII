@@ -58,11 +58,10 @@ pub trait AnimatorSettings {
     }
 
     #[allow(dead_code)]
-    fn snapshot(&mut self) -> Result<()> {
+    fn snapshot(&mut self, name: &str) -> Result<()> {
         Ok(())
     }
 
     fn set_visibility(&mut self, state: bool);
     fn get_visibility(&self) -> bool;
 }
-

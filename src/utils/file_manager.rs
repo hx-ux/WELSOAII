@@ -2,13 +2,14 @@ use std::{fs, path::PathBuf};
 
 use anyhow::{Context, Result};
 
-use crate::utils::AppSettings;
+use crate::{animator::animation_type::AnimationType, utils::AppSettings};
 
 pub struct FileManager;
 
 impl FileManager {
     fn app_root_path() -> Result<PathBuf> {
-        let mut doc = dirs::document_dir().context("Could not determine user document directory")?;
+        let mut doc =
+            dirs::document_dir().context("Could not determine user document directory")?;
         doc.push(AppSettings::APP_NAME);
         fs::create_dir_all(&doc)
             .with_context(|| format!("Failed to create app directory at {:?}", doc))?;
@@ -27,5 +28,11 @@ impl FileManager {
         path.push("settings.json");
         Ok(path)
     }
+    pub fn preset_path(ani_type: AnimationType) -> Result<PathBuf> {
+        let mut path = Self::app_root_path()?;
+        path.push("presets");
+        path.push(ani_type.to_string());
+        fs::create_dir_all(path.clone())?;
+        Ok(path)
+    }
 }
-
