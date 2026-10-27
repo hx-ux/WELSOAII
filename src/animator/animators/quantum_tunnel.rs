@@ -3,6 +3,7 @@ use crate::{
     color::ColorParam,
     modulator::Modulator,
     parameters::{ConstantParam, ModulatedParam},
+    preset::PresetState,
     timecode::TimeCode,
 };
 
@@ -29,6 +30,8 @@ pub struct QuantumTunnelSettings {
     #[serde(skip)]
     animator: Vec<QuantumTunnelAnimator>,
     visible: bool,
+    #[serde(skip)]
+    preset: PresetState,
 }
 
 impl QuantumTunnelSettings {
@@ -51,6 +54,7 @@ impl QuantumTunnelSettings {
                 "recursive_weight",
             ),
             visible: true,
+            preset: PresetState::default(),
         }
     }
 }
@@ -179,6 +183,18 @@ impl AnimatorSettings for QuantumTunnelSettings {
 
     fn get_visibility(&self) -> bool {
         self.visible
+    }
+    fn preset_state(&self) -> &PresetState {
+        &self.preset
+    }
+    fn preset_state_mut(&mut self) -> &mut PresetState {
+        &mut self.preset
+    }
+    fn to_json(&self) -> anyhow::Result<String> {
+        Ok(serde_json::to_string_pretty(self)?)
+    }
+    fn apply_json(&mut self, json: &str) -> anyhow::Result<()> {
+        Ok(())
     }
 }
 

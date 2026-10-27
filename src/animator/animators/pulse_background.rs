@@ -6,6 +6,7 @@ use crate::{
     color::ColorParam,
     modulator::Modulator,
     parameters::{ConstantParam, ModulatedParam},
+    preset::PresetState,
     timecode::TimeCode,
 };
 use anyhow::Ok;
@@ -26,6 +27,8 @@ pub struct PulseBackgroundSettings {
     #[serde(skip)]
     pub animator: Vec<PulseBackgroundAnimator>,
     pub visible: bool,
+    #[serde(skip)]
+    preset: PresetState,
 }
 
 impl PulseBackgroundSettings {
@@ -41,6 +44,7 @@ impl PulseBackgroundSettings {
             ring_spread: ModulatedParam::new(1.0, 0.3, 3.0, "Ring Spread", "pulse_ring_spread"),
             animator: Vec::new(),
             visible: true,
+            preset: PresetState::default(),
         }
     }
 }
@@ -161,10 +165,6 @@ impl AnimatorSettings for PulseBackgroundSettings {
         params
     }
 
-    fn snapshot(&mut self, name: &str) -> anyhow::Result<()> {
-        Ok(())
-    }
-
     fn set_visibility(&mut self, state: bool) {
         self.visible = state;
         self.hot_update();
@@ -172,6 +172,19 @@ impl AnimatorSettings for PulseBackgroundSettings {
 
     fn get_visibility(&self) -> bool {
         self.visible
+    }
+
+    fn preset_state(&self) -> &PresetState {
+        &self.preset
+    }
+    fn preset_state_mut(&mut self) -> &mut PresetState {
+        &mut self.preset
+    }
+    fn to_json(&self) -> anyhow::Result<String> {
+        Ok(serde_json::to_string_pretty(self)?)
+    }
+    fn apply_json(&mut self, json: &str) -> anyhow::Result<()> {
+        Ok(())
     }
 }
 

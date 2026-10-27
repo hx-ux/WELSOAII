@@ -7,6 +7,8 @@ use crate::color::ColorParam;
 use crate::modulator::Modulator;
 use crate::parameters::ConstantParam;
 use crate::parameters::ModulatedParam;
+use crate::preset;
+use crate::preset::PresetState;
 use crate::timecode::TimeCode;
 use anyhow::Ok;
 use nannou::prelude::*;
@@ -31,6 +33,8 @@ pub struct ScanLineSettings {
     #[serde(skip)]
     pub animator: Vec<ScanLineAnimator>,
     visible: bool,
+    #[serde(skip)]
+    preset: PresetState,
 }
 
 impl ScanLineSettings {
@@ -48,6 +52,7 @@ impl ScanLineSettings {
             begin_pos: win_rect.left(),
             animator: vec![],
             visible: true,
+            preset: PresetState::default(),
         }
     }
 }
@@ -171,10 +176,6 @@ impl AnimatorSettings for ScanLineSettings {
         params
     }
 
-    fn snapshot(&mut self, name: &str) -> anyhow::Result<()> {
-        Ok(())
-    }
-
     fn set_visibility(&mut self, state: bool) {
         self.visible = state;
         self.hot_update();
@@ -182,6 +183,21 @@ impl AnimatorSettings for ScanLineSettings {
 
     fn get_visibility(&self) -> bool {
         self.visible
+    }
+
+    fn preset_state(&self) -> &PresetState {
+        &self.preset
+    }
+    fn preset_state_mut(&mut self) -> &mut PresetState {
+        &mut self.preset
+    }
+    fn to_json(&self) -> anyhow::Result<String> {
+        Ok(serde_json::to_string_pretty(self)?)
+    }
+    fn apply_json(&mut self, json: &str) -> anyhow::Result<()> {
+        let l: Self = serde_json::from_str(json)?;
+
+        Ok(())
     }
 }
 

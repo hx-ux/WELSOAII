@@ -1,4 +1,3 @@
-// External crate imports
 extern crate nannou;
 use nannou::prelude::*;
 use nannou_egui::{self, Egui, egui};
@@ -8,6 +7,7 @@ mod animator;
 mod color;
 mod modulator;
 mod parameters;
+mod preset;
 mod receiver;
 mod scene;
 mod sender;
@@ -173,14 +173,6 @@ fn update(app: &App, model: &mut Model, update: Update) {
         });
 
     egui::Window::new("LOG")
-        .resizable(true)
-        .default_open(true)
-        .open(&mut model.log_modal_open)
-        .show(&ctx, |ui| {
-            model.logger.ui(ui);
-        });
-
-    egui::Window::new("SCENE")
         .resizable(true)
         .default_open(true)
         .open(&mut model.log_modal_open)

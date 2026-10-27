@@ -2,6 +2,7 @@ use crate::{
     animator::{AnimatedObject, AnimatorSettings, ObjectShape, animation_type::AnimationType},
     color::ColorParam,
     parameters::{ConstantParam, ModulatedParam},
+    preset::PresetState,
 };
 
 use crate::modulator::Modulator;
@@ -29,6 +30,8 @@ pub struct WaveLinesSettings {
     #[serde(skip)]
     pub animator: Vec<WaveLine>,
     visible: bool,
+    #[serde(skip)]
+    preset: PresetState,
 }
 
 impl WaveLinesSettings {
@@ -48,6 +51,7 @@ impl WaveLinesSettings {
             height: win_rect.h(),
             animator: Vec::new(),
             visible: true,
+            preset: PresetState::default(),
         }
     }
 }
@@ -189,8 +193,23 @@ impl AnimatorSettings for WaveLinesSettings {
         params
     }
 
-    fn snapshot(&mut self, name: &str) -> anyhow::Result<()> {
-        Ok(())
+    fn update_modulations(&mut self, beat_pos: f32, modulators: &[Box<dyn Modulator>]) {
+        let mut any_modulated = false;
+        for param in self.modulated_params_mut() {
+            param.modulate(beat_pos, modulators);
+            if param.modulation_active {
+                any_modulated = true;
+            }
+        }
+        if any_modulated {
+            self.hot_update();
+        }
+    }
+
+    fn reset_modulations(&mut self) {
+        for param in self.modulated_params_mut() {
+            param.ghost_value = None;
+        }
     }
 
     fn set_visibility(&mut self, state: bool) {
@@ -200,6 +219,21 @@ impl AnimatorSettings for WaveLinesSettings {
 
     fn get_visibility(&self) -> bool {
         self.visible
+    }
+
+    fn preset_state(&self) -> &PresetState {
+        &self.preset
+    }
+    fn preset_state_mut(&mut self) -> &mut PresetState {
+        &mut self.preset
+    }
+    fn to_json(&self) -> anyhow::Result<String> {
+        Ok(serde_json::to_string_pretty(self)?)
+    }
+    fn apply_json(&mut self, json: &str) -> anyhow::Result<()> {
+        let l: Self = serde_json::from_str(json)?;
+
+        Ok(())
     }
 }
 

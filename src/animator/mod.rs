@@ -1,6 +1,6 @@
 use crate::{
     animator::animation_type::AnimationType, modulator::Modulator, parameters::ModulatedParam,
-    timecode::TimeCode,
+    preset::PresetState, timecode::TimeCode, utils::FileManager,
 };
 use anyhow::Result;
 use nannou::prelude::*;
@@ -57,11 +57,63 @@ pub trait AnimatorSettings {
         }
     }
 
-    #[allow(dead_code)]
-    fn snapshot(&mut self, name: &str) -> Result<()> {
-        Ok(())
-    }
-
     fn set_visibility(&mut self, state: bool);
     fn get_visibility(&self) -> bool;
+
+    fn preset_state(&self) -> &PresetState;
+    fn preset_state_mut(&mut self) -> &mut PresetState;
+    fn to_json(&self) -> anyhow::Result<String>; // serde_json::to_string_pretty(self)
+    fn apply_json(&mut self, json: &str) -> anyhow::Result<()>; // parse + copy fields
+
+    fn save_preset(&mut self, name: &str) -> anyhow::Result<()> {
+        let mut path = FileManager::preset_path(self.animation_type())?;
+        path.push(format!("{name}.json"));
+        std::fs::write(path, self.to_json()?)?;
+        Ok(())
+    }
+    fn load_preset_list(&mut self) -> anyhow::Result<()> {
+        let dir = FileManager::preset_path(self.animation_type())?;
+        let mut names = Vec::new();
+        if dir.is_dir() {
+            for e in std::fs::read_dir(dir)? {
+                names.push(e?.file_name().to_string_lossy().into_owned());
+            }
+        }
+        let st = self.preset_state_mut();
+        if let Some(first) = names.first() {
+            st.selected = first.clone();
+        }
+        st.available = names;
+        Ok(())
+    }
+    fn load_preset(&mut self) -> anyhow::Result<()> {
+        let mut path = FileManager::preset_path(self.animation_type())?;
+        path.push(&self.preset_state().selected);
+        let json = std::fs::read_to_string(path)?;
+        self.apply_json(&json)
+    }
+
+    fn preset_ui(&mut self, ui: &mut egui::Ui) {
+        let mut save = false;
+        let mut load = false;
+        let st = self.preset_state_mut();
+        ui.text_edit_singleline(&mut st.prest_save_name);
+        save = ui.button("save").clicked();
+        egui::ComboBox::from_label("")
+            .selected_text(&st.selected)
+            .show_ui(ui, |ui| {
+                for o in st.available.clone() {
+                    ui.selectable_value(&mut st.selected, o.clone(), o);
+                }
+            });
+        load = ui.button("load").clicked();
+        if save {
+            let n = self.preset_state().prest_save_name.clone();
+            let _ = self.save_preset(&n);
+            let _ = self.load_preset_list();
+        }
+        if load {
+            let _ = self.load_preset();
+        }
+    }
 }

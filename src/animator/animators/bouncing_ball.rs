@@ -3,8 +3,8 @@ use crate::{
     color::ColorParam,
     modulator::Modulator,
     parameters::{ConstantParam, ModulatedParam},
+    preset::PresetState,
     timecode::TimeCode,
-    utils::FileManager,
 };
 
 use anyhow::Ok;
@@ -30,11 +30,13 @@ pub struct BouncingBallSettings {
     #[serde(skip)]
     animator: Vec<BouncingBallAnimator>,
     visible: bool,
+    #[serde(skip)]
+    preset: PresetState,
 }
 
 impl BouncingBallSettings {
     pub fn new(win_rect: &Rect) -> Self {
-        Self {
+        let mut instance = Self {
             ball_count: ConstantParam::new(20, 1, 400, "Ball Count", "ball_count"),
             speed: ModulatedParam::new(5.0, 1.0, 20.0, "Speed", "bounce_speed"),
             dimension: *win_rect,
@@ -44,7 +46,11 @@ impl BouncingBallSettings {
             color: ColorParam::default(),
             animator: Vec::new(),
             visible: true,
-        }
+            preset: PresetState::default(),
+        };
+        let _ = instance.load_preset_list();
+
+        instance
     }
 }
 
@@ -71,10 +77,7 @@ impl AnimatorSettings for BouncingBallSettings {
         if self.color.ui(ui, mods) {
             self.hot_update();
         }
-
-        if (ui.button("save")).clicked() {
-            let _ = self.snapshot("idk");
-        }
+        self.preset_ui(ui);
     }
 
     fn animation_type(&self) -> AnimationType {
@@ -149,13 +152,6 @@ impl AnimatorSettings for BouncingBallSettings {
         params
     }
 
-    fn snapshot(&mut self, name: &str) -> anyhow::Result<()> {
-        let mut r = FileManager::preset_path(self.animation_type())?;
-        r.push("name.json");
-        nannou::io::save_to_json(r, &self)?;
-        Ok(())
-    }
-
     fn set_visibility(&mut self, state: bool) {
         self.visible = state;
         self.hot_update();
@@ -163,6 +159,23 @@ impl AnimatorSettings for BouncingBallSettings {
 
     fn get_visibility(&self) -> bool {
         self.visible
+    }
+
+    fn preset_state(&self) -> &PresetState {
+        &self.preset
+    }
+    fn preset_state_mut(&mut self) -> &mut PresetState {
+        &mut self.preset
+    }
+    fn to_json(&self) -> anyhow::Result<String> {
+        Ok(serde_json::to_string_pretty(self)?)
+    }
+    fn apply_json(&mut self, json: &str) -> anyhow::Result<()> {
+        let l: Self = serde_json::from_str(json)?;
+        self.ball_count.value = l.ball_count.value;
+
+        self.hot_update();
+        Ok(())
     }
 }
 
