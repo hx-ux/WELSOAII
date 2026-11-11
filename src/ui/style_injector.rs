@@ -2,15 +2,14 @@
 //!
 //! This module provides a cohesive dark theme with consistent colors,
 //! spacing, and typography across all UI elements.
-use std::sync::Once;
-
-use nannou_egui::egui::{Color32, Context, FontData, FontDefinitions, FontFamily, Style, Visuals};
-
 use crate::ui::style_definitions::{custom_colors, custom_rounding};
+use nannou_egui::egui::{
+    Color32, Context, FontData, FontDefinitions, FontFamily, FontId, Style, TextStyle, Visuals,
+};
+use std::{collections::BTreeMap, sync::Once};
 
 static FONTS_INIT: Once = Once::new();
 
-/// Applies the custom dark theme to the given egui context
 pub fn apply_custom_style(ctx: &Context, opacity: u8, transparent: bool) {
     FONTS_INIT.call_once(|| {
         setup_fonts(ctx);
@@ -18,6 +17,7 @@ pub fn apply_custom_style(ctx: &Context, opacity: u8, transparent: bool) {
 
     let style = Style {
         visuals: setup_visuals(opacity, transparent),
+        text_styles: setup_text_styles(),
         ..Default::default()
     };
 
@@ -32,24 +32,49 @@ pub fn setup_fonts(ctx: &Context) {
         FontData::from_static(include_bytes!("../assets/Lato.ttf")),
     );
 
-    if let Some(font_keys) = fonts.families.get_mut(&FontFamily::Proportional) {
-        font_keys.push("sans".into());
-    }
-
-    if let Some(font_keys) = fonts.families.get_mut(&FontFamily::Monospace) {
-        font_keys.push("sans".into());
-    }
-
     fonts.font_data.insert(
-        "nerdfonts".to_owned(),
-        FontData::from_static(include_bytes!("../assets/nerdfonts.ttf")),
+        "jetbrains_mono".to_owned(),
+        FontData::from_static(include_bytes!("../assets/JetBrainsMono-Medium.ttf")),
     );
 
-    if let Some(font_keys) = fonts.families.get_mut(&FontFamily::Proportional) {
-        font_keys.push("nerdfonts".into());
+    fonts.font_data.insert(
+        "phosphor".to_owned(),
+        FontData::from_static(include_bytes!("../assets/Phosphor.ttf")),
+    );
+
+    if let Some(prop) = fonts.families.get_mut(&FontFamily::Proportional) {
+        prop.insert(0, "sans".into());
+        prop.insert(1, "phosphor".into());
+    }
+
+    if let Some(mono) = fonts.families.get_mut(&FontFamily::Monospace) {
+        mono.insert(0, "jetbrains_mono".into());
+        mono.insert(1, "phosphor".into());
     }
 
     ctx.set_fonts(fonts);
+}
+
+fn setup_text_styles() -> BTreeMap<TextStyle, FontId> {
+    let mut styles = BTreeMap::new();
+    styles.insert(TextStyle::Heading, display_font(14.0));
+    styles.insert(TextStyle::Body, sans_font(12.0));
+    styles.insert(TextStyle::Button, sans_font(11.5));
+    styles.insert(TextStyle::Small, sans_font(10.5));
+    styles.insert(TextStyle::Monospace, mono_font(11.5));
+    styles
+}
+
+pub fn display_font(size: f32) -> FontId {
+    FontId::new(size, FontFamily::Proportional)
+}
+
+pub fn sans_font(size: f32) -> FontId {
+    FontId::new(size, FontFamily::Proportional)
+}
+
+pub fn mono_font(size: f32) -> FontId {
+    FontId::new(size, FontFamily::Monospace)
 }
 
 fn setup_visuals(opacity: u8, transparent: bool) -> Visuals {
@@ -105,4 +130,3 @@ fn setup_widget_rounding(visuals: &mut Visuals) {
     visuals.widgets.open.rounding = custom_rounding::open();
     visuals.widgets.noninteractive.rounding = custom_rounding::noninteractive();
 }
-
