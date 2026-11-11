@@ -111,4 +111,3 @@ impl ConstantParam<bool> {
         changed
     }
 }
-

@@ -65,4 +65,3 @@ pub trait AnimatorSettings {
     fn set_visibility(&mut self, state: bool);
     fn get_visibility(&self) -> bool;
 }
-
