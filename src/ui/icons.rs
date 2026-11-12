@@ -71,6 +71,7 @@ pub const ICON_ANIM_PULSE: &str = "\u{E47C}";
 pub const ICON_ANIM_SCAN: &str = "\u{E0B8}";
 pub const ICON_ANIM_WAVES: &str = "\u{E6DE}";
 pub const ICON_ANIM_TUNNEL: &str = "\u{E9FA}";
+pub const ICON_ANIM_MIRAGE: &str = "\u{E620}";
 
 /// Returns the waveform glyph for a given `LfoWave`.
 pub const fn lfo_wave_icon(wave: LfoWave) -> &'static str {

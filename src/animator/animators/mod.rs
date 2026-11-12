@@ -1,7 +1,7 @@
+pub mod acid_mirage;
 pub mod bouncing_ball;
 pub mod pulse_background;
 pub mod quantum_tunnel;
 pub mod scan_line;
 pub mod strobe;
 pub mod wave_lines;
-
