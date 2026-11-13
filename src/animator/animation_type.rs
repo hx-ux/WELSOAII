@@ -48,6 +48,10 @@ pub enum MirageMode {
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize, Deserialize, Default, Display, EnumIter)]
 pub enum ScanLineModes {
     #[default]
+    #[strum(to_string = "Prism Lattice")]
+    PrismLattice,
+    #[strum(to_string = "Mirror Clash")]
+    MirrorClash,
     #[strum(to_string = "Ping Pong")]
     PingPong,
     #[strum(to_string = "Wrap Around")]
@@ -57,19 +61,51 @@ pub enum ScanLineModes {
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize, Deserialize, Default, Display, EnumIter)]
 pub enum PulseModes {
     #[default]
-    #[strum(to_string = "Smooth")]
-    Smooth,
+    #[strum(to_string = "Ripple Wave")]
+    RippleWave,
+    #[strum(to_string = "Heartbeat")]
+    Heartbeat,
     #[strum(to_string = "Elastic")]
     Elastic,
+    #[strum(to_string = "Smooth")]
+    Smooth,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize, Deserialize, Default, Display, EnumIter)]
 pub enum PulseShape {
     #[default]
-    #[strum(to_string = "Square")]
-    Square,
-    #[strum(to_string = "Circle")]
-    Circle,
+    #[strum(to_string = "Lotus")]
+    Lotus,
+    #[strum(to_string = "Star")]
+    Star,
     #[strum(to_string = "Diamond")]
     Diamond,
+    #[strum(to_string = "Hexagon")]
+    Hexagon,
+    #[strum(to_string = "Circle")]
+    Circle,
+    #[strum(to_string = "Square")]
+    Square,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize, Deserialize, Default, Display, EnumIter)]
+pub enum WaveMode {
+    #[default]
+    #[strum(to_string = "Aurora Silk")]
+    AuroraSilk,
+    #[strum(to_string = "DNA Braid")]
+    DnaBraid,
+    #[strum(to_string = "Cyber Ocean")]
+    CyberOcean,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize, Deserialize, Default, Display, EnumIter)]
+pub enum TunnelShape {
+    #[default]
+    #[strum(to_string = "Sacred Star")]
+    SacredStar,
+    #[strum(to_string = "Hyperspace")]
+    HyperCircle,
+    #[strum(to_string = "Crystal Hex")]
+    CrystalHex,
 }

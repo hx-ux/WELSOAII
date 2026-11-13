@@ -10,14 +10,49 @@ use anyhow::Ok;
 use nannou::prelude::*;
 use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
+use strum::IntoEnumIterator;
+use strum_macros::{Display, EnumIter};
 
 fn default_rect() -> Rect {
     Rect::from_w_h(800.0, 600.0)
 }
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize, Deserialize, Default, Display, EnumIter)]
+pub enum SyncRate {
+    #[strum(to_string = "1/8")]
+    OneEighth,
+    #[default]
+    #[strum(to_string = "1/4")]
+    OneFourth,
+    #[strum(to_string = "1/2")]
+    OneHalf,
+    #[strum(to_string = "1/1")]
+    One,
+}
+
+impl SyncRate {
+    /// Musical note division multiplier (subdivisions per 4-beat bar).
+    /// 1/8 = fastest (8 per bar), 1/4 = 1 beat (4 per bar), 1/2 = 2 beats (2 per bar), 1/1 = 1 bar.
+    pub fn multiplier(self) -> f32 {
+        match self {
+            SyncRate::OneEighth => 8.0,
+            SyncRate::OneFourth => 4.0,
+            SyncRate::OneHalf => 2.0,
+            SyncRate::One => 1.0,
+        }
+    }
+
+    /// Tempo-scaled speed factor for the given BPM.
+    pub fn speed(self, bpm: f32) -> f32 {
+        (bpm / 60.0) * self.multiplier()
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct BouncingBallSettings {
     pub ball_count: ConstantParam<u32>,
+    pub sync: ConstantParam<bool>,
+    pub sync_rate: SyncRate,
     pub speed: ModulatedParam,
     pub radius: ModulatedParam,
     ball_vel_range_x: ConstantParam<f32>,
@@ -35,6 +70,8 @@ impl BouncingBallSettings {
     pub fn new(win_rect: &Rect) -> Self {
         Self {
             ball_count: ConstantParam::new(20, 1, 400, "Ball Count", "ball_count"),
+            sync: ConstantParam::new(false, false, true, "Sync", "bounce_sync"),
+            sync_rate: SyncRate::default(),
             speed: ModulatedParam::new(5.0, 1.0, 20.0, "Speed", "bounce_speed"),
             dimension: *win_rect,
             radius: ModulatedParam::new(10.0, 4.0, 40.0, "Radius", "bounce_radius"),
@@ -55,7 +92,22 @@ impl AnimatorSettings for BouncingBallSettings {
         if self.radius.slider_ui(ui, mods) {
             self.hot_update();
         }
-        if self.speed.slider_ui(ui, mods) {
+        if self.sync.checkbox_ui(ui) {
+            self.hot_update();
+        }
+        if self.sync.value {
+            ui.label("Rate:");
+            ui.horizontal_wrapped(|ui| {
+                for rate in SyncRate::iter() {
+                    if ui
+                        .radio_value(&mut self.sync_rate, rate, rate.to_string())
+                        .changed()
+                    {
+                        self.hot_update();
+                    }
+                }
+            });
+        } else if self.speed.slider_ui(ui, mods) {
             self.hot_update();
         }
 
@@ -104,8 +156,12 @@ impl AnimatorSettings for BouncingBallSettings {
 
         let speed = self.speed.value();
         let radius = self.radius.value();
+        let sync = self.sync.value;
+        let sync_rate = self.sync_rate;
         for ball in self.animator.iter_mut() {
             ball.speed = speed;
+            ball.sync = sync;
+            ball.sync_rate = sync_rate;
             ball.radius = radius;
             ball.color = self.color.value_mapped(ball.index);
             ball.visible = self.visible;
@@ -160,6 +216,8 @@ impl AnimatorSettings for BouncingBallSettings {
 
 pub struct BouncingBallAnimator {
     pub speed: f32,
+    pub sync: bool,
+    pub sync_rate: SyncRate,
     pub position: Vec2,
     pub velocity: Vec2,
     pub radius: f32,
@@ -193,6 +251,8 @@ impl BouncingBallAnimator {
             radius,
             color: settings.color.value_mapped(index),
             speed: settings.speed.value(),
+            sync: settings.sync.value,
+            sync_rate: settings.sync_rate,
             index,
             visible: settings.visible,
         }
@@ -201,7 +261,12 @@ impl BouncingBallAnimator {
 
 impl AnimatedObject for BouncingBallAnimator {
     fn update(&mut self, win_rect: &Rect, timecode: &TimeCode) {
-        self.position += self.velocity * timecode.get_delta_time() * self.speed;
+        let effective_speed = if self.sync {
+            self.sync_rate.speed(timecode.tempo.value)
+        } else {
+            self.speed
+        };
+        self.position += self.velocity * timecode.get_delta_time() * effective_speed;
 
         let min_x = win_rect.left() + self.radius;
         let max_x = win_rect.right() - self.radius;
