@@ -41,7 +41,7 @@ fn model(app: &App) -> Model {
 
     let global_settings = AppSettings::load_or_default(&logger);
 
-    app.set_update_rate(global_settings.framerate);
+    app.set_update_rate(global_settings.framerate.value);
 
     let view_window_id = app
         .new_window()

@@ -196,7 +196,7 @@ impl ReceiverGrid {
             draw.rect()
                 .xy(cell.rect.xy())
                 .wh(cell.rect.wh())
-                .stroke_color(SNOW)
+                .stroke_color(WHITE)
                 .stroke_weight(1.0)
                 .color(cell.get_display_color());
 
