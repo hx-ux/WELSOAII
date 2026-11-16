@@ -1,7 +1,7 @@
 use crate::timecode::TimeCode;
 use crate::ui::icons::{ICON_PAUSE, ICON_PLAY, ICON_STOP};
 use crate::ui::style_definitions::custom_colors::ACCENT;
-use nannou_egui::egui;
+use nannou::prelude::egui;
 
 impl TimeCode {
     pub fn ui(&mut self, ui: &mut egui::Ui) {

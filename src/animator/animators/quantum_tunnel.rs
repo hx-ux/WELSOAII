@@ -7,7 +7,6 @@ use crate::{
 };
 
 use nannou::prelude::*;
-use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 
 fn default_rect() -> Rect {
@@ -187,7 +186,7 @@ pub struct QuantumTunnelAnimator {
     pub speed: f32,
     pub depth: f32,
     pub twist: f32,
-    pub color: Rgba8,
+    pub color: Srgba,
     pub index: usize,
     pub current_z: f32,
     pub center: Vec2,
@@ -263,7 +262,7 @@ impl AnimatedObject for QuantumTunnelAnimator {
         ObjectShape::Circle(self.position, size)
     }
 
-    fn color(&self) -> Rgba8 {
+    fn color(&self) -> Srgba {
         self.color
     }
 }

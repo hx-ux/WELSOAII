@@ -7,7 +7,6 @@ use crate::{
 use crate::modulator::Modulator;
 use crate::timecode::TimeCode;
 use nannou::prelude::*;
-use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
@@ -218,7 +217,7 @@ pub struct WaveLine {
     pub harmonic: u32,
     pub decay: f32,
     phase: f32,
-    color: Rgba8,
+    color: Srgba,
     visible: bool,
 }
 
@@ -314,7 +313,7 @@ impl AnimatedObject for WaveLine {
         ))
     }
 
-    fn color(&self) -> Rgba8 {
+    fn color(&self) -> Srgba {
         self.color
     }
 }

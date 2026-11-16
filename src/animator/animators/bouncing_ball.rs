@@ -8,7 +8,6 @@ use crate::{
 
 use anyhow::Ok;
 use nannou::prelude::*;
-use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 
 fn default_rect() -> Rect {
@@ -163,7 +162,7 @@ pub struct BouncingBallAnimator {
     pub position: Vec2,
     pub velocity: Vec2,
     pub radius: f32,
-    pub color: Rgba8,
+    pub color: Srgba,
     pub index: usize,
     visible: bool,
 }
@@ -239,7 +238,7 @@ impl AnimatedObject for BouncingBallAnimator {
         ObjectShape::Circle(self.position, self.radius)
     }
 
-    fn color(&self) -> Rgba8 {
+    fn color(&self) -> Srgba {
         self.color
     }
 }

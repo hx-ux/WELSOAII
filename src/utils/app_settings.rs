@@ -1,6 +1,6 @@
 use crate::utils::{FileManager, Severity};
 use crate::{parameters::ConstantParam, utils::AppLogger};
-use nannou_egui::egui;
+use nannou::prelude::egui;
 use serde::{Deserialize, Serialize};
 use std::fs;
 
@@ -39,7 +39,9 @@ impl AppSettings {
             Ok(p) => p,
             Err(e) => {
                 logger.log(
-                    format!("Warning: Could not determine app settings path ({e}). Using defaults."),
+                    format!(
+                        "Warning: Could not determine app settings path ({e}). Using defaults."
+                    ),
                     Severity::Error,
                 );
                 return Self::default();
@@ -115,4 +117,3 @@ impl AppSettings {
         changed
     }
 }
-

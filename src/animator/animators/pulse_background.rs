@@ -10,7 +10,6 @@ use crate::{
 };
 use anyhow::Ok;
 use nannou::prelude::*;
-use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 #[derive(Serialize, Deserialize)]
@@ -178,7 +177,7 @@ impl AnimatorSettings for PulseBackgroundSettings {
 pub struct PulseBackgroundAnimator {
     mode: PulseModes,
     pub shape: PulseShape,
-    pub color: Rgba8,
+    pub color: Srgba,
     pub speed: u8,
     current_size_w: f32,
     current_size_h: f32,
@@ -310,7 +309,7 @@ impl AnimatedObject for PulseBackgroundAnimator {
         ObjectShape::Rect(Rect::from_w_h(self.current_size_w, self.current_size_h))
     }
 
-    fn color(&self) -> Rgba8 {
+    fn color(&self) -> Srgba {
         self.color
     }
 }

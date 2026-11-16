@@ -1,5 +1,5 @@
 use chrono::Local;
-use nannou_egui::egui;
+use nannou::prelude::egui;
 use std::{
     collections::VecDeque,
     sync::{Arc, Mutex},

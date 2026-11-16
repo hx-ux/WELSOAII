@@ -1,4 +1,4 @@
-use nannou_egui::egui;
+use nannou::prelude::egui;
 use serde::{Deserialize, Serialize};
 
 use crate::ui::icons::ICON_REFRESH;
@@ -51,7 +51,7 @@ impl<T> ConstantParam<T> {
                     .add(
                         egui::DragValue::new(&mut self.value)
                             .speed(1)
-                            .clamp_range(self.lower..=self.upper),
+                            .range(self.lower..=self.upper),
                     )
                     .changed();
                 if ui.button(ICON_REFRESH).clicked() {

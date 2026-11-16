@@ -10,7 +10,6 @@ use crate::parameters::ModulatedParam;
 use crate::timecode::TimeCode;
 use anyhow::Ok;
 use nannou::prelude::*;
-use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 
@@ -188,7 +187,7 @@ impl AnimatorSettings for ScanLineSettings {
 pub struct ScanLineAnimator {
     mode: ScanLineModes,
     pub speed: f32,
-    pub color: Rgba8,
+    pub color: Srgba,
     position: Vec2,
     height: f32,
     pub width: f32,
@@ -278,7 +277,7 @@ impl AnimatedObject for ScanLineAnimator {
         ))
     }
 
-    fn color(&self) -> Rgba8 {
+    fn color(&self) -> Srgba {
         self.color
     }
 }

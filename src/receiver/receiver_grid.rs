@@ -5,7 +5,6 @@ use crate::{
     utils::{AppLogger, Severity},
 };
 use nannou::prelude::*;
-use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter};
@@ -216,11 +215,11 @@ impl ReceiverGrid {
             }
 
             for (idx, cell) in self.cells.iter().enumerate() {
-                let cell_send_col = cell.get_send_color();
+                let [r, g, b, _] = cell.get_send_color().to_u8_array();
                 let base_idx = idx * 3;
-                self.led_buffer[base_idx] = cell_send_col.red;
-                self.led_buffer[base_idx + 1] = cell_send_col.green;
-                self.led_buffer[base_idx + 2] = cell_send_col.blue;
+                self.led_buffer[base_idx] = r;
+                self.led_buffer[base_idx + 1] = g;
+                self.led_buffer[base_idx + 2] = b;
             }
 
             let _ = self.device.send_data(&self.led_buffer);

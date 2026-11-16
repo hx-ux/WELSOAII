@@ -4,7 +4,6 @@ use crate::{
 };
 use anyhow::Result;
 use nannou::prelude::*;
-use nannou_egui::egui;
 
 pub mod animation_type;
 #[allow(clippy::module_inception)]
@@ -22,10 +21,10 @@ pub trait AnimatedObject {
     fn update(&mut self, win_rect: &Rect, clock: &TimeCode);
     fn draw(&self, draw: &Draw);
     fn shape(&self) -> ObjectShape;
-    fn color(&self) -> Rgba8;
+    fn color(&self) -> Srgba;
 }
 
-pub trait AnimatorSettings {
+pub trait AnimatorSettings: Send + Sync {
     fn control_ui(&mut self, ui: &mut egui::Ui, mods: &[Box<dyn Modulator>]);
     fn animation_type(&self) -> AnimationType;
     fn init(&mut self);

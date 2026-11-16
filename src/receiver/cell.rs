@@ -1,10 +1,10 @@
-use nannou::{color::Rgba8, geom::Rect};
+use nannou::{geom::Rect, prelude::Srgba};
 
 /// Represents a single cell, which can collide with an animator object
 #[derive(Clone)]
 pub struct GridCell {
     pub rect: Rect,
-    pub display_color: Rgba8,
+    pub display_color: Srgba,
     pub is_active: bool,
     pub pos_string: String,
 }
@@ -14,27 +14,27 @@ impl GridCell {
         GridCell {
             rect,
             is_active: false,
-            display_color: Rgba8::new(0, 0, 0, 0),
+            display_color: Srgba::rgba_u8(0, 0, 0, 0),
             pos_string: pos.to_string(),
         }
     }
 
     pub fn reset(&mut self) {
         self.is_active = false;
-        self.display_color = Rgba8::new(0, 0, 0, 0);
+        self.display_color = Srgba::rgba_u8(0, 0, 0, 0);
     }
 
-    pub fn get_send_color(&self) -> Rgba8 {
+    pub fn get_send_color(&self) -> Srgba {
         if self.is_active {
             return self.display_color;
         }
-        Rgba8::new(0, 0, 0, 0)
+        Srgba::rgba_u8(0, 0, 0, 0)
     }
 
-    pub fn get_display_color(&self) -> Rgba8 {
+    pub fn get_display_color(&self) -> Srgba {
         if self.is_active {
             return self.display_color;
         }
-        Rgba8::new(0, 0, 0, 0)
+        Srgba::rgba_u8(0, 0, 0, 0)
     }
 }

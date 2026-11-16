@@ -1,4 +1,4 @@
-use nannou_egui::egui::{self, vec2};
+use nannou::prelude::egui::{self, vec2};
 
 use crate::ui::style_definitions::custom_colors;
 
@@ -55,11 +55,11 @@ impl<'a> egui::Widget for GhostValueSlider<'a> {
             value_frac += delta;
             value_frac = value_frac.clamp(0.0, 1.0);
             *self.value = min + value_frac * range_size;
-            response.changed = true;
+            response.mark_changed();
         }
 
         let painter = ui.painter();
-        let rounding = egui::Rounding::same(base_rect.height() / 2.0);
+        let rounding = egui::CornerRadius::from(base_rect.height() / 2.0);
 
         if let Some(ghost_val) = self.ghost_value {
             let ghost_frac = (ghost_val - min) / range_size;

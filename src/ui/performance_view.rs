@@ -1,4 +1,4 @@
-use nannou_egui::egui::{self, RichText};
+use nannou::prelude::egui::{self, RichText};
 
 const HISTORY_SECS: f32 = 1.0;
 
