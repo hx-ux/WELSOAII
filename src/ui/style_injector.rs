@@ -15,11 +15,12 @@ pub fn apply_custom_style(ctx: &Context, opacity: u8, transparent: bool) {
         setup_fonts(ctx);
     });
 
-    let style = Style {
+    let mut style = Style {
         visuals: setup_visuals(opacity, transparent),
         text_styles: setup_text_styles(),
         ..Default::default()
     };
+    style.interaction.selectable_labels = false;
 
     ctx.set_global_style(style);
 }
