@@ -1,5 +1,8 @@
 use crate::{
-    animator::{AnimatedObject, AnimatorSettings, ObjectShape, animation_type::AnimationType},
+    animator::{
+        AnimatedObject, AnimatorSettings, ObjectShape,
+        animation_type::{AnimationType, LayerBlendMode, LayerPolygonMode},
+    },
     color::ColorParam,
     modulator::Modulator,
     parameters::{ConstantParam, ModulatedParam},
@@ -27,6 +30,10 @@ pub struct BouncingBallSettings {
     #[serde(skip)]
     animator: Vec<BouncingBallAnimator>,
     visible: bool,
+    #[serde(default)]
+    pub blend_mode: LayerBlendMode,
+    #[serde(default)]
+    pub polygon_mode: LayerPolygonMode,
 }
 
 impl BouncingBallSettings {
@@ -41,6 +48,8 @@ impl BouncingBallSettings {
             color: ColorParam::default(),
             animator: Vec::new(),
             visible: true,
+            blend_mode: LayerBlendMode::default(),
+            polygon_mode: LayerPolygonMode::default(),
         }
     }
 }
@@ -149,6 +158,22 @@ impl AnimatorSettings for BouncingBallSettings {
 
     fn get_visibility(&self) -> bool {
         self.visible
+    }
+
+    fn get_blend_mode(&self) -> LayerBlendMode {
+        self.blend_mode
+    }
+
+    fn set_blend_mode(&mut self, mode: LayerBlendMode) {
+        self.blend_mode = mode;
+    }
+
+    fn get_polygon_mode(&self) -> LayerPolygonMode {
+        self.polygon_mode
+    }
+
+    fn set_polygon_mode(&mut self, mode: LayerPolygonMode) {
+        self.polygon_mode = mode;
     }
 }
 

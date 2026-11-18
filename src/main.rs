@@ -1,4 +1,5 @@
 // External crate imports
+extern crate nannou;
 use nannou::prelude::*;
 
 // Module imports
@@ -12,12 +13,15 @@ mod sender;
 mod timecode;
 mod ui;
 mod utils;
+// Re-exports for public API
+pub use utils::AppMode;
 
 use crate::animator::Animator;
 // Core component imports
 use crate::receiver::{LayoutMode, ReceiverGrid};
 use crate::ui::performance_view::PerfStats;
-use crate::utils::{AppLogger, AppMode, AppSettings, Severity};
+use crate::utils::{AppLogger, AppSettings, Severity};
+
 fn main() {
     nannou::app(model).update(update).run();
 }
@@ -59,7 +63,7 @@ fn model(app: &App) -> Model {
         Rect::from_x_y_w_h(0.0, 0.0, 400.0, 300.0),
         20,
         20,
-        LayoutMode::Column,
+        LayoutMode::Colum,
         logger.clone(),
     );
 
@@ -78,6 +82,7 @@ fn model(app: &App) -> Model {
     }
 }
 
+#[allow(deprecated)]
 fn update(app: &App, model: &mut Model) {
     let win_rect = app.window_rect();
 
@@ -93,15 +98,7 @@ fn update(app: &App, model: &mut Model) {
             model.global_settings.fully_transparent,
         );
 
-        let mut viewport_ui = egui::Ui::new(
-            ctx.clone(),
-            "viewport".into(),
-            egui::UiBuilder::new()
-                .layer_id(egui::LayerId::background())
-                .max_rect(ctx.viewport_rect()),
-        );
-
-        egui::Panel::top("MENU").show_inside(&mut viewport_ui, |ui| {
+        egui::Panel::top("MENU").show(&ctx, |ui| {
             ui.horizontal(|ui| {
                 egui::MenuBar::new().ui(ui, |ui| {
                     ui.menu_button("Settings", |ui| {
@@ -127,21 +124,24 @@ fn update(app: &App, model: &mut Model) {
             });
         });
 
-        let window_width = model.global_settings.view_window_size.0 as f32;
         egui::Panel::left("control_panel")
             .resizable(true)
-            .min_size(window_width * 0.2)
-            .max_size(window_width)
-            .default_size(window_width * 0.2)
-            .show_animated_inside(&mut viewport_ui, true, |ui| {
-                ui.add_space(1.0);
-                model.animator.animator_layer_ui(ui, &win_rect);
-                model.animator.animator_ui(ui);
+            .min_size(model.global_settings.view_window_size.1 as f32 * 0.22)
+            .max_size(model.global_settings.view_window_size.1 as f32)
+            .default_size(model.global_settings.view_window_size.1 as f32 * 0.25)
+            .show_animated(&ctx, true, |ui| {
+                egui::ScrollArea::vertical()
+                    .auto_shrink([false, false])
+                    .show(ui, |ui| {
+                        ui.add_space(1.0);
+                        model.animator.animator_layer_ui(ui, &win_rect);
+                        model.animator.animator_ui(ui);
+                    });
             });
 
         egui::Panel::bottom("Modulators")
             .exact_size(200.0)
-            .show_inside(&mut viewport_ui, |ui| {
+            .show(&ctx, |ui| {
                 ui.add_space(1.0);
                 ui.separator();
                 ui.horizontal(|ui| {
@@ -177,50 +177,34 @@ fn update(app: &App, model: &mut Model) {
     model.animator.update(&win_rect, delta_secs);
 }
 
-fn key_pressed(app: &App, model: &mut Model, key: KeyCode) {
-    // Don't trigger shortcuts while the user is typing into an egui text field
-    if model.global_settings.app_mode == AppMode::Edit
-        && app
-            .egui_for_window(model.window)
-            .egui_wants_keyboard_input()
-    {
-        return;
-    }
-
+fn key_pressed(_app: &App, model: &mut Model, key: KeyCode) {
     let receiver = &mut model.animator.grid;
 
     match key {
         KeyCode::ArrowUp => {
-            if receiver.edit_mode.value {
+            if receiver.edit_mode {
                 receiver.move_by(vec2(0.0, 10.0));
             }
         }
         KeyCode::ArrowDown => {
-            if receiver.edit_mode.value {
+            if receiver.edit_mode {
                 receiver.move_by(vec2(0.0, -10.0));
             }
         }
         KeyCode::ArrowRight => {
-            if receiver.edit_mode.value {
+            if receiver.edit_mode {
                 receiver.move_by(vec2(10.0, 0.0));
             }
         }
         KeyCode::ArrowLeft => {
-            if receiver.edit_mode.value {
+            if receiver.edit_mode {
                 receiver.move_by(vec2(-10.0, 0.0));
             }
         }
 
-        KeyCode::Equal | KeyCode::NumpadAdd => {
-            if receiver.edit_mode.value {
-                receiver.resize_by(vec2(10.0, 10.0))
-            }
-        }
-        KeyCode::Minus | KeyCode::NumpadSubtract => {
-            if receiver.edit_mode.value {
-                receiver.resize_by(vec2(-10.0, -10.0))
-            }
-        }
+        KeyCode::Equal | KeyCode::NumpadAdd => receiver.resize_by(vec2(10.0, 10.0)),
+        KeyCode::Minus | KeyCode::NumpadSubtract => receiver.resize_by(vec2(-10.0, -10.0)),
+        KeyCode::KeyC => model.animator.request_clear(),
         KeyCode::KeyP => model.global_settings.app_mode = AppMode::Presentation,
         KeyCode::KeyE => model.global_settings.app_mode = AppMode::Edit,
         _ => (),
@@ -229,8 +213,8 @@ fn key_pressed(app: &App, model: &mut Model, key: KeyCode) {
 
 fn view(app: &App, model: &Model) {
     let draw = app.draw();
-    draw.background().color(BLACK);
+    let win_rect = app.window_rect();
 
-    model.animator.draw_animator(&draw);
+    model.animator.draw_animator(&draw, &win_rect);
     model.animator.draw_grid(&draw);
 }

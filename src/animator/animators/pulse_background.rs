@@ -1,17 +1,19 @@
 use crate::{
     animator::{
         AnimatedObject, AnimatorSettings, ObjectShape,
-        animation_type::{AnimationType, PulseModes, PulseShape},
+        animation_type::{
+            AnimationType, LayerBlendMode, LayerPolygonMode, PulseModes, PulseShape,
+        },
     },
     color::ColorParam,
     modulator::Modulator,
     parameters::{ConstantParam, ModulatedParam},
     timecode::TimeCode,
 };
+use anyhow::Ok;
 use nannou::prelude::*;
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
-
 #[derive(Serialize, Deserialize)]
 pub struct PulseBackgroundSettings {
     pub ring_count: ConstantParam<u32>,
@@ -25,6 +27,10 @@ pub struct PulseBackgroundSettings {
     #[serde(skip)]
     pub animator: Vec<PulseBackgroundAnimator>,
     pub visible: bool,
+    #[serde(default)]
+    pub blend_mode: LayerBlendMode,
+    #[serde(default)]
+    pub polygon_mode: LayerPolygonMode,
 }
 
 impl PulseBackgroundSettings {
@@ -40,6 +46,8 @@ impl PulseBackgroundSettings {
             ring_spread: ModulatedParam::new(1.0, 0.3, 3.0, "Ring Spread", "pulse_ring_spread"),
             animator: Vec::new(),
             visible: true,
+            blend_mode: LayerBlendMode::default(),
+            polygon_mode: LayerPolygonMode::default(),
         }
     }
 }
@@ -160,6 +168,10 @@ impl AnimatorSettings for PulseBackgroundSettings {
         params
     }
 
+    fn snapshot(&mut self) -> anyhow::Result<()> {
+        Ok(())
+    }
+
     fn set_visibility(&mut self, state: bool) {
         self.visible = state;
         self.hot_update();
@@ -167,6 +179,22 @@ impl AnimatorSettings for PulseBackgroundSettings {
 
     fn get_visibility(&self) -> bool {
         self.visible
+    }
+
+    fn get_blend_mode(&self) -> LayerBlendMode {
+        self.blend_mode
+    }
+
+    fn set_blend_mode(&mut self, mode: LayerBlendMode) {
+        self.blend_mode = mode;
+    }
+
+    fn get_polygon_mode(&self) -> LayerPolygonMode {
+        self.polygon_mode
+    }
+
+    fn set_polygon_mode(&mut self, mode: LayerPolygonMode) {
+        self.polygon_mode = mode;
     }
 }
 
@@ -202,11 +230,6 @@ impl PulseBackgroundAnimator {
             visible: settings.visible,
         }
     }
-
-    fn ring_size(&self) -> (f32, f32) {
-        let scale = self.ring_spread * (1.0 + self.index as f32 * 0.3);
-        (self.current_size_w * scale, self.current_size_h * scale)
-    }
 }
 
 impl AnimatedObject for PulseBackgroundAnimator {
@@ -235,11 +258,32 @@ impl AnimatedObject for PulseBackgroundAnimator {
     }
 
     fn draw(&self, draw: &Draw) {
+        if !self.visible {
+            return;
+        }
+        let pts = self.ring_points(64);
+        draw.polyline().weight(2.0).color(self.color).points(pts);
+    }
+
+    fn shape(&self) -> ObjectShape {
+        ObjectShape::Polyline {
+            points: self.ring_points(32),
+            thickness: 3.0,
+        }
+    }
+
+    fn color(&self) -> Srgba {
+        self.color
+    }
+}
+
+impl PulseBackgroundAnimator {
+    fn ring_points(&self, circle_segments: usize) -> Vec<Point2> {
         let cx = 0.0;
         let cy = 0.0;
-
-        let (ring_size_w, ring_size_h) = self.ring_size();
-        let ring_color = self.color;
+        let spread = self.ring_spread;
+        let ring_size_w = self.current_size_w * spread * (1.0 + self.index as f32 * 0.3);
+        let ring_size_h = self.current_size_h * spread * (1.0 + self.index as f32 * 0.3);
         let ring_rotation = self.rotation * (self.index as f32 + 1.0) * 0.15;
 
         let cos_r = ring_rotation.cos();
@@ -254,7 +298,7 @@ impl AnimatedObject for PulseBackgroundAnimator {
             PulseShape::Square => {
                 let hw = ring_size_w * 0.5;
                 let hh = ring_size_h * 0.5;
-                let pts: Vec<Point2> = [
+                [
                     pt2(cx - hw, cy - hh),
                     pt2(cx + hw, cy - hh),
                     pt2(cx + hw, cy + hh),
@@ -263,30 +307,24 @@ impl AnimatedObject for PulseBackgroundAnimator {
                 ]
                 .iter()
                 .map(|&p| rotate(p))
-                .collect();
-                if self.visible {
-                    draw.polyline().weight(2.0).color(ring_color).points(pts);
-                }
+                .collect()
             }
             PulseShape::Circle => {
-                let segments = 64usize;
                 let rx = ring_size_w * 0.5;
                 let ry = ring_size_h * 0.5;
-                let mut pts: Vec<Point2> = (0..=segments)
+                let mut pts: Vec<Point2> = (0..=circle_segments)
                     .map(|i| {
-                        let angle = i as f32 / segments as f32 * std::f32::consts::TAU;
+                        let angle = i as f32 / circle_segments as f32 * std::f32::consts::TAU;
                         rotate(pt2(cx + rx * angle.cos(), cy + ry * angle.sin()))
                     })
                     .collect();
                 pts.push(pts[0]);
-                if self.visible {
-                    draw.polyline().weight(2.0).color(ring_color).points(pts);
-                }
+                pts
             }
             PulseShape::Diamond => {
                 let hw = ring_size_w * 0.5;
                 let hh = ring_size_h * 0.5;
-                let pts: Vec<Point2> = [
+                [
                     pt2(cx, cy + hh),
                     pt2(cx + hw, cy),
                     pt2(cx, cy - hh),
@@ -295,20 +333,8 @@ impl AnimatedObject for PulseBackgroundAnimator {
                 ]
                 .iter()
                 .map(|&p| rotate(p))
-                .collect();
-                if self.visible {
-                    draw.polyline().weight(2.0).color(ring_color).points(pts);
-                }
+                .collect()
             }
         }
-    }
-
-    fn shape(&self) -> ObjectShape {
-        let (ring_size_w, ring_size_h) = self.ring_size();
-        ObjectShape::Rect(Rect::from_w_h(ring_size_w, ring_size_h))
-    }
-
-    fn color(&self) -> Srgba {
-        self.color
     }
 }

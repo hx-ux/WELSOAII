@@ -2,6 +2,8 @@ use crate::animator::AnimatedObject;
 use crate::animator::AnimatorSettings;
 use crate::animator::ObjectShape;
 use crate::animator::animation_type::AnimationType;
+use crate::animator::animation_type::LayerBlendMode;
+use crate::animator::animation_type::LayerPolygonMode;
 use crate::animator::animation_type::ScanLineModes;
 use crate::color::ColorParam;
 use crate::modulator::Modulator;
@@ -29,6 +31,10 @@ pub struct ScanLineSettings {
     #[serde(skip)]
     pub animator: Vec<ScanLineAnimator>,
     visible: bool,
+    #[serde(default)]
+    pub blend_mode: LayerBlendMode,
+    #[serde(default)]
+    pub polygon_mode: LayerPolygonMode,
 }
 
 impl ScanLineSettings {
@@ -46,6 +52,8 @@ impl ScanLineSettings {
             begin_pos: win_rect.left(),
             animator: vec![],
             visible: true,
+            blend_mode: LayerBlendMode::default(),
+            polygon_mode: LayerPolygonMode::default(),
         }
     }
 }
@@ -178,6 +186,22 @@ impl AnimatorSettings for ScanLineSettings {
     fn get_visibility(&self) -> bool {
         self.visible
     }
+
+    fn get_blend_mode(&self) -> LayerBlendMode {
+        self.blend_mode
+    }
+
+    fn set_blend_mode(&mut self, mode: LayerBlendMode) {
+        self.blend_mode = mode;
+    }
+
+    fn get_polygon_mode(&self) -> LayerPolygonMode {
+        self.polygon_mode
+    }
+
+    fn set_polygon_mode(&mut self, mode: LayerPolygonMode) {
+        self.polygon_mode = mode;
+    }
 }
 
 pub struct ScanLineAnimator {
@@ -266,12 +290,11 @@ impl AnimatedObject for ScanLineAnimator {
     }
 
     fn shape(&self) -> ObjectShape {
-        ObjectShape::Rect(Rect::from_x_y_w_h(
-            self.position.x,
-            self.position.y,
-            self.width,
-            self.height,
-        ))
+        ObjectShape::RotatedRect {
+            center: self.position,
+            size: vec2(self.width, self.height),
+            angle: self.tilt,
+        }
     }
 
     fn color(&self) -> Srgba {

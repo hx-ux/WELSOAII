@@ -63,6 +63,7 @@ impl ColorParam {
                                 .changed();
                         }
                     });
+                changed |= self.col_a.slider_ui(ui, mods);
             }
         }
 
@@ -80,7 +81,9 @@ impl ColorParam {
         }
 
         let palette = self.palette.as_slice();
-        palette[index % palette.len()]
+        let mut color = palette[index % palette.len()];
+        color.alpha *= (self.col_a.value().clamp(0.0, 255.0)) / 255.0;
+        color
     }
 
     pub fn modulated_params_mut(&mut self) -> Vec<&mut ModulatedParam> {
