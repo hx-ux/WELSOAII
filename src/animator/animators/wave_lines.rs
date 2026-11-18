@@ -1,5 +1,8 @@
 use crate::{
-    animator::{AnimatedObject, AnimatorSettings, ObjectShape, animation_type::AnimationType},
+    animator::{
+        AnimatedObject, AnimatorSettings, ObjectShape,
+        animation_type::{AnimationType, LayerBlendMode, LayerPolygonMode},
+    },
     color::ColorParam,
     parameters::{ConstantParam, ModulatedParam},
 };
@@ -28,6 +31,10 @@ pub struct WaveLinesSettings {
     #[serde(skip)]
     pub animator: Vec<WaveLine>,
     visible: bool,
+    #[serde(default)]
+    pub blend_mode: LayerBlendMode,
+    #[serde(default)]
+    pub polygon_mode: LayerPolygonMode,
 }
 
 impl WaveLinesSettings {
@@ -47,6 +54,8 @@ impl WaveLinesSettings {
             height: win_rect.h(),
             animator: Vec::new(),
             visible: true,
+            blend_mode: LayerBlendMode::default(),
+            polygon_mode: LayerPolygonMode::default(),
         }
     }
 }
@@ -188,6 +197,10 @@ impl AnimatorSettings for WaveLinesSettings {
         params
     }
 
+    fn snapshot(&mut self) -> anyhow::Result<()> {
+        Ok(())
+    }
+
     fn set_visibility(&mut self, state: bool) {
         self.visible = state;
         self.hot_update();
@@ -195,6 +208,22 @@ impl AnimatorSettings for WaveLinesSettings {
 
     fn get_visibility(&self) -> bool {
         self.visible
+    }
+
+    fn get_blend_mode(&self) -> LayerBlendMode {
+        self.blend_mode
+    }
+
+    fn set_blend_mode(&mut self, mode: LayerBlendMode) {
+        self.blend_mode = mode;
+    }
+
+    fn get_polygon_mode(&self) -> LayerPolygonMode {
+        self.polygon_mode
+    }
+
+    fn set_polygon_mode(&mut self, mode: LayerPolygonMode) {
+        self.polygon_mode = mode;
     }
 }
 
@@ -247,6 +276,36 @@ impl WaveLine {
         let spacing = self.width / self.total_lines as f32;
         -self.width / 2.0 + spacing * (self.index as f32 + 0.5)
     }
+    fn sample_points(&self, y_steps: i32) -> Vec<Point2> {
+        let y_min = -self.height / 2.0;
+        let y_max = self.height / 2.0;
+        let base_x = self.base_x();
+        let harm = self.harmonic.max(1) as f32;
+
+        (0..=y_steps)
+            .map(|i| {
+                let t = i as f32 / y_steps as f32;
+                let y = y_min + (y_max - y_min) * t;
+
+                let decay_t = if self.decay < 1.0 {
+                    let edge = 0.15;
+                    let lower = smoothstep(0.0, edge, t);
+                    let upper = smoothstep(1.0, 1.0 - edge, t);
+                    lower * upper
+                } else {
+                    1.0
+                };
+                let decay_env = 1.0 - (1.0 - decay_t) * (1.0 - self.decay);
+                let phase_offset = self.phase + self.phase_spread * self.index as f32;
+                let x_v = (y * self.frequency * harm + phase_offset).sin()
+                    * self.amplitude_current
+                    * decay_env;
+                let x_h = (y * phase_offset * 0.5).cos() * self.h_amplitude;
+
+                pt2(base_x + x_v + x_h, y)
+            })
+            .collect()
+    }
 }
 
 impl AnimatedObject for WaveLine {
@@ -259,39 +318,9 @@ impl AnimatedObject for WaveLine {
     }
 
     fn draw(&self, draw: &Draw) {
-        let y_steps = 32.max((self.height / 20.0) as i32);
-        let y_min = -self.height / 2.0;
-        let y_max = self.height / 2.0;
-        let base_x = self.base_x();
-        let harm = self.harmonic.max(1) as f32;
-
-        let points = (0..=y_steps).map(|i| {
-            let t = i as f32 / y_steps as f32;
-            let y = y_min + (y_max - y_min) * t;
-
-            // Edge decay envelope — amplitude tapers off at top and bottom
-            let decay_t = if self.decay < 1.0 {
-                // smoothstep at edges
-                let edge = 0.15;
-                let lower = smoothstep(0.0, edge, t);
-                let upper = smoothstep(1.0, 1.0 - edge, t);
-                lower * upper
-            } else {
-                1.0
-            };
-            let decay_env = 1.0 - (1.0 - decay_t) * (1.0 - self.decay);
-            let phase_offset = self.phase + self.phase_spread * self.index as f32;
-            // Primary vertical wave (with harmonic multiplier)
-            let x_v = (y * self.frequency * harm + phase_offset).sin()
-                * self.amplitude_current
-                * decay_env;
-            // Secondary horizontal / Lissajous axis
-            let x_h = (y * phase_offset * 0.5).cos() * self.h_amplitude;
-
-            pt2(base_x + x_v + x_h, y)
-        });
-
         if self.visible {
+            let y_steps = 32.max((self.height / 20.0) as i32);
+            let points = self.sample_points(y_steps);
             draw.polyline()
                 .weight(self.thickness)
                 .color(self.color)
@@ -300,13 +329,10 @@ impl AnimatedObject for WaveLine {
     }
 
     fn shape(&self) -> ObjectShape {
-        let half_w = self.amplitude_current.abs() + self.h_amplitude.abs() + self.thickness * 0.5;
-        ObjectShape::Rect(Rect::from_x_y_w_h(
-            self.base_x(),
-            0.0,
-            half_w * 2.0,
-            self.height,
-        ))
+        ObjectShape::Polyline {
+            points: self.sample_points(28),
+            thickness: self.thickness,
+        }
     }
 
     fn color(&self) -> Srgba {

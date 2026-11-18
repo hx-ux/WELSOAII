@@ -1,5 +1,8 @@
 use crate::{
-    animator::{AnimatedObject, AnimatorSettings, ObjectShape, animation_type::AnimationType},
+    animator::{
+        AnimatedObject, AnimatorSettings, ObjectShape,
+        animation_type::{AnimationType, LayerBlendMode, LayerPolygonMode},
+    },
     color::ColorParam,
     modulator::Modulator,
     parameters::{ConstantParam, ModulatedParam},
@@ -28,6 +31,10 @@ pub struct QuantumTunnelSettings {
     #[serde(skip)]
     animator: Vec<QuantumTunnelAnimator>,
     visible: bool,
+    #[serde(default)]
+    pub blend_mode: LayerBlendMode,
+    #[serde(default)]
+    pub polygon_mode: LayerPolygonMode,
 }
 
 impl QuantumTunnelSettings {
@@ -50,6 +57,8 @@ impl QuantumTunnelSettings {
                 "recursive_weight",
             ),
             visible: true,
+            blend_mode: LayerBlendMode::default(),
+            polygon_mode: LayerPolygonMode::default(),
         }
     }
 }
@@ -179,6 +188,22 @@ impl AnimatorSettings for QuantumTunnelSettings {
     fn get_visibility(&self) -> bool {
         self.visible
     }
+
+    fn get_blend_mode(&self) -> LayerBlendMode {
+        self.blend_mode
+    }
+
+    fn set_blend_mode(&mut self, mode: LayerBlendMode) {
+        self.blend_mode = mode;
+    }
+
+    fn get_polygon_mode(&self) -> LayerPolygonMode {
+        self.polygon_mode
+    }
+
+    fn set_polygon_mode(&mut self, mode: LayerPolygonMode) {
+        self.polygon_mode = mode;
+    }
 }
 
 pub struct QuantumTunnelAnimator {
@@ -259,7 +284,16 @@ impl AnimatedObject for QuantumTunnelAnimator {
     fn shape(&self) -> ObjectShape {
         let z_normalized = self.current_z / self.depth;
         let size = (1.0 - z_normalized).powi(2) * 400.0;
-        ObjectShape::Circle(self.position, size)
+        let line_weight = if self.r_weight {
+            z_normalized * self.line_weight * 2.0
+        } else {
+            self.line_weight
+        };
+        ObjectShape::Ring {
+            center: self.position,
+            radius: size,
+            thickness: line_weight,
+        }
     }
 
     fn color(&self) -> Srgba {
