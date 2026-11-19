@@ -16,3 +16,7 @@ strum_macros = "0.28.0"
 strum = "0.28.0"
 egui_plot = "0.35"
 tempfile = "3.27.0"
+
+[profile.dev.package."*"]
+opt-level = 3
+
