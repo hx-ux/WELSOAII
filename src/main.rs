@@ -96,7 +96,15 @@ fn update(app: &App, model: &mut Model) {
             model.global_settings.fully_transparent,
         );
 
-        egui::Panel::top("MENU").show(&ctx, |ui| {
+        let mut viewport_ui = egui::Ui::new(
+            ctx.clone(),
+            "viewport".into(),
+            egui::UiBuilder::new()
+                .layer_id(egui::LayerId::background())
+                .max_rect(ctx.viewport_rect()),
+        );
+
+        egui::Panel::top("MENU").show_inside(&mut viewport_ui, |ui| {
             ui.horizontal(|ui| {
                 egui::MenuBar::new().ui(ui, |ui| {
                     ui.menu_button("Settings", |ui| {
@@ -127,7 +135,7 @@ fn update(app: &App, model: &mut Model) {
             .min_size(model.global_settings.view_window_size.1 as f32 * 0.2)
             .max_size(model.global_settings.view_window_size.1 as f32)
             .default_size(model.global_settings.view_window_size.1 as f32 * 0.1)
-            .show_animated(&ctx, true, |ui| {
+            .show_animated_inside(&mut viewport_ui, true, |ui| {
                 ui.add_space(1.0);
                 model.animator.animator_layer_ui(ui, &win_rect);
                 model.animator.animator_ui(ui);
@@ -135,7 +143,7 @@ fn update(app: &App, model: &mut Model) {
 
         egui::Panel::bottom("Modulators")
             .exact_size(200.0)
-            .show(&ctx, |ui| {
+            .show_inside(&mut viewport_ui, |ui| {
                 ui.add_space(1.0);
                 ui.separator();
                 ui.horizontal(|ui| {
