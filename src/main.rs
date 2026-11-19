@@ -176,28 +176,36 @@ fn key_pressed(_app: &App, model: &mut Model, key: KeyCode) {
 
     match key {
         KeyCode::ArrowUp => {
-            if receiver.edit_mode {
+            if receiver.edit_mode.value {
                 receiver.move_by(vec2(0.0, 10.0));
             }
         }
         KeyCode::ArrowDown => {
-            if receiver.edit_mode {
+            if receiver.edit_mode.value {
                 receiver.move_by(vec2(0.0, -10.0));
             }
         }
         KeyCode::ArrowRight => {
-            if receiver.edit_mode {
+            if receiver.edit_mode.value {
                 receiver.move_by(vec2(10.0, 0.0));
             }
         }
         KeyCode::ArrowLeft => {
-            if receiver.edit_mode {
+            if receiver.edit_mode.value {
                 receiver.move_by(vec2(-10.0, 0.0));
             }
         }
 
-        KeyCode::Equal | KeyCode::NumpadAdd => receiver.resize_by(vec2(10.0, 10.0)),
-        KeyCode::Minus | KeyCode::NumpadSubtract => receiver.resize_by(vec2(-10.0, -10.0)),
+        KeyCode::Equal | KeyCode::NumpadAdd => {
+            if receiver.edit_mode.value {
+                receiver.resize_by(vec2(10.0, 10.0))
+            }
+        }
+        KeyCode::Minus | KeyCode::NumpadSubtract => {
+            if receiver.edit_mode.value {
+                receiver.resize_by(vec2(-10.0, -10.0))
+            }
+        }
         KeyCode::KeyP => model.global_settings.app_mode = AppMode::Presentation,
         KeyCode::KeyE => model.global_settings.app_mode = AppMode::Edit,
         _ => (),

@@ -6,7 +6,7 @@ pub struct GridCell {
     pub rect: Rect,
     pub display_color: Srgba,
     pub is_active: bool,
-    pub pos_string: String,
+    pub pos: u32,
 }
 
 impl GridCell {
@@ -15,7 +15,7 @@ impl GridCell {
             rect,
             is_active: false,
             display_color: Srgba::rgba_u8(0, 0, 0, 0),
-            pos_string: pos.to_string(),
+            pos: pos,
         }
     }
 

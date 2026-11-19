@@ -9,7 +9,7 @@ use crate::utils::AppLogger;
 pub struct WLEDSender {
     pub ip: String,
     pub name: String,
-    pub max_len: usize,
+    pub length: usize,
     #[serde(skip)]
     connection: Option<Arc<Mutex<DDPConnection>>>,
     #[serde(skip)]
@@ -18,16 +18,28 @@ pub struct WLEDSender {
     pub logger: AppLogger,
 }
 
+impl Default for WLEDSender {
+    fn default() -> Self {
+        Self {
+            ip: "192.168.178.102".to_string(),
+            name: "Default".to_string(),
+            length: 400,
+            connection: Default::default(),
+            establish_conn: false,
+            logger: Default::default(),
+        }
+    }
+}
+
 impl WLEDSender {
     const RECEIVER_PORT: &str = "4048";
 
-    #[allow(dead_code)]
-    pub fn new(ip: &str, name: &str, max_len: usize, logger: AppLogger) -> Self {
+    pub fn new(ip: &str, name: &str, length: usize, logger: AppLogger) -> Self {
         Self {
             ip: ip.to_string(),
             name: name.to_string(),
             connection: None,
-            max_len,
+            length,
             establish_conn: false,
             logger,
         }
