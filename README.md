@@ -1,6 +1,7 @@
 # WelosaII
 
 WelosaII is a creative, real-time animation app
+
 It renders generative visuals, provides a live control UI, and can map animations to an LED grid over DDP (Only WLED Support for now).
 
 **Project status:** early beta. Expect breaking changes, missing features, and rough edges.
