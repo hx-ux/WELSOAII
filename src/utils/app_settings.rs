@@ -56,7 +56,7 @@ impl AppSettings {
                         "No existing settings found at {:?} ({}). Using defaults.",
                         path, e
                     ),
-                    Severity::Error,
+                    Severity::Info,
                 );
                 return Self::default();
             }

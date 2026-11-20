@@ -130,11 +130,12 @@ fn update(app: &App, model: &mut Model) {
             });
         });
 
+        let window_width = model.global_settings.view_window_size.0 as f32;
         egui::Panel::left("control_panel")
             .resizable(true)
-            .min_size(model.global_settings.view_window_size.1 as f32 * 0.2)
-            .max_size(model.global_settings.view_window_size.1 as f32)
-            .default_size(model.global_settings.view_window_size.1 as f32 * 0.1)
+            .min_size(window_width * 0.2)
+            .max_size(window_width)
+            .default_size(window_width * 0.2)
             .show_animated_inside(&mut viewport_ui, true, |ui| {
                 ui.add_space(1.0);
                 model.animator.animator_layer_ui(ui, &win_rect);
@@ -179,7 +180,16 @@ fn update(app: &App, model: &mut Model) {
     model.animator.update(&win_rect, delta_secs);
 }
 
-fn key_pressed(_app: &App, model: &mut Model, key: KeyCode) {
+fn key_pressed(app: &App, model: &mut Model, key: KeyCode) {
+    // Don't trigger shortcuts while the user is typing into an egui text field
+    if model.global_settings.app_mode == AppMode::Edit
+        && app
+            .egui_for_window(model.window)
+            .egui_wants_keyboard_input()
+    {
+        return;
+    }
+
     let receiver = &mut model.animator.grid;
 
     match key {
