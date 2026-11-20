@@ -55,4 +55,3 @@ fn test_section(curr_sec: u64, len: u64) -> Result<Vec<u8>> {
 
     Ok(vec)
 }
-

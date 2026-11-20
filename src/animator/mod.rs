@@ -64,4 +64,3 @@ pub trait AnimatorSettings: Send + Sync {
     fn set_visibility(&mut self, state: bool);
     fn get_visibility(&self) -> bool;
 }
-

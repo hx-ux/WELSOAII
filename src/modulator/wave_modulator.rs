@@ -195,4 +195,3 @@ impl Modulator for WaveModulator {
         1.0 + (g - 1.0) * amount
     }
 }
-

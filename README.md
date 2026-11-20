@@ -10,7 +10,7 @@ It renders generative visuals, provides a live control UI, and can map animation
 - Master clock with BPM control and optional Ableton Link sync
 - Live UI for tweaking settings and previewing output
 - LED grid mapping with DDP output support
-- ~~Preset saving for animator and grid settings~~ COMMING SOON
+- ~~Preset saving for animator and grid settings~~ COMING SOON
 
 ## Getting Started
 ### Prerequisites
@@ -24,6 +24,8 @@ cargo run
 ## Controls
 - `P`: presentation mode (hide UI)
 - `E`: edit mode (show UI)
+- Arrow keys: move the LED receiver grid (when *Show grid* is enabled)
+- `+` / `-`: resize the LED receiver grid (when *Show grid* is enabled)
 
 
 ## Contributing
@@ -39,5 +41,5 @@ Thanks for helping! This project is in early beta, so contributions are especial
 * Shader Support
 * Midi Support
 * Art-Net Support
-* Proper and less clutched Gui
+* Proper and less cluttered GUI
 

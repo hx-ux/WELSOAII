@@ -6,7 +6,6 @@ pub mod custom_colors {
     #[allow(dead_code)]
     pub const SURFACE: Color32 = Color32::from_rgb(46, 46, 56);
 
-
     // Widget states — charcoal-based
     pub const BUTTON_NORMAL: Color32 = Color32::from_rgb(50, 50, 50);
     pub const BUTTON_HOVER: Color32 = Color32::from_rgb(68, 68, 68);

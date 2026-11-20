@@ -193,7 +193,6 @@ impl BouncingBallAnimator {
     }
 }
 
-
 impl AnimatedObject for BouncingBallAnimator {
     fn update(&mut self, win_rect: &Rect, timecode: &TimeCode) {
         self.position += self.velocity * timecode.get_delta_time() * self.speed;
