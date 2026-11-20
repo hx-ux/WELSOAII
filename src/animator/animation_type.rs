@@ -31,8 +31,6 @@ pub enum AnimationType {
     WaveLines = 3,
     #[strum(to_string = "Quantum Tunnel")]
     QuantumTunnel = 4,
-    #[strum(to_string = "Strobe")]
-    Strobe = 5,
 }
 
 /// GPU & WLED grid blend modes powered by Bevy/wgpu render pipelines.

@@ -182,22 +182,22 @@ fn key_pressed(_app: &App, model: &mut Model, key: KeyCode) {
 
     match key {
         KeyCode::ArrowUp => {
-            if receiver.edit_mode {
+            if receiver.edit_mode.value {
                 receiver.move_by(vec2(0.0, 10.0));
             }
         }
         KeyCode::ArrowDown => {
-            if receiver.edit_mode {
+            if receiver.edit_mode.value {
                 receiver.move_by(vec2(0.0, -10.0));
             }
         }
         KeyCode::ArrowRight => {
-            if receiver.edit_mode {
+            if receiver.edit_mode.value {
                 receiver.move_by(vec2(10.0, 0.0));
             }
         }
         KeyCode::ArrowLeft => {
-            if receiver.edit_mode {
+            if receiver.edit_mode.value {
                 receiver.move_by(vec2(-10.0, 0.0));
             }
         }

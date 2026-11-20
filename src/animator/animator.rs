@@ -5,16 +5,14 @@ use crate::{
         animators::{
             bouncing_ball::BouncingBallSettings, pulse_background::PulseBackgroundSettings,
             quantum_tunnel::QuantumTunnelSettings, scan_line::ScanLineSettings,
-            strobe::StrobeSettings, wave_lines::WaveLinesSettings,
+            wave_lines::WaveLinesSettings,
         },
     },
     modulator::{Modulator, wave_modulator::WaveModulator},
     parameters::ModulatedParam,
     receiver::ReceiverGrid,
     timecode::TimeCode,
-    ui::icons::{
-        ICON_CARET_DOWN, ICON_CARET_UP, ICON_CLEAR, ICON_EYE_ACTIVE, ICON_EYE_DISABLED,
-    },
+    ui::icons::{ICON_CARET_DOWN, ICON_CARET_UP, ICON_CLEAR, ICON_EYE_ACTIVE, ICON_EYE_DISABLED},
     utils::{AppLogger, Severity},
 };
 use nannou::prelude::egui::Color32;
@@ -69,7 +67,6 @@ impl Animator {
             AnimationType::ScanLine => Box::new(ScanLineSettings::new(win_rect)),
             AnimationType::WaveLines => Box::new(WaveLinesSettings::new(win_rect)),
             AnimationType::QuantumTunnel => Box::new(QuantumTunnelSettings::new(win_rect)),
-            AnimationType::Strobe => Box::new(StrobeSettings::new(win_rect)),
         };
 
         animator.init();
@@ -403,7 +400,11 @@ impl Animator {
                             .show_ui(ui, |ui| {
                                 for mode in LayerBlendMode::iter() {
                                     if ui
-                                        .selectable_value(&mut current_blend, mode, mode.to_string())
+                                        .selectable_value(
+                                            &mut current_blend,
+                                            mode,
+                                            mode.to_string(),
+                                        )
                                         .changed()
                                     {
                                         animator.set_blend_mode(current_blend);
