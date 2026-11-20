@@ -304,7 +304,7 @@ impl AnimatedObject for WaveLine {
     }
 
     fn shape(&self) -> ObjectShape {
-        let half_w = self.amplitude_current.abs() + self.thickness * 0.5;
+        let half_w = self.amplitude_current.abs() + self.h_amplitude.abs() + self.thickness * 0.5;
         ObjectShape::Rect(Rect::from_x_y_w_h(
             self.base_x(),
             0.0,

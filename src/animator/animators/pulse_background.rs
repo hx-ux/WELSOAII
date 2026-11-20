@@ -206,6 +206,11 @@ impl PulseBackgroundAnimator {
             visible: settings.visible,
         }
     }
+
+    fn ring_size(&self) -> (f32, f32) {
+        let scale = self.ring_spread * (1.0 + self.index as f32 * 0.3);
+        (self.current_size_w * scale, self.current_size_h * scale)
+    }
 }
 
 impl AnimatedObject for PulseBackgroundAnimator {
@@ -237,10 +242,7 @@ impl AnimatedObject for PulseBackgroundAnimator {
         let cx = 0.0;
         let cy = 0.0;
 
-        let spread = self.ring_spread;
-
-        let ring_size_w = self.current_size_w * spread * (1.0 + self.index as f32 * 0.3);
-        let ring_size_h = self.current_size_h * spread * (1.0 + self.index as f32 * 0.3);
+        let (ring_size_w, ring_size_h) = self.ring_size();
         let ring_color = self.color;
         let ring_rotation = self.rotation * (self.index as f32 + 1.0) * 0.15;
 
@@ -306,7 +308,8 @@ impl AnimatedObject for PulseBackgroundAnimator {
     }
 
     fn shape(&self) -> ObjectShape {
-        ObjectShape::Rect(Rect::from_w_h(self.current_size_w, self.current_size_h))
+        let (ring_size_w, ring_size_h) = self.ring_size();
+        ObjectShape::Rect(Rect::from_w_h(ring_size_w, ring_size_h))
     }
 
     fn color(&self) -> Srgba {

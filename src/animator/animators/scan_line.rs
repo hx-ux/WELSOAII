@@ -139,6 +139,7 @@ impl AnimatorSettings for ScanLineSettings {
     }
 
     fn update(&mut self, win_rect: &Rect, timecode: &TimeCode) {
+        self.set_dimension(win_rect);
         for g in self.animator.iter_mut() {
             g.update(win_rect, timecode);
         }
@@ -227,6 +228,7 @@ impl ScanLineAnimator {
 
 impl AnimatedObject for ScanLineAnimator {
     fn update(&mut self, win_rect: &Rect, timecode: &TimeCode) {
+        self.height = win_rect.h();
         self.time += timecode.get_delta_time();
         self.position.x += self.speed * timecode.get_delta_time();
 
