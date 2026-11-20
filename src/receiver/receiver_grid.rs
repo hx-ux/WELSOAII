@@ -36,6 +36,8 @@ pub struct ReceiverGrid {
     pub edit_mode: ConstantParam<bool>,
     #[serde(skip)]
     pub logger: AppLogger,
+    #[serde(skip)]
+    send_error_logged: bool,
 }
 
 impl ReceiverGrid {
@@ -61,6 +63,7 @@ impl ReceiverGrid {
             layout_mode,
             edit_mode: ConstantParam::new(false, false, true, "Show grid", "show_grid"),
             logger,
+            send_error_logged: false,
         };
 
         grid.update_cells();
@@ -249,7 +252,16 @@ impl ReceiverGrid {
                 self.led_buffer[base_idx + 2] = b;
             }
 
-            let _ = self.device.send_data(&self.led_buffer);
+            match self.device.send_data(&self.led_buffer) {
+                Ok(()) => self.send_error_logged = false,
+                Err(e) => {
+                    if !self.send_error_logged {
+                        self.logger
+                            .log(format!("Error sending DDP data: {e}"), Severity::Error);
+                        self.send_error_logged = true;
+                    }
+                }
+            }
         }
     }
 
@@ -282,20 +294,19 @@ impl ReceiverGrid {
     pub fn ui(&mut self, ui: &mut egui::Ui) -> bool {
         let mut changed = false;
 
-        let mut name = self.device.name.clone();
         if ui
-            .add(monospace_text_edit(&mut name, "Device Name"))
+            .add(monospace_text_edit(&mut self.device.name, "Device Name"))
             .changed()
         {
-            self.device.name = name;
             changed = true;
         }
 
         ui.add_space(5.0);
 
-        let mut ip = self.device.ip.clone();
-        if ui.add(monospace_text_edit(&mut ip, "IP Address")).changed() {
-            self.device.ip = ip;
+        if ui
+            .add(monospace_text_edit(&mut self.device.ip, "IP Address"))
+            .changed()
+        {
             changed = true;
         }
 
@@ -309,17 +320,18 @@ impl ReceiverGrid {
             })
             .clicked()
         {
+            self.send_error_logged = false;
             if self.device.establish_conn {
                 self.device.close_connection();
                 self.logger
                     .log("Disconnected from WLED device", Severity::Info);
             } else {
                 match self.device.open_connection() {
-                    Ok(_) => self.logger.log(
+                    Ok(()) => self.logger.log(
                         format!("Connected to WLED device at {}", self.device.ip),
                         Severity::Info,
                     ),
-                    Err(e) => self.logger.log(format!("{e}"), Severity::Error),
+                    Err(e) => self.logger.log(format!("{e:#}"), Severity::Error),
                 }
             }
             changed = true;
