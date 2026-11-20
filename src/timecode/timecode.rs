@@ -182,6 +182,5 @@ impl TimeCode {
                 self.start_link();
             }
         }
-        self.abl_sync_state.capture_app_state();
     }
 }

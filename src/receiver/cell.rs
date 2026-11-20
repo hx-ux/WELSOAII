@@ -15,7 +15,7 @@ impl GridCell {
             rect,
             is_active: false,
             display_color: Srgba::rgba_u8(0, 0, 0, 0),
-            pos: pos,
+            pos,
         }
     }
 

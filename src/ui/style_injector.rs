@@ -84,7 +84,7 @@ fn setup_visuals(opacity: u8, transparent: bool) -> Visuals {
     if transparent {
         visuals.panel_fill = Color32::TRANSPARENT;
     } else {
-        visuals.panel_fill = Color32::from_rgba_premultiplied(12, 14, 18, opacity);
+        visuals.panel_fill = Color32::from_rgba_unmultiplied(12, 14, 18, opacity);
     }
 
     visuals.window_corner_radius = custom_rounding::window();

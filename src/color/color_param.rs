@@ -54,7 +54,7 @@ impl ColorParam {
             }
 
             ColorMode::Palette => {
-                egui::ComboBox::from_label("")
+                egui::ComboBox::from_id_salt("color_palette")
                     .selected_text(self.palette.to_string())
                     .show_ui(ui, |ui| {
                         for option in ColorPalette::iter() {

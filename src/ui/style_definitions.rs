@@ -30,7 +30,7 @@ pub mod custom_colors {
     pub const SELECTION_BG: Color32 = Color32::from_rgb(100, 40, 0);
     pub const SELECTION_STROKE: Color32 = Color32::from_rgb(255, 102, 0);
 
-    pub const SLIDER_GHOST_FILL: Color32 = Color32::from_rgba_premultiplied(200, 200, 200, 100);
+    pub const SLIDER_GHOST_FILL: Color32 = Color32::from_rgba_unmultiplied_const(200, 200, 200, 100);
 }
 
 pub mod custom_rounding {

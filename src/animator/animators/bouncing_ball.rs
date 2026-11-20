@@ -6,7 +6,6 @@ use crate::{
     timecode::TimeCode,
 };
 
-use anyhow::Ok;
 use nannou::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -141,10 +140,6 @@ impl AnimatorSettings for BouncingBallSettings {
         let mut params = vec![&mut self.speed, &mut self.radius];
         params.extend(self.color.modulated_params_mut());
         params
-    }
-
-    fn snapshot(&mut self) -> anyhow::Result<()> {
-        Ok(())
     }
 
     fn set_visibility(&mut self, state: bool) {

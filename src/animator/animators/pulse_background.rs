@@ -8,10 +8,10 @@ use crate::{
     parameters::{ConstantParam, ModulatedParam},
     timecode::TimeCode,
 };
-use anyhow::Ok;
 use nannou::prelude::*;
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
+
 #[derive(Serialize, Deserialize)]
 pub struct PulseBackgroundSettings {
     pub ring_count: ConstantParam<u32>,
@@ -158,10 +158,6 @@ impl AnimatorSettings for PulseBackgroundSettings {
 
         params.extend(self.color.modulated_params_mut());
         params
-    }
-
-    fn snapshot(&mut self) -> anyhow::Result<()> {
-        Ok(())
     }
 
     fn set_visibility(&mut self, state: bool) {

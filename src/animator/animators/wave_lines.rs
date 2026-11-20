@@ -188,10 +188,6 @@ impl AnimatorSettings for WaveLinesSettings {
         params
     }
 
-    fn snapshot(&mut self) -> anyhow::Result<()> {
-        Ok(())
-    }
-
     fn set_visibility(&mut self, state: bool) {
         self.visible = state;
         self.hot_update();

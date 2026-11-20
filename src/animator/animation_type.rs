@@ -30,8 +30,6 @@ pub enum AnimationType {
     WaveLines = 3,
     #[strum(to_string = "Quantum Tunnel")]
     QuantumTunnel = 4,
-    // #[strum(to_string = "Strobe")]
-    // Strobe = 5,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize, Deserialize, Default, Display, EnumIter)]

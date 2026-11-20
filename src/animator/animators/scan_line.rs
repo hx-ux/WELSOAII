@@ -8,7 +8,6 @@ use crate::modulator::Modulator;
 use crate::parameters::ConstantParam;
 use crate::parameters::ModulatedParam;
 use crate::timecode::TimeCode;
-use anyhow::Ok;
 use nannou::prelude::*;
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
@@ -169,10 +168,6 @@ impl AnimatorSettings for ScanLineSettings {
         ];
         params.extend(self.color.modulated_params_mut());
         params
-    }
-
-    fn snapshot(&mut self) -> anyhow::Result<()> {
-        Ok(())
     }
 
     fn set_visibility(&mut self, state: bool) {

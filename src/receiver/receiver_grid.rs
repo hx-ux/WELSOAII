@@ -13,7 +13,7 @@ use strum_macros::{Display, EnumIter};
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq, EnumIter, Display)]
 pub enum LayoutMode {
     Row,
-    Colum,
+    Column,
 }
 
 #[derive(Clone, Serialize)]
@@ -131,7 +131,7 @@ impl ReceiverGrid {
                 // Row-major: index = row * cols + col
                 (row * self.cols + col) as usize
             }
-            LayoutMode::Colum => {
+            LayoutMode::Column => {
                 // Column-major: index = col * rows + row
                 (col * self.rows + row) as usize
             }
@@ -167,7 +167,7 @@ impl ReceiverGrid {
                     }
                 }
             }
-            LayoutMode::Colum => {
+            LayoutMode::Column => {
                 let mut pos = 0;
                 for c in 0..cols {
                     for r in 0..rows {
@@ -341,7 +341,7 @@ impl ReceiverGrid {
 
         let mut layout_changed = false;
         ui.label("Layout Mode");
-        egui::ComboBox::from_id_salt("")
+        egui::ComboBox::from_id_salt("layout_mode")
             .selected_text(self.layout_mode.to_string())
             .show_ui(ui, |ui| {
                 for option in LayoutMode::iter() {
