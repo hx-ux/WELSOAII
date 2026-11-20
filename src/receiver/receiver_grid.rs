@@ -1,4 +1,5 @@
 use crate::{
+    parameters::ConstantParam,
     receiver::cell::GridCell,
     sender::WLEDSender,
     ui::controls::monospace_text_edit,
@@ -32,7 +33,7 @@ pub struct ReceiverGrid {
     cell_h: f32,
     pub layout_mode: LayoutMode,
     #[serde(skip)]
-    pub edit_mode: bool,
+    pub edit_mode: ConstantParam<bool>,
     #[serde(skip)]
     pub needs_clear: bool,
     #[serde(skip)]
@@ -49,12 +50,7 @@ impl ReceiverGrid {
     ) -> Self {
         let cell_count = (rows * cols) as usize;
         let led_buffer = vec![0u8; cell_count * 3];
-        // ip: "192.168.178.102".to_string(),
-        // name: "Default".to_string(),
-        // max_len: 400,
-        // connection: None,
-        // establish_conn: false,
-        let sender = WLEDSender::new("192.168.178.102", "Default", 400, logger.clone());
+        let sender = WLEDSender::default();
         let mut grid = ReceiverGrid {
             main_rect,
             cells: Vec::new(),
@@ -65,7 +61,7 @@ impl ReceiverGrid {
             cell_w: 0.0,
             cell_h: 0.0,
             layout_mode,
-            edit_mode: false,
+            edit_mode: ConstantParam::new(false, false, true, "Show grid", "show_grid"),
             needs_clear: false,
             logger,
         };
@@ -193,30 +189,55 @@ impl ReceiverGrid {
     }
 
     pub fn draw(&self, draw: &Draw) {
-        if !self.edit_mode {
+        if !self.edit_mode.value {
             return;
         }
 
-        let grid_draw = draw
-            .z(5.0)
-            .color_blend(BLEND_NORMAL)
-            .polygon_mode(PolygonMode::Fill);
-        let font_size = if self.cells.len() >= 100 { 10 } else { 12 };
-
         for cell in &self.cells {
-            grid_draw
-                .rect()
-                .xy(cell.rect.xy())
-                .wh(cell.rect.wh())
-                .stroke_color(WHITE)
-                .stroke_weight(1.0)
-                .color(cell.get_display_color());
+            if cell.is_active {
+                draw.rect()
+                    .xy(cell.rect.xy())
+                    .wh(cell.rect.wh())
+                    .color(cell.get_display_color());
+            }
 
-            grid_draw
-                .text(&cell.pos_string)
-                .xy(cell.rect.xy())
-                .color(WHITE)
-                .font_size(font_size);
+            let last_total_pos = (self.cols * self.rows) - 1;
+            let last_row_pos = (self.cols * self.rows) - self.rows;
+            let last_col_pos = self.cols - 1;
+
+            if cell.pos == 0
+                || cell.pos == last_total_pos
+                || cell.pos == last_row_pos
+                || cell.pos == last_col_pos
+            {
+                draw.text(&cell.pos.to_string())
+                    .xy(cell.rect.xy())
+                    .color(WHITE)
+                    .font_size(10);
+            }
+        }
+
+        let left = self.main_rect.left();
+        let right = self.main_rect.right();
+        let top = self.main_rect.top();
+        let bottom = self.main_rect.bottom();
+
+        for c in 0..=self.cols {
+            let x = left + c as f32 * self.cell_w;
+            draw.line()
+                .start(pt2(x, top))
+                .end(pt2(x, bottom))
+                .stroke_weight(1.0)
+                .color(WHITE);
+        }
+
+        for r in 0..=self.rows {
+            let y = top - r as f32 * self.cell_h;
+            draw.line()
+                .start(pt2(left, y))
+                .end(pt2(right, y))
+                .stroke_weight(1.0)
+                .color(WHITE);
         }
     }
 
@@ -240,7 +261,7 @@ impl ReceiverGrid {
     }
 
     pub fn move_by(&mut self, offset: Vec2) {
-        if self.edit_mode {
+        if self.edit_mode.value {
             let new_center = self.main_rect.xy() + offset;
             self.main_rect = Rect::from_x_y_w_h(
                 new_center.x,
@@ -254,7 +275,7 @@ impl ReceiverGrid {
     }
 
     pub fn resize_by(&mut self, amount: Vec2) {
-        if self.edit_mode {
+        if self.edit_mode.value {
             let new_size = (self.main_rect.wh() + amount).max(vec2(20.0, 20.0));
             self.main_rect = Rect::from_x_y_w_h(
                 self.main_rect.x(),
@@ -312,10 +333,7 @@ impl ReceiverGrid {
             changed = true;
         }
 
-        if ui.checkbox(&mut self.edit_mode, "Edit").clicked() {
-            self.needs_clear = true;
-            changed = true;
-        }
+        self.edit_mode.checkbox_ui(ui);
 
         let mut layout_changed = false;
         egui::ComboBox::from_label("")
