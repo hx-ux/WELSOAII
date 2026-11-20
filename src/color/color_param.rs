@@ -1,6 +1,5 @@
 use crate::{color::ColorPalette, modulator::Modulator, parameters::ModulatedParam};
-use nannou::color::Rgba8;
-use nannou_egui::egui;
+use nannou::prelude::{Srgba, egui};
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 
@@ -55,7 +54,7 @@ impl ColorParam {
             }
 
             ColorMode::Palette => {
-                egui::ComboBox::from_label("")
+                egui::ComboBox::from_id_salt("color_palette")
                     .selected_text(self.palette.to_string())
                     .show_ui(ui, |ui| {
                         for option in ColorPalette::iter() {
@@ -70,9 +69,9 @@ impl ColorParam {
         changed
     }
 
-    pub fn value_mapped(&self, index: usize) -> Rgba8 {
+    pub fn value_mapped(&self, index: usize) -> Srgba {
         if self.mode == ColorMode::Solid {
-            return Rgba8::new(
+            return Srgba::rgba_u8(
                 self.col_r.value() as u8,
                 self.col_g.value() as u8,
                 self.col_b.value() as u8,
@@ -93,4 +92,3 @@ impl ColorParam {
         ]
     }
 }
-

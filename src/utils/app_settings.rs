@@ -1,6 +1,6 @@
 use crate::utils::{FileManager, Severity};
 use crate::{parameters::ConstantParam, utils::AppLogger};
-use nannou_egui::egui;
+use nannou::prelude::egui;
 use serde::{Deserialize, Serialize};
 use std::fs;
 
@@ -12,7 +12,7 @@ pub enum AppMode {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AppSettings {
-    pub framerate: f64,
+    pub framerate: ConstantParam<f64>,
     pub view_window_size: (u32, u32),
     pub app_mode: AppMode,
     pub control_windows_opacity: ConstantParam<u8>,
@@ -22,7 +22,7 @@ pub struct AppSettings {
 impl Default for AppSettings {
     fn default() -> Self {
         Self {
-            framerate: 60.0,
+            framerate: ConstantParam::new(60.0, 20.0, 200.0, "FPS-Limit", "fps_limit"),
             view_window_size: (1000, 1000),
             app_mode: AppMode::Edit,
             control_windows_opacity: ConstantParam::new(200, 1, 255, "Opacity", "opacity"),
@@ -39,7 +39,9 @@ impl AppSettings {
             Ok(p) => p,
             Err(e) => {
                 logger.log(
-                    format!("Warning: Could not determine app settings path ({e}). Using defaults."),
+                    format!(
+                        "Warning: Could not determine app settings path ({e}). Using defaults."
+                    ),
                     Severity::Error,
                 );
                 return Self::default();
@@ -54,7 +56,7 @@ impl AppSettings {
                         "No existing settings found at {:?} ({}). Using defaults.",
                         path, e
                     ),
-                    Severity::Error,
+                    Severity::Info,
                 );
                 return Self::default();
             }
@@ -94,6 +96,7 @@ impl AppSettings {
         });
 
         changed |= self.control_windows_opacity.slider_ui(ui);
+        changed |= self.framerate.drag_ui(ui);
 
         changed |= ui
             .checkbox(&mut self.fully_transparent, "transparent")
@@ -115,4 +118,3 @@ impl AppSettings {
         changed
     }
 }
-

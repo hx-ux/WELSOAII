@@ -2,7 +2,7 @@
 
 use crate::animator::animation_type::UpdateBehaviour;
 use anyhow::Result;
-use nannou_egui::egui;
+use nannou::prelude::egui;
 
 #[derive(Clone, Default)]
 pub struct SceneManager {

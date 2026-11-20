@@ -1,37 +1,32 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use ddp_rs::connection::DDPConnection;
 use serde::Serialize;
+use std::net::UdpSocket;
 use std::sync::{Arc, Mutex};
-
-use crate::utils::AppLogger;
 
 #[derive(Clone, Serialize)]
 pub struct WLEDSender {
     pub ip: String,
     pub name: String,
-    pub max_len: usize,
     #[serde(skip)]
     connection: Option<Arc<Mutex<DDPConnection>>>,
     #[serde(skip)]
     pub establish_conn: bool,
-    #[serde(skip)]
-    pub logger: AppLogger,
+}
+
+impl Default for WLEDSender {
+    fn default() -> Self {
+        Self {
+            ip: "192.168.178.102".to_string(),
+            name: "Default".to_string(),
+            connection: None,
+            establish_conn: false,
+        }
+    }
 }
 
 impl WLEDSender {
     const RECEIVER_PORT: &str = "4048";
-
-    #[allow(dead_code)]
-    pub fn new(ip: &str, name: &str, max_len: usize, logger: AppLogger) -> Self {
-        Self {
-            ip: ip.to_string(),
-            name: name.to_string(),
-            connection: None,
-            max_len,
-            establish_conn: false,
-            logger,
-        }
-    }
 
     pub fn send_data(&self, data: &[u8]) -> Result<()> {
         if self.establish_conn
@@ -43,46 +38,22 @@ impl WLEDSender {
         Ok(())
     }
 
-    pub fn open_connection(&mut self) -> Result<bool> {
+    pub fn open_connection(&mut self) -> Result<()> {
+        self.close_connection();
+
         let target_address = format!("{}:{}", self.ip, Self::RECEIVER_PORT);
+        let socket = UdpSocket::bind("0.0.0.0:0").context("Error opening UDP socket")?;
+        let conn = DDPConnection::try_new(
+            target_address,
+            ddp_rs::protocol::PixelConfig::default(),
+            ddp_rs::protocol::ID::Default,
+            socket,
+        )
+        .with_context(|| format!("Error creating DDP connection to {}", self.ip))?;
 
-        match std::net::UdpSocket::bind("0.0.0.0:4048") {
-            Ok(socket) => {
-                match DDPConnection::try_new(
-                    target_address,
-                    ddp_rs::protocol::PixelConfig::default(),
-                    ddp_rs::protocol::ID::Default,
-                    socket,
-                ) {
-                    Ok(conn) => {
-                        self.connection = Some(Arc::new(Mutex::new(conn)));
-                        self.establish_conn = true;
-                        self.logger.log(
-                            format!("Connected to {} ", self.ip),
-                            crate::utils::Severity::Info,
-                        );
-                    }
-                    Err(err) => {
-                        self.establish_conn = false;
-                        self.logger.log(
-                            format!("Error creating DDP connection: {} {}", self.ip, err),
-                            crate::utils::Severity::Error,
-                        );
-                        anyhow::bail!("Error creating DDP connection: {}", err);
-                    }
-                };
-            }
-            Err(err) => {
-                self.establish_conn = false;
-                self.logger.log(
-                    format!("Error opening UDP socket: {}", err),
-                    crate::utils::Severity::Error,
-                );
-                anyhow::bail!("Error opening UDP socket: {}", err);
-            }
-        }
-
-        Ok(self.establish_conn)
+        self.connection = Some(Arc::new(Mutex::new(conn)));
+        self.establish_conn = true;
+        Ok(())
     }
 
     pub fn close_connection(&mut self) {

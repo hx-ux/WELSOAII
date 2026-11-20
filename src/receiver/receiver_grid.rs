@@ -1,11 +1,11 @@
 use crate::{
+    parameters::ConstantParam,
     receiver::cell::GridCell,
     sender::WLEDSender,
     ui::controls::monospace_text_edit,
     utils::{AppLogger, Severity},
 };
 use nannou::prelude::*;
-use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter};
@@ -13,7 +13,7 @@ use strum_macros::{Display, EnumIter};
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq, EnumIter, Display)]
 pub enum LayoutMode {
     Row,
-    Colum,
+    Column,
 }
 
 #[derive(Clone, Serialize)]
@@ -33,9 +33,11 @@ pub struct ReceiverGrid {
     cell_h: f32,
     pub layout_mode: LayoutMode,
     #[serde(skip)]
-    pub edit_mode: bool,
+    pub edit_mode: ConstantParam<bool>,
     #[serde(skip)]
     pub logger: AppLogger,
+    #[serde(skip)]
+    send_error_logged: bool,
 }
 
 impl ReceiverGrid {
@@ -48,12 +50,7 @@ impl ReceiverGrid {
     ) -> Self {
         let cell_count = (rows * cols) as usize;
         let led_buffer = vec![0u8; cell_count * 3];
-        // ip: "192.168.178.102".to_string(),
-        // name: "Default".to_string(),
-        // max_len: 400,
-        // connection: None,
-        // establish_conn: false,
-        let sender = WLEDSender::new("192.168.178.102", "Default", 400, logger.clone());
+        let sender = WLEDSender::default();
         let mut grid = ReceiverGrid {
             main_rect,
             cells: Vec::new(),
@@ -64,8 +61,9 @@ impl ReceiverGrid {
             cell_w: 0.0,
             cell_h: 0.0,
             layout_mode,
-            edit_mode: false,
+            edit_mode: ConstantParam::new(false, false, true, "Show grid", "show_grid"),
             logger,
+            send_error_logged: false,
         };
 
         grid.update_cells();
@@ -133,7 +131,7 @@ impl ReceiverGrid {
                 // Row-major: index = row * cols + col
                 (row * self.cols + col) as usize
             }
-            LayoutMode::Colum => {
+            LayoutMode::Column => {
                 // Column-major: index = col * rows + row
                 (col * self.rows + row) as usize
             }
@@ -169,7 +167,7 @@ impl ReceiverGrid {
                     }
                 }
             }
-            LayoutMode::Colum => {
+            LayoutMode::Column => {
                 let mut pos = 0;
                 for c in 0..cols {
                     for r in 0..rows {
@@ -187,24 +185,55 @@ impl ReceiverGrid {
     }
 
     pub fn draw(&self, draw: &Draw) {
-        if !self.edit_mode {
+        if !self.edit_mode.value {
             return;
         }
 
-        let font_size = if self.cells.len() >= 100 { 10 } else { 12 };
-
         for cell in &self.cells {
-            draw.rect()
-                .xy(cell.rect.xy())
-                .wh(cell.rect.wh())
-                .stroke_color(SNOW)
-                .stroke_weight(1.0)
-                .color(cell.get_display_color());
+            if cell.is_active {
+                draw.rect()
+                    .xy(cell.rect.xy())
+                    .wh(cell.rect.wh())
+                    .color(cell.get_display_color());
+            }
 
-            draw.text(&cell.pos_string)
-                .xy(cell.rect.xy())
-                .color(WHITE)
-                .font_size(font_size);
+            let last_total_pos = (self.cols * self.rows) - 1;
+            let last_row_pos = (self.cols * self.rows) - self.rows;
+            let last_col_pos = self.cols - 1;
+
+            if cell.pos == 0
+                || cell.pos == last_total_pos
+                || cell.pos == last_row_pos
+                || cell.pos == last_col_pos
+            {
+                draw.text(&cell.pos.to_string())
+                    .xy(cell.rect.xy())
+                    .color(WHITE)
+                    .font_size(10);
+            }
+        }
+
+        let left = self.main_rect.left();
+        let right = self.main_rect.right();
+        let top = self.main_rect.top();
+        let bottom = self.main_rect.bottom();
+
+        for c in 0..=self.cols {
+            let x = left + c as f32 * self.cell_w;
+            draw.line()
+                .start(pt2(x, top))
+                .end(pt2(x, bottom))
+                .stroke_weight(1.0)
+                .color(WHITE);
+        }
+
+        for r in 0..=self.rows {
+            let y = top - r as f32 * self.cell_h;
+            draw.line()
+                .start(pt2(left, y))
+                .end(pt2(right, y))
+                .stroke_weight(1.0)
+                .color(WHITE);
         }
     }
 
@@ -216,19 +245,28 @@ impl ReceiverGrid {
             }
 
             for (idx, cell) in self.cells.iter().enumerate() {
-                let cell_send_col = cell.get_send_color();
+                let [r, g, b, _] = cell.get_send_color().to_u8_array();
                 let base_idx = idx * 3;
-                self.led_buffer[base_idx] = cell_send_col.red;
-                self.led_buffer[base_idx + 1] = cell_send_col.green;
-                self.led_buffer[base_idx + 2] = cell_send_col.blue;
+                self.led_buffer[base_idx] = r;
+                self.led_buffer[base_idx + 1] = g;
+                self.led_buffer[base_idx + 2] = b;
             }
 
-            let _ = self.device.send_data(&self.led_buffer);
+            match self.device.send_data(&self.led_buffer) {
+                Ok(()) => self.send_error_logged = false,
+                Err(e) => {
+                    if !self.send_error_logged {
+                        self.logger
+                            .log(format!("Error sending DDP data: {e}"), Severity::Error);
+                        self.send_error_logged = true;
+                    }
+                }
+            }
         }
     }
 
     pub fn move_by(&mut self, offset: Vec2) {
-        if self.edit_mode {
+        if self.edit_mode.value {
             let new_center = self.main_rect.xy() + offset;
             self.main_rect = Rect::from_x_y_w_h(
                 new_center.x,
@@ -241,7 +279,7 @@ impl ReceiverGrid {
     }
 
     pub fn resize_by(&mut self, amount: Vec2) {
-        if self.edit_mode {
+        if self.edit_mode.value {
             let new_size = (self.main_rect.wh() + amount).max(vec2(20.0, 20.0));
             self.main_rect = Rect::from_x_y_w_h(
                 self.main_rect.x(),
@@ -256,54 +294,54 @@ impl ReceiverGrid {
     pub fn ui(&mut self, ui: &mut egui::Ui) -> bool {
         let mut changed = false;
 
-        let mut name = self.device.name.clone();
         if ui
-            .add(monospace_text_edit(&mut name, "Device Name"))
+            .add(monospace_text_edit(&mut self.device.name, "Device Name"))
             .changed()
         {
-            self.device.name = name;
             changed = true;
         }
 
         ui.add_space(5.0);
 
-        let mut ip = self.device.ip.clone();
-        if ui.add(monospace_text_edit(&mut ip, "IP Address")).changed() {
-            self.device.ip = ip;
+        if ui
+            .add(monospace_text_edit(&mut self.device.ip, "IP Address"))
+            .changed()
+        {
             changed = true;
         }
 
         ui.add_space(5.0);
 
-        let status = if self.device.establish_conn {
-            "Disconnect"
-        } else {
-            "Connect"
-        };
-
-        if ui.button(status).clicked() {
+        if ui
+            .button(if self.device.establish_conn {
+                "Disconnect"
+            } else {
+                "Connect"
+            })
+            .clicked()
+        {
+            self.send_error_logged = false;
             if self.device.establish_conn {
                 self.device.close_connection();
                 self.logger
                     .log("Disconnected from WLED device", Severity::Info);
             } else {
                 match self.device.open_connection() {
-                    Ok(_) => self.logger.log(
+                    Ok(()) => self.logger.log(
                         format!("Connected to WLED device at {}", self.device.ip),
                         Severity::Info,
                     ),
-                    Err(e) => self.logger.log(format!("{e}"), Severity::Error),
+                    Err(e) => self.logger.log(format!("{e:#}"), Severity::Error),
                 }
             }
             changed = true;
         }
 
-        if ui.checkbox(&mut self.edit_mode, "Edit").clicked() {
-            changed = true;
-        }
+        self.edit_mode.checkbox_ui(ui);
 
         let mut layout_changed = false;
-        egui::ComboBox::from_label("")
+        ui.label("Layout Mode");
+        egui::ComboBox::from_id_salt("layout_mode")
             .selected_text(self.layout_mode.to_string())
             .show_ui(ui, |ui| {
                 for option in LayoutMode::iter() {

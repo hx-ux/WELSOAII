@@ -7,7 +7,6 @@ use crate::{
 use crate::modulator::Modulator;
 use crate::timecode::TimeCode;
 use nannou::prelude::*;
-use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
@@ -189,10 +188,6 @@ impl AnimatorSettings for WaveLinesSettings {
         params
     }
 
-    fn snapshot(&mut self) -> anyhow::Result<()> {
-        Ok(())
-    }
-
     fn set_visibility(&mut self, state: bool) {
         self.visible = state;
         self.hot_update();
@@ -218,7 +213,7 @@ pub struct WaveLine {
     pub harmonic: u32,
     pub decay: f32,
     phase: f32,
-    color: Rgba8,
+    color: Srgba,
     visible: bool,
 }
 
@@ -305,7 +300,7 @@ impl AnimatedObject for WaveLine {
     }
 
     fn shape(&self) -> ObjectShape {
-        let half_w = self.amplitude_current.abs() + self.thickness * 0.5;
+        let half_w = self.amplitude_current.abs() + self.h_amplitude.abs() + self.thickness * 0.5;
         ObjectShape::Rect(Rect::from_x_y_w_h(
             self.base_x(),
             0.0,
@@ -314,7 +309,7 @@ impl AnimatedObject for WaveLine {
         ))
     }
 
-    fn color(&self) -> Rgba8 {
+    fn color(&self) -> Srgba {
         self.color
     }
 }

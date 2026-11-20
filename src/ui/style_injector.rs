@@ -3,7 +3,7 @@
 //! This module provides a cohesive dark theme with consistent colors,
 //! spacing, and typography across all UI elements.
 use crate::ui::style_definitions::{custom_colors, custom_rounding};
-use nannou_egui::egui::{
+use nannou::prelude::egui::{
     Color32, Context, FontData, FontDefinitions, FontFamily, FontId, Style, TextStyle, Visuals,
 };
 use std::{collections::BTreeMap, sync::Once};
@@ -15,13 +15,14 @@ pub fn apply_custom_style(ctx: &Context, opacity: u8, transparent: bool) {
         setup_fonts(ctx);
     });
 
-    let style = Style {
+    let mut style = Style {
         visuals: setup_visuals(opacity, transparent),
         text_styles: setup_text_styles(),
         ..Default::default()
     };
+    style.interaction.selectable_labels = false;
 
-    ctx.set_style(style);
+    ctx.set_global_style(style);
 }
 
 pub fn setup_fonts(ctx: &Context) {
@@ -29,17 +30,17 @@ pub fn setup_fonts(ctx: &Context) {
 
     fonts.font_data.insert(
         "sans".to_owned(),
-        FontData::from_static(include_bytes!("../assets/Lato.ttf")),
+        FontData::from_static(include_bytes!("../assets/Lato.ttf")).into(),
     );
 
     fonts.font_data.insert(
         "jetbrains_mono".to_owned(),
-        FontData::from_static(include_bytes!("../assets/JetBrainsMono-Medium.ttf")),
+        FontData::from_static(include_bytes!("../assets/JetBrainsMono-Medium.ttf")).into(),
     );
 
     fonts.font_data.insert(
         "phosphor".to_owned(),
-        FontData::from_static(include_bytes!("../assets/Phosphor.ttf")),
+        FontData::from_static(include_bytes!("../assets/Phosphor.ttf")).into(),
     );
 
     if let Some(prop) = fonts.families.get_mut(&FontFamily::Proportional) {
@@ -83,10 +84,10 @@ fn setup_visuals(opacity: u8, transparent: bool) -> Visuals {
     if transparent {
         visuals.panel_fill = Color32::TRANSPARENT;
     } else {
-        visuals.panel_fill = Color32::from_rgba_premultiplied(12, 14, 18, opacity);
+        visuals.panel_fill = Color32::from_rgba_unmultiplied(12, 14, 18, opacity);
     }
 
-    visuals.window_rounding = custom_rounding::window();
+    visuals.window_corner_radius = custom_rounding::window();
 
     // Widget fill states
     visuals.widgets.inactive.bg_fill = custom_colors::BUTTON_NORMAL;
@@ -124,9 +125,9 @@ fn setup_visuals(opacity: u8, transparent: bool) -> Visuals {
 }
 
 fn setup_widget_rounding(visuals: &mut Visuals) {
-    visuals.widgets.active.rounding = custom_rounding::active();
-    visuals.widgets.inactive.rounding = custom_rounding::inactive();
-    visuals.widgets.hovered.rounding = custom_rounding::hovered();
-    visuals.widgets.open.rounding = custom_rounding::open();
-    visuals.widgets.noninteractive.rounding = custom_rounding::noninteractive();
+    visuals.widgets.active.corner_radius = custom_rounding::active();
+    visuals.widgets.inactive.corner_radius = custom_rounding::inactive();
+    visuals.widgets.hovered.corner_radius = custom_rounding::hovered();
+    visuals.widgets.open.corner_radius = custom_rounding::open();
+    visuals.widgets.noninteractive.corner_radius = custom_rounding::noninteractive();
 }

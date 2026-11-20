@@ -8,11 +8,10 @@ use crate::{
     parameters::{ConstantParam, ModulatedParam},
     timecode::TimeCode,
 };
-use anyhow::Ok;
 use nannou::prelude::*;
-use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
+
 #[derive(Serialize, Deserialize)]
 pub struct PulseBackgroundSettings {
     pub ring_count: ConstantParam<u32>,
@@ -161,10 +160,6 @@ impl AnimatorSettings for PulseBackgroundSettings {
         params
     }
 
-    fn snapshot(&mut self) -> anyhow::Result<()> {
-        Ok(())
-    }
-
     fn set_visibility(&mut self, state: bool) {
         self.visible = state;
         self.hot_update();
@@ -178,7 +173,7 @@ impl AnimatorSettings for PulseBackgroundSettings {
 pub struct PulseBackgroundAnimator {
     mode: PulseModes,
     pub shape: PulseShape,
-    pub color: Rgba8,
+    pub color: Srgba,
     pub speed: u8,
     current_size_w: f32,
     current_size_h: f32,
@@ -206,6 +201,11 @@ impl PulseBackgroundAnimator {
             rotation: 0.0,
             visible: settings.visible,
         }
+    }
+
+    fn ring_size(&self) -> (f32, f32) {
+        let scale = self.ring_spread * (1.0 + self.index as f32 * 0.3);
+        (self.current_size_w * scale, self.current_size_h * scale)
     }
 }
 
@@ -238,10 +238,7 @@ impl AnimatedObject for PulseBackgroundAnimator {
         let cx = 0.0;
         let cy = 0.0;
 
-        let spread = self.ring_spread;
-
-        let ring_size_w = self.current_size_w * spread * (1.0 + self.index as f32 * 0.3);
-        let ring_size_h = self.current_size_h * spread * (1.0 + self.index as f32 * 0.3);
+        let (ring_size_w, ring_size_h) = self.ring_size();
         let ring_color = self.color;
         let ring_rotation = self.rotation * (self.index as f32 + 1.0) * 0.15;
 
@@ -307,10 +304,11 @@ impl AnimatedObject for PulseBackgroundAnimator {
     }
 
     fn shape(&self) -> ObjectShape {
-        ObjectShape::Rect(Rect::from_w_h(self.current_size_w, self.current_size_h))
+        let (ring_size_w, ring_size_h) = self.ring_size();
+        ObjectShape::Rect(Rect::from_w_h(ring_size_w, ring_size_h))
     }
 
-    fn color(&self) -> Rgba8 {
+    fn color(&self) -> Srgba {
         self.color
     }
 }

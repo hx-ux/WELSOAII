@@ -1,11 +1,10 @@
-use nannou_egui::egui::{Color32, Rounding};
+use nannou::prelude::egui::{Color32, CornerRadius};
 
 pub mod custom_colors {
     use super::Color32;
 
     #[allow(dead_code)]
     pub const SURFACE: Color32 = Color32::from_rgb(46, 46, 56);
-
 
     // Widget states — charcoal-based
     pub const BUTTON_NORMAL: Color32 = Color32::from_rgb(50, 50, 50);
@@ -30,28 +29,28 @@ pub mod custom_colors {
     pub const SELECTION_BG: Color32 = Color32::from_rgb(100, 40, 0);
     pub const SELECTION_STROKE: Color32 = Color32::from_rgb(255, 102, 0);
 
-    pub const SLIDER_GHOST_FILL: Color32 = Color32::from_rgba_premultiplied(200, 200, 200, 100);
+    pub const SLIDER_GHOST_FILL: Color32 = Color32::from_rgba_unmultiplied_const(200, 200, 200, 100);
 }
 
 pub mod custom_rounding {
-    use super::Rounding;
+    use super::CornerRadius;
 
-    pub fn active() -> Rounding {
-        Rounding::same(4.0)
+    pub fn active() -> CornerRadius {
+        CornerRadius::same(4)
     }
-    pub fn inactive() -> Rounding {
-        Rounding::same(4.0)
+    pub fn inactive() -> CornerRadius {
+        CornerRadius::same(4)
     }
-    pub fn hovered() -> Rounding {
-        Rounding::same(4.0)
+    pub fn hovered() -> CornerRadius {
+        CornerRadius::same(4)
     }
-    pub fn open() -> Rounding {
-        Rounding::same(4.0)
+    pub fn open() -> CornerRadius {
+        CornerRadius::same(4)
     }
-    pub fn noninteractive() -> Rounding {
-        Rounding::same(4.0)
+    pub fn noninteractive() -> CornerRadius {
+        CornerRadius::same(4)
     }
-    pub fn window() -> Rounding {
-        Rounding::same(5.0)
+    pub fn window() -> CornerRadius {
+        CornerRadius::same(5)
     }
 }

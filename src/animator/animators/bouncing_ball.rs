@@ -6,9 +6,7 @@ use crate::{
     timecode::TimeCode,
 };
 
-use anyhow::Ok;
 use nannou::prelude::*;
-use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 
 fn default_rect() -> Rect {
@@ -144,10 +142,6 @@ impl AnimatorSettings for BouncingBallSettings {
         params
     }
 
-    fn snapshot(&mut self) -> anyhow::Result<()> {
-        Ok(())
-    }
-
     fn set_visibility(&mut self, state: bool) {
         self.visible = state;
         self.hot_update();
@@ -163,7 +157,7 @@ pub struct BouncingBallAnimator {
     pub position: Vec2,
     pub velocity: Vec2,
     pub radius: f32,
-    pub color: Rgba8,
+    pub color: Srgba,
     pub index: usize,
     visible: bool,
 }
@@ -198,7 +192,6 @@ impl BouncingBallAnimator {
         }
     }
 }
-
 
 impl AnimatedObject for BouncingBallAnimator {
     fn update(&mut self, win_rect: &Rect, timecode: &TimeCode) {
@@ -239,7 +232,7 @@ impl AnimatedObject for BouncingBallAnimator {
         ObjectShape::Circle(self.position, self.radius)
     }
 
-    fn color(&self) -> Rgba8 {
+    fn color(&self) -> Srgba {
         self.color
     }
 }

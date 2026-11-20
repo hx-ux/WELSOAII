@@ -1,5 +1,5 @@
 use egui_plot::{Line, Plot, PlotPoints, Points};
-use nannou_egui::egui::{self, Color32};
+use nannou::prelude::egui::{self, Color32};
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter};
@@ -104,7 +104,7 @@ impl Modulator for WaveModulator {
         let base_cycles = current_beat * self.freq_mul;
 
         ui.vertical(|ui| {
-            egui::ComboBox::from_id_source(format!("Wave {}", self.index))
+            egui::ComboBox::from_id_salt(format!("Wave {}", self.index))
                 .selected_text(self.wave.to_string())
                 .show_ui(ui, |ui| {
                     for w in LfoWave::iter() {
@@ -124,17 +124,20 @@ impl Modulator for WaveModulator {
                 .collect();
 
             // Floating line
-            let line = Line::new(PlotPoints::from(samples))
+            let line = Line::new("wave", PlotPoints::from(samples))
                 .width(1.5_f32)
                 .color(accent);
 
             // Point
             let handle = {
                 let peak_t = 0.5f32.powf(1.0 / (2.0f32).powf(self.skew.value));
-                Points::new(PlotPoints::from(vec![[
-                    peak_t as f64,
-                    self.preview(base_cycles + peak_t) as f64,
-                ]]))
+                Points::new(
+                    "peak",
+                    PlotPoints::from(vec![[
+                        peak_t as f64,
+                        self.preview(base_cycles + peak_t) as f64,
+                    ]]),
+                )
                 .radius(4.0_f32)
                 .color(accent)
             };
@@ -192,4 +195,3 @@ impl Modulator for WaveModulator {
         1.0 + (g - 1.0) * amount
     }
 }
-

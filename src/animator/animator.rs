@@ -14,8 +14,8 @@ use crate::{
     ui::icons::{ICON_EYE_ACTIVE, ICON_EYE_DISABLED},
     utils::{AppLogger, Severity},
 };
+use nannou::prelude::egui::Color32;
 use nannou::prelude::*;
-use nannou_egui::egui::{self, Color32};
 use strum::IntoEnumIterator;
 
 pub struct Animator {
@@ -192,7 +192,7 @@ impl Animator {
                         .clicked()
                     {
                         self.add_animator(win_rect, anim_type);
-                        ui.close_menu();
+                        ui.close();
                     }
                 }
             });
@@ -216,7 +216,7 @@ impl Animator {
                     let (rect, _) =
                         ui.allocate_exact_size(egui::vec2(3.0, 14.0), egui::Sense::hover());
                     ui.painter()
-                        .rect_filled(rect, egui::Rounding::ZERO, indicator_color);
+                        .rect_filled(rect, egui::CornerRadius::ZERO, indicator_color);
 
                     let label =
                         egui::RichText::new(anim_name.to_uppercase()).color(if is_selected {

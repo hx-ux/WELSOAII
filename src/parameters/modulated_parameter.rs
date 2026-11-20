@@ -5,7 +5,7 @@ use crate::{
         icons::{ICON_MOD_CONNECTED, ICON_MOD_NOT_CONNECTED, ICON_REFRESH},
     },
 };
-use nannou_egui::egui;
+use nannou::prelude::egui;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
@@ -125,18 +125,18 @@ impl ModulatedParam {
                     ui.add(
                         egui::DragValue::new(&mut self.mod_amount)
                             .speed(0.1)
-                            .clamp_range(0.000..=1.000),
+                            .range(0.000..=1.000),
                     );
 
                     ui.label("LFO:");
                     ui.horizontal(|ui| {
                         ui.separator();
-                        egui::menu::bar(ui, |ui| {
+                        egui::MenuBar::new().ui(ui, |ui| {
                             ui.menu_button(self.modulator_index.to_string(), |ui| {
                                 for index in 0..modulators.len() {
                                     if ui.button(index.to_string()).clicked() {
                                         self.modulator_index = index;
-                                        ui.close_menu();
+                                        ui.close();
                                     }
                                 }
                             });
@@ -149,4 +149,3 @@ impl ModulatedParam {
         changed
     }
 }
-

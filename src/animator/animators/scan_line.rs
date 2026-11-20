@@ -8,9 +8,7 @@ use crate::modulator::Modulator;
 use crate::parameters::ConstantParam;
 use crate::parameters::ModulatedParam;
 use crate::timecode::TimeCode;
-use anyhow::Ok;
 use nannou::prelude::*;
-use nannou_egui::egui;
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 
@@ -140,6 +138,7 @@ impl AnimatorSettings for ScanLineSettings {
     }
 
     fn update(&mut self, win_rect: &Rect, timecode: &TimeCode) {
+        self.set_dimension(win_rect);
         for g in self.animator.iter_mut() {
             g.update(win_rect, timecode);
         }
@@ -171,10 +170,6 @@ impl AnimatorSettings for ScanLineSettings {
         params
     }
 
-    fn snapshot(&mut self) -> anyhow::Result<()> {
-        Ok(())
-    }
-
     fn set_visibility(&mut self, state: bool) {
         self.visible = state;
         self.hot_update();
@@ -188,7 +183,7 @@ impl AnimatorSettings for ScanLineSettings {
 pub struct ScanLineAnimator {
     mode: ScanLineModes,
     pub speed: f32,
-    pub color: Rgba8,
+    pub color: Srgba,
     position: Vec2,
     height: f32,
     pub width: f32,
@@ -228,6 +223,7 @@ impl ScanLineAnimator {
 
 impl AnimatedObject for ScanLineAnimator {
     fn update(&mut self, win_rect: &Rect, timecode: &TimeCode) {
+        self.height = win_rect.h();
         self.time += timecode.get_delta_time();
         self.position.x += self.speed * timecode.get_delta_time();
 
@@ -278,7 +274,7 @@ impl AnimatedObject for ScanLineAnimator {
         ))
     }
 
-    fn color(&self) -> Rgba8 {
+    fn color(&self) -> Srgba {
         self.color
     }
 }

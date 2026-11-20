@@ -3,7 +3,7 @@ use crate::{
     timecode::link_state::LinkState,
     ui::icons::{ICON_PAUSE, ICON_PLAY, ICON_STOP},
 };
-use nannou_egui::egui;
+use nannou::prelude::egui;
 use serde::{Deserialize, Serialize};
 
 /// Master Clock for syncing all effects
@@ -88,14 +88,13 @@ impl TimeCode {
         self.abl_sync_state.capture_app_state();
 
         let time = self.abl_sync_state.link.clock_micros();
-        let beats = self
-            .abl_sync_state
-            .session_state
-            .beat_at_time(time, self.abl_sync_state.quantum);
+        if let Ok(session_state) = self.abl_sync_state.session_state.get_mut() {
+            let beats = session_state.beat_at_time(time, self.abl_sync_state.quantum);
 
-        self.total_beats = beats as f32;
-        self.tempo.value = self.abl_sync_state.session_state.tempo() as f32;
-        self.current_time = (self.total_beats * 60.0) / self.tempo.value;
+            self.total_beats = beats as f32;
+            self.tempo.value = session_state.tempo() as f32;
+            self.current_time = (self.total_beats * 60.0) / self.tempo.value;
+        }
     }
 
     #[allow(dead_code)]
@@ -183,6 +182,5 @@ impl TimeCode {
                 self.start_link();
             }
         }
-        self.abl_sync_state.capture_app_state();
     }
 }
