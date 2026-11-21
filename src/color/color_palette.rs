@@ -24,6 +24,14 @@ pub enum ColorPalette {
     Ice,
     #[strum(to_string = "Horizon")]
     PastelHorizon,
+    #[strum(to_string = "Playa")]
+    Playa,
+    #[strum(to_string = "Aggro")]
+    Aggro,
+    #[strum(to_string = "Vaporwave")]
+    Vaporwave,
+    #[strum(to_string = "Brutalist")]
+    Brutalist,
 }
 
 impl ColorPalette {
@@ -150,6 +158,64 @@ impl ColorPalette {
                         Srgba::rgba_u8(255, 155, 182, 255),
                         Srgba::rgba_u8(255, 204, 220, 255),
                         Srgba::rgba_u8(255, 234, 246, 255),
+                    ]
+                })
+            }
+            ColorPalette::Playa => {
+                static PLAYA: OnceLock<Vec<Srgba>> = OnceLock::new();
+                PLAYA.get_or_init(|| {
+                    vec![
+                        Srgba::rgba_u8(255, 0, 128, 255),  // Acid Magenta
+                        Srgba::rgba_u8(255, 102, 0, 255),  // Burning Flame Orange
+                        Srgba::rgba_u8(255, 230, 0, 255),  // Solar Gold
+                        Srgba::rgba_u8(0, 255, 180, 255),  // Bioluminescent Mint
+                        Srgba::rgba_u8(0, 210, 255, 255),  // Laser Cyan
+                        Srgba::rgba_u8(138, 43, 255, 255), // Ultraviolet
+                        Srgba::rgba_u8(255, 42, 255, 255), // Electric Fuchsia
+                        Srgba::rgba_u8(180, 255, 0, 255),  // Psychedelic Lime
+                    ]
+                })
+            }
+            ColorPalette::Aggro => {
+                static AGGRO: OnceLock<Vec<Srgba>> = OnceLock::new();
+                AGGRO.get_or_init(|| {
+                    vec![
+                        Srgba::rgba_u8(255, 0, 34, 255),    // Laser Crimson
+                        Srgba::rgba_u8(255, 56, 0, 255),    // Riot Flame Orange
+                        Srgba::rgba_u8(255, 238, 0, 255),   // Hazard Strobe Yellow
+                        Srgba::rgba_u8(150, 0, 18, 255),    // Arterial Blood Red
+                        Srgba::rgba_u8(255, 0, 96, 255),    // Violator Magenta
+                        Srgba::rgba_u8(196, 255, 0, 255),   // Venom Acid Chartreuse
+                        Srgba::rgba_u8(255, 245, 245, 255), // White-Hot Arc
+                    ]
+                })
+            }
+            ColorPalette::Vaporwave => {
+                static VAPORWAVE: OnceLock<Vec<Srgba>> = OnceLock::new();
+                VAPORWAVE.get_or_init(|| {
+                    vec![
+                        Srgba::rgba_u8(255, 113, 206, 255), // Neon Bubblegum Pink
+                        Srgba::rgba_u8(1, 205, 254, 255),   // Cyber Mall Cyan
+                        Srgba::rgba_u8(5, 255, 161, 255),   // Seafoam VHS Mint
+                        Srgba::rgba_u8(185, 103, 255, 255), // Heliotrope Synth Purple
+                        Srgba::rgba_u8(255, 251, 150, 255), // Sunset Grid Cream-Yellow
+                        Srgba::rgba_u8(255, 108, 149, 255), // Outrun Coral Rose
+                        Srgba::rgba_u8(98, 70, 234, 255),   // CRT Twilight Indigo
+                    ]
+                })
+            }
+
+            ColorPalette::Brutalist => {
+                static BRUTALIST: OnceLock<Vec<Srgba>> = OnceLock::new();
+                BRUTALIST.get_or_init(|| {
+                    vec![
+                        Srgba::rgba_u8(235, 235, 230, 255), // Stark Chalk Concrete
+                        Srgba::rgba_u8(148, 152, 156, 255), // Raw Béton Brut Slab
+                        Srgba::rgba_u8(68, 72, 76, 255),    // Cast Iron Charcoal
+                        Srgba::rgba_u8(255, 69, 0, 255),    // International Safety Orange
+                        Srgba::rgba_u8(212, 208, 196, 255), // Weathered Limestone
+                        Srgba::rgba_u8(255, 212, 0, 255),   // Industrial Warning Yellow
+                        Srgba::rgba_u8(0, 87, 255, 255),    // Structural Blueprint Cobalt
                     ]
                 })
             }
