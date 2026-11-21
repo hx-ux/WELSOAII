@@ -30,6 +30,8 @@ pub enum AnimationType {
     WaveLines = 3,
     #[strum(to_string = "Quantum Tunnel")]
     QuantumTunnel = 4,
+    #[strum(to_string = "Acid Mirage")]
+    AcidMirage = 5,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize, Deserialize, Default, Display, EnumIter)]
@@ -59,4 +61,15 @@ pub enum PulseShape {
     Circle,
     #[strum(to_string = "Diamond")]
     Diamond,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize, Deserialize, Default, Display, EnumIter)]
+pub enum MirageMode {
+    #[default]
+    #[strum(to_string = "Kundalini")]
+    Kundalini,
+    #[strum(to_string = "Vortex")]
+    HypnoVortex,
+    #[strum(to_string = "Attractor Web")]
+    AttractorWeb,
 }

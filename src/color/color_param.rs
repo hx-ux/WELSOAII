@@ -33,6 +33,17 @@ impl Default for ColorParam {
 }
 
 impl ColorParam {
+    pub fn new_from_palette(palette: ColorPalette) -> Self {
+        Self {
+            col_r: ModulatedParam::new(255.0, 0.0, 255.0, "Red", "red"),
+            col_g: ModulatedParam::new(64.0, 0.0, 255.0, "Green", "green"),
+            col_b: ModulatedParam::new(220.0, 0.0, 255.0, "Blue", "blue"),
+            col_a: ModulatedParam::new(255.0, 0.0, 255.0, "Alpha", "alpha"),
+            mode: ColorMode::Palette,
+            palette,
+        }
+    }
+
     pub fn ui(&mut self, ui: &mut egui::Ui, mods: &[Box<dyn Modulator>]) -> bool {
         let mut changed = false;
 

@@ -3,9 +3,9 @@ use crate::{
         AnimatorSettings, ObjectShape,
         animation_type::AnimationType,
         animators::{
-            bouncing_ball::BouncingBallSettings, pulse_background::PulseBackgroundSettings,
-            quantum_tunnel::QuantumTunnelSettings, scan_line::ScanLineSettings,
-            wave_lines::WaveLinesSettings,
+            acid_mirage::AcidMirageSettings, bouncing_ball::BouncingBallSettings,
+            pulse_background::PulseBackgroundSettings, quantum_tunnel::QuantumTunnelSettings,
+            scan_line::ScanLineSettings, wave_lines::WaveLinesSettings,
         },
     },
     modulator::{Modulator, wave_modulator::WaveModulator},
@@ -54,6 +54,7 @@ impl Animator {
             AnimationType::ScanLine => Box::new(ScanLineSettings::new(win_rect)),
             AnimationType::WaveLines => Box::new(WaveLinesSettings::new(win_rect)),
             AnimationType::QuantumTunnel => Box::new(QuantumTunnelSettings::new(win_rect)),
+            AnimationType::AcidMirage => Box::new(AcidMirageSettings::new(win_rect)),
         };
 
         animator.init();
