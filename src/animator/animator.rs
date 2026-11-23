@@ -104,7 +104,7 @@ impl Animator {
             animations.update(win_rect, &self.timecode);
         }
 
-        let trail_val = self.trail_persistence.value().clamp(0.0, 0.97);
+        let trail_val: f32 = self.trail_persistence.value().clamp(0.0, 0.97);
         if self.force_clear_frames > 0 {
             self.force_clear_frames -= 1;
             self.last_retention = 0.0;
@@ -263,8 +263,6 @@ impl Animator {
                 let is_selected = self.current_animation_index == Some(index);
                 let anim_name = self.active_animations[index].animation_type().to_string();
                 let is_visible = self.active_animations[index].get_visibility();
-                let blend_badge = self.active_animations[index].get_blend_mode().short_label();
-                let poly_mode = self.active_animations[index].get_polygon_mode();
 
                 ui.horizontal(|ui| {
                     let indicator_color = if is_selected {
@@ -278,34 +276,12 @@ impl Animator {
                     ui.painter()
                         .rect_filled(rect, egui::CornerRadius::ZERO, indicator_color);
 
-                    let badge_suffix = if poly_mode.is_wireframe() {
-                        format!(" [{}:{}]", blend_badge, poly_mode.short_label())
-                    } else {
-                        format!(" [{}]", blend_badge)
-                    };
-
-                    let label = egui::RichText::new(format!(
-                        "{}{}",
-                        anim_name.to_uppercase(),
-                        badge_suffix
-                    ))
-                    .color(if is_selected {
-                        egui::Color32::from_rgb(255, 102, 0)
-                    } else {
-                        egui::Color32::from_gray(150)
-                    });
-
-                    if ui.button(label).clicked() {
-                        self.current_animation_index = Some(index);
-                    }
-
                     if index > 0
                         && ui
                             .add(
                                 egui::Button::new(egui::RichText::new(ICON_CARET_UP))
                                     .min_size(egui::vec2(12.0, 12.0)),
                             )
-                            .on_hover_text("Move layer earlier in blend order")
                             .clicked()
                     {
                         swap_indices = Some((index, index - 1));
@@ -323,15 +299,25 @@ impl Animator {
                         swap_indices = Some((index, index + 1));
                     }
 
-                    let eye_icon = if is_visible {
-                        ICON_EYE_ACTIVE
-                    } else {
-                        ICON_EYE_DISABLED
-                    };
+                    let label = egui::RichText::new(format!("{}", anim_name.to_uppercase(),))
+                        .color(if is_selected {
+                            egui::Color32::from_rgb(255, 102, 0)
+                        } else {
+                            egui::Color32::from_gray(150)
+                        });
+
+                    if ui.button(label).clicked() {
+                        self.current_animation_index = Some(index);
+                    }
+
                     if ui
                         .add(
-                            egui::Button::new(egui::RichText::new(eye_icon))
-                                .min_size(egui::vec2(12.0, 12.0)),
+                            egui::Button::new(egui::RichText::new(if is_visible {
+                                ICON_EYE_ACTIVE
+                            } else {
+                                ICON_EYE_DISABLED
+                            }))
+                            .min_size(egui::vec2(12.0, 12.0)),
                         )
                         .clicked()
                     {

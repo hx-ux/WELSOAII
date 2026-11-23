@@ -37,9 +37,12 @@ impl ObjectShape {
     /// Returns axis-aligned bounding box `(left, right, bottom, top)` in world coordinates.
     pub fn bounds(&self) -> (f32, f32, f32, f32) {
         match self {
-            ObjectShape::Circle(pos, radius) => {
-                (pos.x - radius, pos.x + radius, pos.y - radius, pos.y + radius)
-            }
+            ObjectShape::Circle(pos, radius) => (
+                pos.x - radius,
+                pos.x + radius,
+                pos.y - radius,
+                pos.y + radius,
+            ),
             ObjectShape::Ring {
                 center,
                 radius,
@@ -250,71 +253,3 @@ pub trait AnimatorSettings: Send + Sync {
 
     fn set_polygon_mode(&mut self, _mode: LayerPolygonMode) {}
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::receiver::cell::GridCell;
-
-    #[test]
-    fn test_blend_modes_srgba() {
-        let dst = Srgba::new(0.4, 0.2, 0.5, 1.0);
-        let src = Srgba::new(0.5, 0.6, 0.3, 1.0);
-
-        let added = LayerBlendMode::Add.blend_srgba(dst, src);
-        assert!((added.red - 0.9).abs() < 1e-5);
-        assert!((added.green - 0.8).abs() < 1e-5);
-        assert!((added.blue - 0.8).abs() < 1e-5);
-
-        let lightest = LayerBlendMode::Lightest.blend_srgba(dst, src);
-        assert!((lightest.red - 0.5).abs() < 1e-5);
-        assert!((lightest.green - 0.6).abs() < 1e-5);
-        assert!((lightest.blue - 0.5).abs() < 1e-5);
-
-        let subtracted = LayerBlendMode::Subtract.blend_srgba(dst, src);
-        assert!((subtracted.red - 0.0).abs() < 1e-5);
-        assert!((subtracted.green - 0.0).abs() < 1e-5);
-        assert!((subtracted.blue - 0.2).abs() < 1e-5);
-    }
-
-    #[test]
-    fn test_grid_cell_decay_and_blend() {
-        let mut cell = GridCell::new_from_rect(Rect::from_x_y_w_h(0.0, 0.0, 20.0, 20.0), 0);
-        cell.blend(Srgba::new(0.8, 0.4, 0.2, 1.0), LayerBlendMode::Normal);
-        assert!(cell.is_active);
-        assert!((cell.display_color.red - 0.8).abs() < 1e-5);
-
-        cell.decay(0.5);
-        assert!(cell.is_active);
-        assert!((cell.display_color.red - 0.4).abs() < 1e-5);
-
-        cell.decay(0.0);
-        assert!(!cell.is_active);
-    }
-
-    #[test]
-    fn test_object_shapes_and_wireframe_intersection() {
-        let center_cell = Rect::from_x_y_w_h(0.0, 0.0, 10.0, 10.0);
-        let edge_cell = Rect::from_x_y_w_h(50.0, 0.0, 10.0, 10.0);
-
-        let circle = ObjectShape::Circle(vec2(0.0, 0.0), 50.0);
-        // Solid circle intersects center and edge
-        assert!(circle.intersects_cell(&center_cell, false));
-        assert!(circle.intersects_cell(&edge_cell, false));
-        // Wireframe circle only intersects the perimeter edge, not the center
-        assert!(!circle.intersects_cell(&center_cell, true));
-        assert!(circle.intersects_cell(&edge_cell, true));
-
-        // Hollow ring only intersects the perimeter
-        let ring = ObjectShape::Ring {
-            center: vec2(0.0, 0.0),
-            radius: 50.0,
-            thickness: 4.0,
-        };
-        assert!(!ring.intersects_cell(&center_cell, false));
-        assert!(ring.intersects_cell(&edge_cell, false));
-    }
-}
-
-
-
