@@ -1,9 +1,10 @@
 use crate::{
     animator::{
-        AnimatedObject, AnimatorSettings, ObjectShape,
+        AnimatedObject, AnimatorSettings, LayerTrailState, ObjectShape,
         animation_type::{
             AnimationType, LayerBlendMode, LayerPolygonMode, PulseModes, PulseShape,
         },
+        default_trail_persistence,
     },
     color::ColorParam,
     modulator::Modulator,
@@ -24,8 +25,12 @@ pub struct PulseBackgroundSettings {
     pub limit: ModulatedParam,
     pub rotation_speed: ModulatedParam,
     pub ring_spread: ModulatedParam,
+    #[serde(default = "default_trail_persistence")]
+    pub trail_persistence: ModulatedParam,
     #[serde(skip)]
     pub animator: Vec<PulseBackgroundAnimator>,
+    #[serde(skip)]
+    pub trails: LayerTrailState,
     pub visible: bool,
     #[serde(default)]
     pub blend_mode: LayerBlendMode,
@@ -44,7 +49,9 @@ impl PulseBackgroundSettings {
             ring_count: ConstantParam::new(3, 1, 12, "Ring Count", "ring_count"),
             rotation_speed: ModulatedParam::new(1.0, 0.0, 6.0, "Rotation", "pulse_rotation"),
             ring_spread: ModulatedParam::new(1.0, 0.3, 3.0, "Ring Spread", "pulse_ring_spread"),
+            trail_persistence: default_trail_persistence(),
             animator: Vec::new(),
+            trails: LayerTrailState::default(),
             visible: true,
             blend_mode: LayerBlendMode::default(),
             polygon_mode: LayerPolygonMode::default(),
@@ -93,6 +100,10 @@ impl AnimatorSettings for PulseBackgroundSettings {
         }
 
         if self.rotation_speed.slider_ui(ui, modulators) {
+            self.hot_update();
+        }
+
+        if self.trail_persistence.slider_ui(ui, modulators) {
             self.hot_update();
         }
 
@@ -162,6 +173,7 @@ impl AnimatorSettings for PulseBackgroundSettings {
             &mut self.limit,
             &mut self.rotation_speed,
             &mut self.ring_spread,
+            &mut self.trail_persistence,
         ];
 
         params.extend(self.color.modulated_params_mut());
@@ -195,6 +207,18 @@ impl AnimatorSettings for PulseBackgroundSettings {
 
     fn set_polygon_mode(&mut self, mode: LayerPolygonMode) {
         self.polygon_mode = mode;
+    }
+
+    fn get_trail_persistence(&self) -> f32 {
+        self.trail_persistence.value()
+    }
+
+    fn trails(&self) -> &LayerTrailState {
+        &self.trails
+    }
+
+    fn trails_mut(&mut self) -> &mut LayerTrailState {
+        &mut self.trails
     }
 }
 

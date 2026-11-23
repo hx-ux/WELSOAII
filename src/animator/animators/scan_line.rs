@@ -1,10 +1,12 @@
 use crate::animator::AnimatedObject;
 use crate::animator::AnimatorSettings;
+use crate::animator::LayerTrailState;
 use crate::animator::ObjectShape;
 use crate::animator::animation_type::AnimationType;
 use crate::animator::animation_type::LayerBlendMode;
 use crate::animator::animation_type::LayerPolygonMode;
 use crate::animator::animation_type::ScanLineModes;
+use crate::animator::default_trail_persistence;
 use crate::color::ColorParam;
 use crate::modulator::Modulator;
 use crate::parameters::ConstantParam;
@@ -23,6 +25,8 @@ pub struct ScanLineSettings {
     pub wobble_amp: ModulatedParam,
     pub wobble_freq: ModulatedParam,
     pub tilt: ModulatedParam,
+    #[serde(default = "default_trail_persistence")]
+    pub trail_persistence: ModulatedParam,
     color: ColorParam,
     #[serde(skip)]
     height: f32,
@@ -30,6 +34,8 @@ pub struct ScanLineSettings {
     begin_pos: f32,
     #[serde(skip)]
     pub animator: Vec<ScanLineAnimator>,
+    #[serde(skip)]
+    pub trails: LayerTrailState,
     visible: bool,
     #[serde(default)]
     pub blend_mode: LayerBlendMode,
@@ -47,10 +53,12 @@ impl ScanLineSettings {
             wobble_amp: ModulatedParam::new(0.0, 0.0, 300.0, "Wobble Amp", "scan_wobble_amp"),
             wobble_freq: ModulatedParam::new(2.0, 0.1, 20.0, "Wobble Freq", "scan_wobble_freq"),
             tilt: ModulatedParam::new(0.0, -1.57, 1.57, "Tilt", "scan_tilt"),
+            trail_persistence: default_trail_persistence(),
             color: ColorParam::default(),
             height: win_rect.h(),
             begin_pos: win_rect.left(),
             animator: vec![],
+            trails: LayerTrailState::default(),
             visible: true,
             blend_mode: LayerBlendMode::default(),
             polygon_mode: LayerPolygonMode::default(),
@@ -81,6 +89,10 @@ impl AnimatorSettings for ScanLineSettings {
         }
 
         if self.tilt.slider_ui(ui, modulators) {
+            self.hot_update();
+        }
+
+        if self.trail_persistence.slider_ui(ui, modulators) {
             self.hot_update();
         }
 
@@ -173,6 +185,7 @@ impl AnimatorSettings for ScanLineSettings {
             &mut self.wobble_amp,
             &mut self.wobble_freq,
             &mut self.tilt,
+            &mut self.trail_persistence,
         ];
         params.extend(self.color.modulated_params_mut());
         params
@@ -201,6 +214,18 @@ impl AnimatorSettings for ScanLineSettings {
 
     fn set_polygon_mode(&mut self, mode: LayerPolygonMode) {
         self.polygon_mode = mode;
+    }
+
+    fn get_trail_persistence(&self) -> f32 {
+        self.trail_persistence.value()
+    }
+
+    fn trails(&self) -> &LayerTrailState {
+        &self.trails
+    }
+
+    fn trails_mut(&mut self) -> &mut LayerTrailState {
+        &mut self.trails
     }
 }
 

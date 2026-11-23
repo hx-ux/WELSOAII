@@ -2,10 +2,12 @@ use crate::{
     animator::animation_type::{AnimationType, LayerBlendMode, LayerPolygonMode},
     modulator::Modulator,
     parameters::ModulatedParam,
+    receiver::cell::GridCell,
     timecode::TimeCode,
 };
 use anyhow::Result;
 use nannou::prelude::*;
+use std::collections::VecDeque;
 
 pub mod animation_type;
 #[allow(clippy::module_inception)]
@@ -14,6 +16,17 @@ mod animators;
 
 pub use animator::Animator;
 
+pub fn default_trail_persistence() -> ModulatedParam {
+    ModulatedParam::new(
+        0.0,
+        0.0,
+        0.97,
+        "Trail Persistence",
+        "trail_persistence",
+    )
+}
+
+#[derive(Clone)]
 pub enum ObjectShape {
     Circle(Vec2, f32),
     Ring {
@@ -181,6 +194,138 @@ impl ObjectShape {
             }
         }
     }
+
+    pub fn draw(&self, draw: &Draw, color: Srgba) {
+        match self {
+            ObjectShape::Circle(pos, radius) => {
+                draw.ellipse().xy(*pos).radius(*radius).color(color);
+            }
+            ObjectShape::Ring {
+                center,
+                radius,
+                thickness,
+            } => {
+                draw.ellipse()
+                    .xy(*center)
+                    .radius(*radius)
+                    .no_fill()
+                    .stroke_weight(*thickness)
+                    .stroke_color(color);
+            }
+            ObjectShape::Rect(r) => {
+                draw.rect().xy(r.xy()).wh(r.wh()).color(color);
+            }
+            ObjectShape::RotatedRect {
+                center,
+                size,
+                angle,
+            } => {
+                draw.rect()
+                    .xy(*center)
+                    .wh(*size)
+                    .rotate(*angle)
+                    .color(color);
+            }
+            ObjectShape::Polyline { points, thickness } => {
+                if points.len() >= 2 {
+                    draw.polyline()
+                        .weight(*thickness)
+                        .color(color)
+                        .points(points.iter().copied());
+                }
+            }
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct TrailObject {
+    pub shape: ObjectShape,
+    pub color: Srgba,
+}
+
+#[derive(Default)]
+pub struct LayerTrailState {
+    pub frames: VecDeque<(Vec<TrailObject>, f32)>,
+    pub grid_cells: Vec<GridCell>,
+}
+
+const MAX_TRAIL_FRAMES: usize = 36;
+
+impl LayerTrailState {
+    pub fn clear(&mut self) {
+        self.frames.clear();
+        for cell in self.grid_cells.iter_mut() {
+            cell.reset();
+        }
+    }
+
+    pub fn step_screen_trails(&mut self, current_objects: Vec<TrailObject>, retention: f32) {
+        if retention <= 0.001 {
+            self.frames.clear();
+            return;
+        }
+
+        if !current_objects.is_empty() {
+            self.frames.push_back((current_objects, 1.0));
+        }
+
+        for (_, weight) in self.frames.iter_mut() {
+            *weight *= retention;
+        }
+
+        while self.frames.front().is_some_and(|(_, w)| *w < 0.02) {
+            self.frames.pop_front();
+        }
+
+        while self.frames.len() > MAX_TRAIL_FRAMES {
+            self.frames.pop_front();
+        }
+    }
+
+    pub fn prepare_grid_cells(&mut self, template_cells: &[GridCell], retention: f32) {
+        if self.grid_cells.len() != template_cells.len() {
+            self.grid_cells = template_cells
+                .iter()
+                .map(|c| GridCell::new_from_rect(c.rect, c.pos))
+                .collect();
+        }
+
+        if retention <= 0.001 {
+            for cell in self.grid_cells.iter_mut() {
+                cell.reset();
+            }
+        } else {
+            for cell in self.grid_cells.iter_mut() {
+                cell.decay(retention);
+            }
+        }
+    }
+
+    pub fn draw(&self, draw: &Draw, blend_mode: LayerBlendMode) {
+        for (objects, weight) in self.frames.iter() {
+            for obj in objects {
+                let color = fade_trail_color(obj.color, *weight, blend_mode);
+                obj.shape.draw(draw, color);
+            }
+        }
+    }
+}
+
+fn fade_trail_color(color: Srgba, weight: f32, blend_mode: LayerBlendMode) -> Srgba {
+    let w = weight.clamp(0.0, 1.0);
+    let a = (color.alpha * w).clamp(0.0, 1.0);
+    match blend_mode {
+        LayerBlendMode::Normal | LayerBlendMode::Add | LayerBlendMode::Subtract => {
+            Srgba::new(color.red, color.green, color.blue, a)
+        }
+        LayerBlendMode::Lightest | LayerBlendMode::Multiply => {
+            Srgba::new(color.red * a, color.green * a, color.blue * a, a)
+        }
+        LayerBlendMode::Screen => {
+            Srgba::new(color.red * w, color.green * w, color.blue * w, color.alpha)
+        }
+    }
 }
 
 fn point_segment_dist_sq(p: Vec2, a: Point2, b: Point2) -> f32 {
@@ -252,4 +397,33 @@ pub trait AnimatorSettings: Send + Sync {
     }
 
     fn set_polygon_mode(&mut self, _mode: LayerPolygonMode) {}
+
+    fn get_trail_persistence(&self) -> f32;
+    fn trails(&self) -> &LayerTrailState;
+    fn trails_mut(&mut self) -> &mut LayerTrailState;
+
+    fn step_trails(&mut self, retention: f32, template_cells: &[GridCell]) {
+        let current_objects: Vec<TrailObject> = if retention > 0.001 && self.get_visibility() {
+            self.get_objects()
+                .into_iter()
+                .map(|obj| TrailObject {
+                    shape: obj.shape(),
+                    color: obj.color(),
+                })
+                .collect()
+        } else {
+            Vec::new()
+        };
+        let trails = self.trails_mut();
+        trails.step_screen_trails(current_objects, retention);
+        trails.prepare_grid_cells(template_cells, retention);
+    }
+
+    fn draw_trails(&self, draw: &Draw) {
+        self.trails().draw(draw, self.get_blend_mode());
+    }
+
+    fn clear_trails(&mut self) {
+        self.trails_mut().clear();
+    }
 }

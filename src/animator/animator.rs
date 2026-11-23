@@ -9,7 +9,6 @@ use crate::{
         },
     },
     modulator::{Modulator, wave_modulator::WaveModulator},
-    parameters::ModulatedParam,
     receiver::ReceiverGrid,
     timecode::TimeCode,
     ui::icons::{ICON_CARET_DOWN, ICON_CARET_UP, ICON_CLEAR, ICON_EYE_ACTIVE, ICON_EYE_DISABLED},
@@ -25,8 +24,6 @@ pub struct Animator {
     pub modulators: Vec<Box<dyn Modulator>>,
     pub active_animations: Vec<Box<dyn AnimatorSettings>>,
     pub current_animation_index: Option<usize>,
-    pub trail_persistence: ModulatedParam,
-    pub last_retention: f32,
     pub force_clear_frames: u8,
     pub logger: AppLogger,
 }
@@ -47,14 +44,6 @@ impl Animator {
             grid,
             active_animations,
             current_animation_index: Some(0),
-            trail_persistence: ModulatedParam::new(
-                0.0,
-                0.0,
-                0.97,
-                "Trail Persistence",
-                "trail_persistence",
-            ),
-            last_retention: 0.0,
             force_clear_frames: 2,
             logger,
         }
@@ -87,6 +76,9 @@ impl Animator {
 
     pub fn request_clear(&mut self) {
         self.force_clear_frames = self.force_clear_frames.max(2);
+        for ani in self.active_animations.iter_mut() {
+            ani.clear_trails();
+        }
         for cell in self.grid.cells.iter_mut() {
             cell.reset();
         }
@@ -100,31 +92,30 @@ impl Animator {
             self.force_clear_frames = self.force_clear_frames.max(2);
         }
 
-        for animations in self.active_animations.iter_mut() {
-            animations.update(win_rect, &self.timecode);
-        }
-
-        let trail_val: f32 = self.trail_persistence.value().clamp(0.0, 0.97);
-        if self.force_clear_frames > 0 {
+        let force_clear = if self.force_clear_frames > 0 {
             self.force_clear_frames -= 1;
-            self.last_retention = 0.0;
-            for cell in self.grid.cells.iter_mut() {
-                cell.reset();
-            }
-        } else if trail_val <= 0.001 {
-            self.last_retention = 0.0;
-            for cell in self.grid.cells.iter_mut() {
-                cell.reset();
-            }
+            true
         } else {
-            let retention = trail_val.powf((delta_time * 60.0).clamp(0.2, 4.0));
-            self.last_retention = retention;
-            for cell in self.grid.cells.iter_mut() {
-                cell.decay(retention);
-            }
+            false
+        };
+
+        for cell in self.grid.cells.iter_mut() {
+            cell.reset();
         }
 
-        for layer in self.active_animations.iter() {
+        let dt_factor = (delta_time * 60.0).clamp(0.2, 4.0);
+
+        for layer in self.active_animations.iter_mut() {
+            let trail_val = layer.get_trail_persistence().clamp(0.0, 0.97);
+            let retention = if force_clear || trail_val <= 0.001 {
+                0.0
+            } else {
+                trail_val.powf(dt_factor)
+            };
+
+            layer.step_trails(retention, &self.grid.cells);
+            layer.update(win_rect, &self.timecode);
+
             if !layer.get_visibility() {
                 continue;
             }
@@ -132,6 +123,7 @@ impl Animator {
             let blend_mode = layer.get_blend_mode();
             let wireframe = layer.get_polygon_mode().is_wireframe();
 
+            let mut hit_cells: Vec<(usize, Srgba)> = Vec::new();
             for obj in layer.get_objects() {
                 let obj_shape = obj.shape();
                 let obj_color = obj.color();
@@ -147,30 +139,35 @@ impl Animator {
                             continue;
                         }
 
-                        let cell = &mut self.grid.cells[idx];
-                        if obj_shape.intersects_cell(&cell.rect, wireframe) {
-                            cell.blend(obj_color, blend_mode);
+                        if obj_shape.intersects_cell(&self.grid.cells[idx].rect, wireframe) {
+                            hit_cells.push((idx, obj_color));
                         }
                     }
+                }
+            }
+
+            {
+                let layer_cells = &mut layer.trails_mut().grid_cells;
+                for (idx, obj_color) in hit_cells {
+                    if let Some(cell) = layer_cells.get_mut(idx) {
+                        cell.blend(obj_color, blend_mode);
+                    }
+                }
+            }
+
+            for (idx, layer_cell) in layer.trails().grid_cells.iter().enumerate() {
+                if layer_cell.is_active
+                    && let Some(dst_cell) = self.grid.cells.get_mut(idx)
+                {
+                    dst_cell.blend_premultiplied(layer_cell.display_color, blend_mode);
                 }
             }
         }
         self.grid.update_led_buffer_and_send();
     }
 
-    pub fn draw_animator(&self, draw: &Draw, win_rect: &Rect) {
-        if self.last_retention <= 0.001 {
-            draw.background().color(BLACK);
-        } else {
-            // Persistent Bevy framebuffer decay quad for motion trails
-            let fade_alpha = (1.0 - self.last_retention).clamp(0.015, 1.0);
-            draw.z(-1.0)
-                .color_blend(BLEND_NORMAL)
-                .polygon_mode(PolygonMode::Fill)
-                .rect()
-                .wh(win_rect.wh())
-                .color(Srgba::new(0.0, 0.0, 0.0, fade_alpha));
-        }
+    pub fn draw_animator(&self, draw: &Draw, _win_rect: &Rect) {
+        draw.background().color(BLACK);
 
         for (idx, ani) in self.active_animations.iter().enumerate() {
             if !ani.get_visibility() {
@@ -181,12 +178,12 @@ impl Animator {
                 .z(layer_z)
                 .color_blend(ani.get_blend_mode().to_wgpu_blend())
                 .polygon_mode(ani.get_polygon_mode().to_wgpu_polygon_mode());
+            ani.draw_trails(&layer_draw);
             ani.draw(&layer_draw);
         }
     }
 
     fn clear_mod_ghosts(&mut self) {
-        self.trail_persistence.ghost_value = None;
         for effect in &mut self.active_animations {
             effect.reset_modulations();
         }
@@ -195,7 +192,6 @@ impl Animator {
     fn apply_modulations(&mut self) {
         self.clear_mod_ghosts();
         let beat_pos = self.timecode.get_beats();
-        self.trail_persistence.modulate(beat_pos, &self.modulators);
         for effect in &mut self.active_animations {
             effect.update_modulations(beat_pos, &self.modulators);
         }
@@ -213,25 +209,6 @@ impl Animator {
     }
 
     pub fn animator_layer_ui(&mut self, ui: &mut egui::Ui, win_rect: &Rect) {
-        ui.horizontal(|ui| {
-            ui.label(
-                egui::RichText::new("COMPOSITOR & TRAILS")
-                    .size(13.0)
-                    .color(Color32::WHITE),
-            );
-            if ui
-                .button(format!("{} Clear", ICON_CLEAR))
-                .on_hover_text("Clear persistent motion trails on screen and WLED grid")
-                .clicked()
-            {
-                self.request_clear();
-            }
-        });
-        self.trail_persistence.slider_ui(ui, &self.modulators);
-
-        ui.add_space(4.0);
-        ui.separator();
-
         let mut index_to_remove = None;
         let mut swap_indices: Option<(usize, usize)> = None;
 
@@ -253,6 +230,13 @@ impl Animator {
                     }
                 }
             });
+            if ui
+                .button(format!("{} Clear", ICON_CLEAR))
+                .on_hover_text("Clear persistent motion trails on screen and WLED grid")
+                .clicked()
+            {
+                self.request_clear();
+            }
         });
 
         ui.separator();

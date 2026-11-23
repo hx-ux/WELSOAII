@@ -1,7 +1,8 @@
 use crate::{
     animator::{
-        AnimatedObject, AnimatorSettings, ObjectShape,
+        AnimatedObject, AnimatorSettings, LayerTrailState, ObjectShape,
         animation_type::{AnimationType, LayerBlendMode, LayerPolygonMode},
+        default_trail_persistence,
     },
     color::ColorParam,
     parameters::{ConstantParam, ModulatedParam},
@@ -23,6 +24,8 @@ pub struct WaveLinesSettings {
     pub h_amplitude: ModulatedParam,
     pub harmonic: ModulatedParam,
     pub decay: ModulatedParam,
+    #[serde(default = "default_trail_persistence")]
+    pub trail_persistence: ModulatedParam,
     color: ColorParam,
     #[serde(skip)]
     width: f32,
@@ -30,6 +33,8 @@ pub struct WaveLinesSettings {
     height: f32,
     #[serde(skip)]
     pub animator: Vec<WaveLine>,
+    #[serde(skip)]
+    pub trails: LayerTrailState,
     visible: bool,
     #[serde(default)]
     pub blend_mode: LayerBlendMode,
@@ -49,10 +54,12 @@ impl WaveLinesSettings {
             h_amplitude: ModulatedParam::new(0.0, 0.0, 200.0, "H-Amplitude", "wave_h_amp"),
             harmonic: ModulatedParam::new(1.0, 1.0, 8.0, "Harmonic", "wave_harmonic"),
             decay: ModulatedParam::new(1.0, 0.0, 1.0, "Edge Decay", "wave_decay"),
+            trail_persistence: default_trail_persistence(),
             color: ColorParam::default(),
             width: win_rect.w(),
             height: win_rect.h(),
             animator: Vec::new(),
+            trails: LayerTrailState::default(),
             visible: true,
             blend_mode: LayerBlendMode::default(),
             polygon_mode: LayerPolygonMode::default(),
@@ -93,6 +100,9 @@ impl AnimatorSettings for WaveLinesSettings {
             self.hot_update();
         }
         if self.decay.slider_ui(ui, modulators) {
+            self.hot_update();
+        }
+        if self.trail_persistence.slider_ui(ui, modulators) {
             self.hot_update();
         }
 
@@ -192,6 +202,7 @@ impl AnimatorSettings for WaveLinesSettings {
             &mut self.h_amplitude,
             &mut self.harmonic,
             &mut self.decay,
+            &mut self.trail_persistence,
         ];
         params.extend(self.color.modulated_params_mut());
         params
@@ -224,6 +235,18 @@ impl AnimatorSettings for WaveLinesSettings {
 
     fn set_polygon_mode(&mut self, mode: LayerPolygonMode) {
         self.polygon_mode = mode;
+    }
+
+    fn get_trail_persistence(&self) -> f32 {
+        self.trail_persistence.value()
+    }
+
+    fn trails(&self) -> &LayerTrailState {
+        &self.trails
+    }
+
+    fn trails_mut(&mut self) -> &mut LayerTrailState {
+        &mut self.trails
     }
 }
 

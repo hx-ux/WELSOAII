@@ -1,7 +1,8 @@
 use crate::{
     animator::{
-        AnimatedObject, AnimatorSettings, ObjectShape,
+        AnimatedObject, AnimatorSettings, LayerTrailState, ObjectShape,
         animation_type::{AnimationType, LayerBlendMode, LayerPolygonMode},
+        default_trail_persistence,
     },
     color::ColorParam,
     modulator::Modulator,
@@ -21,6 +22,8 @@ pub struct BouncingBallSettings {
     pub ball_count: ConstantParam<u32>,
     pub speed: ModulatedParam,
     pub radius: ModulatedParam,
+    #[serde(default = "default_trail_persistence")]
+    pub trail_persistence: ModulatedParam,
     ball_vel_range_x: ConstantParam<f32>,
     ball_vel_range_y: ConstantParam<f32>,
     #[serde(skip)]
@@ -29,6 +32,8 @@ pub struct BouncingBallSettings {
     color: ColorParam,
     #[serde(skip)]
     animator: Vec<BouncingBallAnimator>,
+    #[serde(skip)]
+    trails: LayerTrailState,
     visible: bool,
     #[serde(default)]
     pub blend_mode: LayerBlendMode,
@@ -43,10 +48,12 @@ impl BouncingBallSettings {
             speed: ModulatedParam::new(5.0, 1.0, 20.0, "Speed", "bounce_speed"),
             dimension: *win_rect,
             radius: ModulatedParam::new(10.0, 4.0, 40.0, "Radius", "bounce_radius"),
+            trail_persistence: default_trail_persistence(),
             ball_vel_range_x: ConstantParam::new(10.0, 1.0, 200.0, "Range X", "range_x"),
             ball_vel_range_y: ConstantParam::new(15.0, 1.0, 200.0, "Range Y", "range_y"),
             color: ColorParam::default(),
             animator: Vec::new(),
+            trails: LayerTrailState::default(),
             visible: true,
             blend_mode: LayerBlendMode::default(),
             polygon_mode: LayerPolygonMode::default(),
@@ -65,7 +72,6 @@ impl AnimatorSettings for BouncingBallSettings {
         if self.speed.slider_ui(ui, mods) {
             self.hot_update();
         }
-
         if ui.horizontal(|ui| self.ball_vel_range_x.drag_ui(ui)).inner {
             self.init();
         }
@@ -146,7 +152,11 @@ impl AnimatorSettings for BouncingBallSettings {
     }
 
     fn modulated_params_mut(&mut self) -> Vec<&mut ModulatedParam> {
-        let mut params = vec![&mut self.speed, &mut self.radius];
+        let mut params = vec![
+            &mut self.speed,
+            &mut self.radius,
+            &mut self.trail_persistence,
+        ];
         params.extend(self.color.modulated_params_mut());
         params
     }
@@ -174,6 +184,18 @@ impl AnimatorSettings for BouncingBallSettings {
 
     fn set_polygon_mode(&mut self, mode: LayerPolygonMode) {
         self.polygon_mode = mode;
+    }
+
+    fn get_trail_persistence(&self) -> f32 {
+        self.trail_persistence.value()
+    }
+
+    fn trails(&self) -> &LayerTrailState {
+        &self.trails
+    }
+
+    fn trails_mut(&mut self) -> &mut LayerTrailState {
+        &mut self.trails
     }
 }
 

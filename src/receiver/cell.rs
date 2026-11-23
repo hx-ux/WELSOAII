@@ -47,6 +47,16 @@ impl GridCell {
     /// Composites a source color onto this cell using the layer's blend mode.
     pub fn blend(&mut self, src_color: Srgba, mode: LayerBlendMode) {
         self.display_color = mode.blend_srgba(self.display_color, src_color);
+        self.update_active_flag();
+    }
+
+    /// Composites a premultiplied layer cell color onto this cell using the layer's blend mode.
+    pub fn blend_premultiplied(&mut self, src_premul: Srgba, mode: LayerBlendMode) {
+        self.display_color = mode.blend_premultiplied(self.display_color, src_premul);
+        self.update_active_flag();
+    }
+
+    fn update_active_flag(&mut self) {
         self.is_active = self.display_color.red > 0.002
             || self.display_color.green > 0.002
             || self.display_color.blue > 0.002;

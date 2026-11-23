@@ -1,7 +1,8 @@
 use crate::{
     animator::{
-        AnimatedObject, AnimatorSettings, ObjectShape,
+        AnimatedObject, AnimatorSettings, LayerTrailState, ObjectShape,
         animation_type::{AnimationType, LayerBlendMode, LayerPolygonMode},
+        default_trail_persistence,
     },
     color::ColorParam,
     modulator::Modulator,
@@ -23,6 +24,8 @@ pub struct QuantumTunnelSettings {
     pub depth: ModulatedParam,
     pub twist: ModulatedParam,
     pub line_weight: ModulatedParam,
+    #[serde(default = "default_trail_persistence")]
+    pub trail_persistence: ModulatedParam,
     pub recursive_line_height: ConstantParam<bool>,
     #[serde(skip)]
     #[serde(default = "default_rect")]
@@ -30,6 +33,8 @@ pub struct QuantumTunnelSettings {
     color: ColorParam,
     #[serde(skip)]
     animator: Vec<QuantumTunnelAnimator>,
+    #[serde(skip)]
+    trails: LayerTrailState,
     visible: bool,
     #[serde(default)]
     pub blend_mode: LayerBlendMode,
@@ -47,7 +52,9 @@ impl QuantumTunnelSettings {
             dimension: *win_rect,
             color: ColorParam::default(),
             animator: Vec::new(),
+            trails: LayerTrailState::default(),
             line_weight: ModulatedParam::new(1.0, 1.0, 10.0, "Line Weight", "line_weight"),
+            trail_persistence: default_trail_persistence(),
 
             recursive_line_height: ConstantParam::new(
                 false,
@@ -82,6 +89,10 @@ impl AnimatorSettings for QuantumTunnelSettings {
         }
 
         if self.line_weight.slider_ui(ui, mods) {
+            self.hot_update();
+        }
+
+        if self.trail_persistence.slider_ui(ui, mods) {
             self.hot_update();
         }
 
@@ -174,6 +185,7 @@ impl AnimatorSettings for QuantumTunnelSettings {
             &mut self.depth,
             &mut self.twist,
             &mut self.line_weight,
+            &mut self.trail_persistence,
         ];
 
         params.extend(self.color.modulated_params_mut());
@@ -203,6 +215,18 @@ impl AnimatorSettings for QuantumTunnelSettings {
 
     fn set_polygon_mode(&mut self, mode: LayerPolygonMode) {
         self.polygon_mode = mode;
+    }
+
+    fn get_trail_persistence(&self) -> f32 {
+        self.trail_persistence.value()
+    }
+
+    fn trails(&self) -> &LayerTrailState {
+        &self.trails
+    }
+
+    fn trails_mut(&mut self) -> &mut LayerTrailState {
+        &mut self.trails
     }
 }
 

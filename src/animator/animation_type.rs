@@ -110,6 +110,16 @@ impl LayerBlendMode {
         let sg = src.green.clamp(0.0, 1.0);
         let sb = src.blue.clamp(0.0, 1.0);
 
+        self.blend_premultiplied(dst, Srgba::new(sr * sa, sg * sa, sb * sa, sa))
+    }
+
+    /// Composites a premultiplied source color (such as a decayed per-layer grid cell) onto `dst`.
+    pub fn blend_premultiplied(self, dst: Srgba, src_premul: Srgba) -> Srgba {
+        let s_r = src_premul.red.clamp(0.0, 1.0);
+        let s_g = src_premul.green.clamp(0.0, 1.0);
+        let s_b = src_premul.blue.clamp(0.0, 1.0);
+        let sa = src_premul.alpha.clamp(0.0, 1.0);
+
         let dr = dst.red.clamp(0.0, 1.0);
         let dg = dst.green.clamp(0.0, 1.0);
         let db = dst.blue.clamp(0.0, 1.0);
@@ -117,44 +127,39 @@ impl LayerBlendMode {
 
         match self {
             LayerBlendMode::Normal => Srgba::new(
-                (sr * sa + dr * (1.0 - sa)).clamp(0.0, 1.0),
-                (sg * sa + dg * (1.0 - sa)).clamp(0.0, 1.0),
-                (sb * sa + db * (1.0 - sa)).clamp(0.0, 1.0),
+                (s_r + dr * (1.0 - sa)).clamp(0.0, 1.0),
+                (s_g + dg * (1.0 - sa)).clamp(0.0, 1.0),
+                (s_b + db * (1.0 - sa)).clamp(0.0, 1.0),
                 (sa + da * (1.0 - sa)).clamp(0.0, 1.0),
             ),
             LayerBlendMode::Add => Srgba::new(
-                (dr + sr * sa).clamp(0.0, 1.0),
-                (dg + sg * sa).clamp(0.0, 1.0),
-                (db + sb * sa).clamp(0.0, 1.0),
+                (dr + s_r).clamp(0.0, 1.0),
+                (dg + s_g).clamp(0.0, 1.0),
+                (db + s_b).clamp(0.0, 1.0),
                 (da + sa).clamp(0.0, 1.0),
             ),
             LayerBlendMode::Lightest => Srgba::new(
-                dr.max(sr * sa),
-                dg.max(sg * sa),
-                db.max(sb * sa),
+                dr.max(s_r),
+                dg.max(s_g),
+                db.max(s_b),
                 da.max(sa),
             ),
-            LayerBlendMode::Screen => {
-                let s_r = sr * sa;
-                let s_g = sg * sa;
-                let s_b = sb * sa;
-                Srgba::new(
-                    (s_r + dr * (1.0 - s_r)).clamp(0.0, 1.0),
-                    (s_g + dg * (1.0 - s_g)).clamp(0.0, 1.0),
-                    (s_b + db * (1.0 - s_b)).clamp(0.0, 1.0),
-                    (sa + da * (1.0 - sa)).clamp(0.0, 1.0),
-                )
-            }
+            LayerBlendMode::Screen => Srgba::new(
+                (s_r + dr * (1.0 - s_r)).clamp(0.0, 1.0),
+                (s_g + dg * (1.0 - s_g)).clamp(0.0, 1.0),
+                (s_b + db * (1.0 - s_b)).clamp(0.0, 1.0),
+                (sa + da * (1.0 - sa)).clamp(0.0, 1.0),
+            ),
             LayerBlendMode::Multiply => Srgba::new(
-                (dr * sr * sa + dr * (1.0 - sa)).clamp(0.0, 1.0),
-                (dg * sg * sa + dg * (1.0 - sa)).clamp(0.0, 1.0),
-                (db * sb * sa + db * (1.0 - sa)).clamp(0.0, 1.0),
+                (dr * s_r + dr * (1.0 - sa)).clamp(0.0, 1.0),
+                (dg * s_g + dg * (1.0 - sa)).clamp(0.0, 1.0),
+                (db * s_b + db * (1.0 - sa)).clamp(0.0, 1.0),
                 da.max(sa),
             ),
             LayerBlendMode::Subtract => Srgba::new(
-                (dr - sr * sa).clamp(0.0, 1.0),
-                (dg - sg * sa).clamp(0.0, 1.0),
-                (db - sb * sa).clamp(0.0, 1.0),
+                (dr - s_r).clamp(0.0, 1.0),
+                (dg - s_g).clamp(0.0, 1.0),
+                (db - s_b).clamp(0.0, 1.0),
                 da,
             ),
         }
